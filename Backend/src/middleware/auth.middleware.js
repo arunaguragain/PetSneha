@@ -29,6 +29,10 @@ async function protect(req, res, next) {
     return next(new AppError('The user belonging to this token no longer exists.', 401));
   }
 
+  if (user.isActive === false) {
+    return next(new AppError('Your account has been deactivated. Contact support.', 401));
+  }
+
   req.user = { id: user._id.toString(), role: user.role, email: user.email };
   next();
 }

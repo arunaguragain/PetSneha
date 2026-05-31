@@ -17,6 +17,8 @@ const orderRoutes = require('./routes/order.routes');
 const productRoutes = require('./routes/product.routes');
 const articleRoutes = require('./routes/article.routes');
 const forumPostRoutes = require('./routes/forumPost.routes');
+const vetDashboardRoutes = require('./routes/vetDashboard.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -39,6 +41,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/forum', forumPostRoutes);
+app.use('/api/vet', vetDashboardRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.all('*', (req, res) => {
   res.status(404).json({ status: 'fail', message: 'Route not found.' });

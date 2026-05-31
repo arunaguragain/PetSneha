@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['petOwner', 'vet', 'admin'], default: 'petOwner' },
     profilePhoto: { type: String },
     phone: { type: String },
+    isActive: { type: Boolean, default: true },
     savedVetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vet' },
     language: { type: String, enum: ['en', 'ne'], default: 'en' },
   },
