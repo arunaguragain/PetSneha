@@ -25,12 +25,12 @@
   }
 
   body {
-    @apply bg-neutral-50 text-neutral-800 font-body antialiased;
+    @apply bg-[rgba(247,249,251,1)] text-black font-body antialiased;
     min-height: 100vh;
-    background-image:
-      radial-gradient(circle at top left, rgba(0, 70, 206, 0.12), transparent 28%),
-      radial-gradient(circle at 85% 10%, rgba(16, 185, 129, 0.1), transparent 24%),
-      linear-gradient(180deg, #f9fbfd 0%, #eef4fa 100%);
+    /* Remove previous gradient backgrounds */
+    /* background-image: radial-gradient(circle at top left, rgba(0, 70, 206, 0.12), transparent 28%),
+       radial-gradient(circle at 85% 10%, rgba(16, 185, 129, 0.1), transparent 24%),
+       linear-gradient(180deg, #f9fbfd 0%, #eef4fa 100%); */
     color: var(--color-text);
   }
 
@@ -215,7 +215,7 @@
   }
 
   .navbar {
-    @apply sticky top-0 z-40 h-[64px] border-b border-white/60 bg-white/80 backdrop-blur-xl;
+    @apply sticky top-0 z-40 h-[64px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)];
   }
 
   .tab-bar {
