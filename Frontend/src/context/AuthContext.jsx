@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState(null);
+  const [language, setLanguage] = useState(() => localStorage.getItem('petsneha_lang') || 'en');
 
   const clearSession = () => {
     localStorage.removeItem(TOKEN_KEY);
@@ -34,6 +35,7 @@ export function AuthProvider({ children }) {
         setUser(currentUser);
         setToken(existingToken);
         setRole(currentUser?.role || null);
+        setLanguage(currentUser?.language || localStorage.getItem('petsneha_lang') || 'en');
       } catch (error) {
         clearSession();
       } finally {
@@ -56,6 +58,7 @@ export function AuthProvider({ children }) {
     setUser(currentUser);
     setToken(authToken);
     setRole(currentUser?.role || null);
+    setLanguage(currentUser?.language || localStorage.getItem('petsneha_lang') || 'en');
 
     return currentUser;
   };
@@ -72,6 +75,7 @@ export function AuthProvider({ children }) {
     setUser(currentUser);
     setToken(authToken);
     setRole(currentUser?.role || userRole || null);
+    setLanguage(currentUser?.language || localStorage.getItem('petsneha_lang') || 'en');
 
     return currentUser;
   };
@@ -87,12 +91,14 @@ export function AuthProvider({ children }) {
       token,
       loading,
       role,
+      language,
+      setLanguage,
       login,
       register,
       logout,
       clearSession,
     }),
-    [loading, role, token, user],
+    [language, loading, role, token, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
