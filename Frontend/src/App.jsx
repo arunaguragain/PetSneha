@@ -8,6 +8,28 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import DashboardPage from './pages/owner/DashboardPage';
+import AddPetPage from './pages/owner/AddPetPage';
+import PetProfilePage from './pages/owner/PetProfilePage';
+import SetReminderPage from './pages/owner/SetReminderPage';
+import ReminderSuccessPage from './pages/owner/ReminderSuccessPage';
+import VetDirectoryPage from './pages/owner/VetDirectoryPage';
+import VetProfilePage from './pages/owner/VetProfilePage';
+import BookingPage from './pages/owner/BookingPage';
+import EmergencyPage from './pages/owner/EmergencyPage';
+import ArticlesPage from './pages/owner/ArticlesPage';
+import ArticleDetailPage from './pages/owner/ArticleDetailPage';
+import ArticleCreatePage from './pages/owner/ArticleCreatePage';
+import ForumPage from './pages/owner/ForumPage';
+import ForumPostPage from './pages/owner/ForumPostPage';
+import ForumCreatePage from './pages/owner/ForumCreatePage';
+import ShopPage from './pages/owner/ShopPage';
+import ProductPage from './pages/owner/ProductPage';
+import CheckoutPage from './pages/owner/CheckoutPage';
+import VetDashboardPage from './pages/vet/VetDashboardPage';
+import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
+import VetArticlesPage from './pages/vet/VetArticlesPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 function AuthenticatedLayout() {
   return (
@@ -56,33 +78,44 @@ export default function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['petOwner', 'vet', 'admin']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/onboarding" element={<PlaceholderPage title="Onboarding coming in Sprint 2" subtitle="Your account is ready. The onboarding flow will land here next." />} />
+          <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['petOwner']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/dashboard" element={<PlaceholderPage title="Dashboard coming in Sprint 2" subtitle="The pet owner dashboard is on the way." />} />
-          <Route path="/pets" element={<PlaceholderPage title="Pets coming in Sprint 2" subtitle="Manage pet profiles, vaccination history, and reminders here." />} />
-          <Route path="/vets" element={<PlaceholderPage title="Vets coming in Sprint 2" subtitle="Verified vet discovery will live here." />} />
-          <Route path="/records" element={<PlaceholderPage title="Records coming in Sprint 2" subtitle="Medical history and files will appear here." />} />
-          <Route path="/shop" element={<PlaceholderPage title="Shop coming in Sprint 2" subtitle="Pet products and delivery flow will be added here." />} />
-          <Route path="/articles" element={<PlaceholderPage title="Articles coming in Sprint 2" subtitle="Educational content will appear here." />} />
-          <Route path="/community" element={<PlaceholderPage title="Community coming in Sprint 2" subtitle="Forums and owner discussions will be added here." />} />
-          <Route path="/emergency" element={<PlaceholderPage title="Emergency coming in Sprint 2" subtitle="Urgent care shortcuts will be added here." />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/pets/new" element={<AddPetPage />} />
+          <Route path="/pets/:petId" element={<PetProfilePage />} />
+          <Route path="/reminders/new" element={<SetReminderPage />} />
+          <Route path="/reminders/success" element={<ReminderSuccessPage />} />
+          <Route path="/vets" element={<VetDirectoryPage />} />
+          <Route path="/vets/:vetId" element={<VetProfilePage />} />
+          <Route path="/vets/:vetId/book" element={<BookingPage />} />
+          <Route path="/emergency" element={<EmergencyPage />} />
+          <Route path="/articles" element={<ArticlesPage />} />
+          <Route path="/articles/new" element={<ArticleCreatePage />} />
+          <Route path="/articles/:articleId" element={<ArticleDetailPage />} />
+          <Route path="/forum" element={<ForumPage />} />
+          <Route path="/forum/new" element={<ForumCreatePage />} />
+          <Route path="/forum/:postId" element={<ForumPostPage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/products/:productId" element={<ProductPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['vet']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/vet/dashboard" element={<PlaceholderPage title="Vet Dashboard coming in Sprint 3" subtitle="Vet operations and appointments will appear here." />} />
-          <Route path="/vet/appointments" element={<PlaceholderPage title="Vet Appointments coming in Sprint 3" subtitle="Appointment management will live here." />} />
+          <Route path="/vet/dashboard" element={<VetDashboardPage />} />
+          <Route path="/vet/appointments" element={<VetAppointmentsPage />} />
+          <Route path="/vet/articles" element={<VetArticlesPage />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/admin/dashboard" element={<PlaceholderPage title="Admin Dashboard coming in Sprint 4" subtitle="Platform administration tools will appear here." />} />
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         </Route>
       </Route>
 
