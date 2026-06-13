@@ -12,6 +12,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardPage from './pages/owner/DashboardPage';
 import AddPetPage from './pages/owner/AddPetPage';
+import EditPetPage from './pages/owner/EditPetPage';
 import PetProfilePage from './pages/owner/PetProfilePage';
 import SetReminderPage from './pages/owner/SetReminderPage';
 import ReminderSuccessPage from './pages/owner/ReminderSuccessPage';
@@ -122,6 +123,7 @@ export default function App() {
           <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />
+          <Route path="/pets/:petId/edit" element={<EditPetPage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
           <Route path="/reminders/success" element={<ReminderSuccessPage />} />
           <Route path="/vets" element={<VetDirectoryPage />} />
