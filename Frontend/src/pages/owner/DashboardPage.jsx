@@ -213,10 +213,11 @@ export default function DashboardPage() {
                   My Pets
                 </h3>
                 <button
-                  onClick={() => navigate('/pets')}
-                  className="text-sm text-[#0046CE] font-medium hover:underline"
+                  onClick={() => navigate('/pets/new')}
+                  className="flex items-center gap-1.5 text-sm text-[#0046CE] font-medium hover:bg-[#EFF6FF] px-3 py-1.5 rounded-lg transition-colors"
                 >
-                  View All
+                  <Plus size={16} />
+                  Add pet
                 </button>
               </div>
 
@@ -228,7 +229,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-sm font-medium text-[#64748B]">No pets added yet.</p>
                   <button
-                    onClick={() => navigate('/pets/add')}
+                    onClick={() => navigate('/pets/new')}
                     className="mt-1 bg-[#0046CE] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#003DA8] transition"
                   >
                     + Add your first pet

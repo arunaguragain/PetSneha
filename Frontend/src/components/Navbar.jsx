@@ -205,7 +205,7 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    <button onClick={() => navigate('/pets/add')} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                    <button onClick={() => navigate('/pets/new')} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                       <PlusCircle size={18} className="text-[#0046CE]" />
                       Add pet
                     </button>
