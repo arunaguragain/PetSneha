@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const response = await loginUser({ email, password });
     const currentUser = response?.data?.user || null;
-    const authToken = response?.token || null;
+    const authToken = response?.data?.token || null;
 
     if (authToken) {
       localStorage.setItem(TOKEN_KEY, authToken);
@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
   const register = async (name, email, password, confirmPassword, userRole) => {
     const response = await registerUser({ name, email, password, confirmPassword, role: userRole });
     const currentUser = response?.data?.user || null;
-    const authToken = response?.token || null;
+    const authToken = response?.data?.token || null;
 
     if (authToken) {
       localStorage.setItem(TOKEN_KEY, authToken);
