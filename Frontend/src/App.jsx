@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Card, PageHeader } from './components/ui';
+import { getPets } from './api/pet.api';
 import HomePage from './pages/HomePage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -33,13 +35,45 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 function AuthenticatedLayout() {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="container-app page-content">
+      <main className="flex-1 bg-[#F8FAFC]">
         <Outlet />
       </main>
-    </>
+      <Footer />
+    </div>
   );
+}
+
+function RecordsGateway() {
+  const [loading, setLoading] = React.useState(true);
+  const [petId, setPetId] = React.useState(null);
+
+  React.useEffect(() => {
+    getPets()
+      .then((res) => {
+        const petsList = res.data?.pets || res.data?.items || (Array.isArray(res.data) ? res.data : res || []);
+        if (petsList.length > 0) {
+          setPetId(petsList[0]._id || petsList[0].id);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="animate-pulse font-semibold text-[#64748B]">Loading records...</div>
+      </div>
+    );
+  }
+
+  if (petId) {
+    return <Navigate to={`/pets/${petId}`} replace />;
+  }
+  
+  return <Navigate to="/dashboard" replace />;
 }
 
 function PlaceholderPage({ title, subtitle }) {
@@ -85,6 +119,7 @@ export default function App() {
       <Route element={<ProtectedRoute allowedRoles={['petOwner']} />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
