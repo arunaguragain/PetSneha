@@ -4,6 +4,7 @@ import { Avatar, Badge, Button, Card, Divider, Input, Select, Skeleton, StarRati
 import { deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord } from '../../api/pet.api';
 import { getErrorMessage, formatDate, unwrapItems, unwrapItem, getPetEmoji, getStatusTone } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Download, Plus, Calendar as CalendarIcon, Mail, Bell, Edit2, Trash2, ArrowRight, Check } from 'lucide-react';
 
 const infoFields = [
@@ -19,6 +20,7 @@ export default function PetProfilePage() {
   const { petId } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [pet, setPet] = useState(null);
   const [records, setRecords] = useState([]);
@@ -101,7 +103,15 @@ export default function PetProfilePage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this pet profile?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Pet Profile',
+      message: `Are you sure you want to delete ${pet?.name || 'this pet'}? This action cannot be undone and all health records, reminders, and appointments will be permanently lost.`,
+      confirmText: 'Delete pet',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+
+    if (!isConfirmed) {
       return;
     }
 
