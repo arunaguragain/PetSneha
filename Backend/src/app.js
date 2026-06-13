@@ -22,7 +22,7 @@ const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100 }));
 app.use(express.json({ limit: '10kb' }));
