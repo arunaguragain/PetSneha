@@ -24,10 +24,11 @@ function toTimeString(totalMinutes) {
 
 function buildSlots(vet, date, bookedAppointments) {
   const bookedSlots = new Set(bookedAppointments.map((appointment) => appointment.timeSlot));
-  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Asia/Kathmandu' }).format(new Date(date)).toLowerCase();
+  const dayNameLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Asia/Kathmandu' }).format(new Date(date)).toLowerCase();
+  const dayNameShort = dayNameLong.substring(0, 3);
   const allowedDays = (vet.availability?.days || []).map((day) => day.toLowerCase());
 
-  if (!vet.availability?.is24Hours && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
+  if (!vet.availability?.is24Hours && allowedDays.length > 0 && !allowedDays.includes(dayNameLong) && !allowedDays.includes(dayNameShort)) {
     return [];
   }
 
@@ -105,7 +106,7 @@ async function bookAppointment(currentUser, payload) {
     petId: pet._id,
     date,
     timeSlot: payload.timeSlot,
-    status: 'confirmed',
+    status: 'pending',
     fee: vet.consultationFee,
     notes: payload.notes,
   });

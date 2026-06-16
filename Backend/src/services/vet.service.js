@@ -190,33 +190,36 @@ async function getReviews(vetId) {
  * @returns {Promise<object>}
  */
 async function submitReview(currentUser, vetId, payload) {
-  const appointment = await appointmentRepository.findById(payload.appointmentId);
-  if (!appointment) {
-    throw new AppError('Appointment not found.', 404);
-  }
-
-  if (currentUser.role !== 'admin' && appointment.petOwnerId.toString() !== currentUser.id) {
-    throw new AppError('You can only review your own appointment.', 403);
-  }
-
-  if (appointment.vetId.toString() !== vetId) {
-    throw new AppError('This appointment does not belong to the selected vet.', 400);
-  }
-
-  if (appointment.status !== 'completed') {
-    throw new AppError('You can only review completed appointments.', 400);
-  }
-
   const vet = await vetRepository.findById(vetId);
   if (!vet) {
     throw new AppError('Vet not found.', 404);
   }
 
-  const alreadyReviewed = (vet.reviews || []).some(
-    (review) => review.appointmentId && review.appointmentId.toString() === payload.appointmentId
-  );
-  if (alreadyReviewed) {
-    throw new AppError('This appointment has already been reviewed.', 409);
+  // If an appointmentId is provided, run the full ownership/status checks.
+  if (payload.appointmentId) {
+    const appointment = await appointmentRepository.findById(payload.appointmentId);
+    if (!appointment) {
+      throw new AppError('Appointment not found.', 404);
+    }
+
+    if (currentUser.role !== 'admin' && appointment.petOwnerId.toString() !== currentUser.id) {
+      throw new AppError('You can only review your own appointment.', 403);
+    }
+
+    if (appointment.vetId.toString() !== vetId) {
+      throw new AppError('This appointment does not belong to the selected vet.', 400);
+    }
+
+    if (appointment.status !== 'completed') {
+      throw new AppError('You can only review completed appointments.', 400);
+    }
+
+    const alreadyReviewed = (vet.reviews || []).some(
+      (review) => review.appointmentId && review.appointmentId.toString() === payload.appointmentId
+    );
+    if (alreadyReviewed) {
+      throw new AppError('This appointment has already been reviewed.', 409);
+    }
   }
 
   const rating = Number(payload.rating);
@@ -227,7 +230,7 @@ async function submitReview(currentUser, vetId, payload) {
     $push: {
       reviews: {
         authorId: currentUser.id,
-        appointmentId: payload.appointmentId,
+        appointmentId: payload.appointmentId || undefined,
         rating,
         comment: payload.comment,
       },
