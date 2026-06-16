@@ -55,4 +55,32 @@ async function deleteById(id) {
   return Vet.findByIdAndDelete(id);
 }
 
-module.exports = { create, findAll, findById, findByUserId, updateById, deleteById };
+async function findAllPublic(filters = {}) {
+  const query = { isVerified: true };
+
+  // Support both raw query param names and built filter structures
+  if (filters.maxFee) {
+    query.consultationFee = { $lte: Number(filters.maxFee) };
+  } else if (filters.consultationFee) {
+    query.consultationFee = filters.consultationFee;
+  }
+
+  if (filters.location) {
+    query.location = filters.location instanceof RegExp ? filters.location : new RegExp(filters.location, 'i');
+  }
+
+  if (filters.specialisation) {
+    query.specialisation = filters.specialisation;
+  }
+
+  // Also support any other filters
+  for (const key of Object.keys(filters)) {
+    if (!['maxFee', 'consultationFee', 'location', 'specialisation', 'verified', 'isVerified'].includes(key)) {
+      query[key] = filters[key];
+    }
+  }
+
+  return Vet.find(query).sort({ rating: -1 });
+}
+
+module.exports = { create, findAll, findAllPublic, findById, findByUserId, updateById, deleteById };
