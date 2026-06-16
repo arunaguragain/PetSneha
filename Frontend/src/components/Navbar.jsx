@@ -39,6 +39,16 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
   
+  const handleLogoClick = () => {
+    if (user?.role === 'vet') {
+      navigate('/vet/dashboard')
+    } else if (user?.role === 'admin') {
+      navigate('/admin/dashboard')
+    } else {
+      navigate('/dashboard')
+    }
+  };
+  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pets, setPets] = useState([]);
   const dropdownRef = useRef(null);
@@ -99,10 +109,10 @@ export default function Navbar() {
     <header className="navbar bg-white border-b border-[#E2E8F0] relative z-50">
       <div className="max-w-[1440px] mx-auto px-8 flex h-full items-center justify-between gap-4">
         {/* Left — Logo */}
-        <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => navigate('/')}>
+        <button onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer shrink-0 hover:opacity-80">
           <img src="/logo.png" alt="PetSneha Logo" className="h-8 w-auto object-contain" />
           <span className="text-[22px] font-bold text-[#0046CE]" style={{ fontFamily: 'Literata, serif' }}>PetSneha</span>
-        </div>
+        </button>
 
         {/* Center — Links */}
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary navigation">
