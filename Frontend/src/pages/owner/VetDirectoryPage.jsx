@@ -5,7 +5,7 @@ import { getVets, saveVet } from '../../api/vet.api';
 import { getErrorMessage, formatCurrency, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { setSavedVet } from '../../utils/ownerState';
-import { Search, MapPin, Receipt, PawPrint, Heart, Star, Check } from 'lucide-react';
+import { Search, MapPin, Receipt, PawPrint, Heart, Star, Check, CheckCircle2, Wallet } from 'lucide-react';
 
 
 export default function VetDirectoryPage() {
@@ -58,11 +58,11 @@ export default function VetDirectoryPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 py-8 relative">
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto relative">
         <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Find Verified Vets</h1>
         
         {/* Filter bar */}
-        <div className="flex items-center gap-3 mt-4 relative">
+        <div className="flex items-center gap-[12px] mt-4 relative">
           <div className="flex-1 relative">
             <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
@@ -77,17 +77,19 @@ export default function VetDirectoryPage() {
           <button 
             type="button" 
             onClick={() => setVerifiedOnly(!verifiedOnly)} 
-            className={`rounded-full px-4 py-2 text-sm transition ${verifiedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
+            className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${verifiedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
           >
-            ✓ Verified only
+            <CheckCircle2 className="w-4 h-4" />
+            Verified only
           </button>
           
           <div ref={feeMenuRef}>
             <button 
               type="button" 
               onClick={() => setFeeMenuOpen(!feeMenuOpen)} 
-              className={`rounded-full px-4 py-2 text-sm transition ${maxFee ? 'bg-[#0046CE] text-white border-[#0046CE]' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
+              className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${maxFee ? 'bg-[#0046CE] text-white border-[#0046CE]' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
             >
+              <Wallet className="w-4 h-4" />
               Fee range ▾
             </button>
             
@@ -117,14 +119,15 @@ export default function VetDirectoryPage() {
           <button 
             type="button" 
             onClick={() => setSavedOnly(!savedOnly)} 
-            className={`rounded-full px-4 py-2 text-sm transition ${savedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
+            className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${savedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
           >
-            □ Saved vets
+            <Heart className={`w-4 h-4 ${savedOnly ? 'fill-current' : 'text-[#64748B]'}`} />
+            Saved vets
           </button>
         </div>
 
         {/* Vet grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mt-6">
           {loading ? (
             Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 bg-[#F8FAFC] rounded-xl animate-pulse border border-[#E2E8F0]" />)
           ) : filteredVets.map((vet) => (
@@ -146,15 +149,17 @@ export default function VetDirectoryPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-[#1E293B] text-base truncate">{vet.name}</h3>
-                        {(vet.isVerified || true) && (
-                          <span className="inline-flex items-center gap-1 bg-[#EFF6FF] text-[#0046CE] text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">
-                            <Check className="w-3 h-3" /> Verified
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 bg-[#EFF6FF] text-[#0046CE] text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">
+                          <Check className="w-3 h-3" /> Verified
+                        </span>
                       </div>
-                      <div className="text-sm text-[#64748B] flex items-center gap-1 flex-shrink-0">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" /> 4.9 (124)
-                      </div>
+                      {vet.reviewCount > 0 ? (
+                        <div className="text-sm text-[#64748B] flex items-center gap-1 flex-shrink-0">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" /> {vet.rating} ({vet.reviewCount})
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[#94A3B8] font-medium flex-shrink-0">No reviews yet</div>
+                      )}
                     </div>
                     <div className="text-sm text-[#64748B] mt-1 truncate">{vet.specialisation || 'General Practice'}</div>
                   </div>

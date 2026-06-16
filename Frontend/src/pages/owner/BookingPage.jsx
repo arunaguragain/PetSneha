@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Input, Select } from '../../components/ui';
+import { Avatar, Badge, Button, Card, Input, Select, Spinner } from '../../components/ui';
 import { bookAppointment, getVet, getVetSlots } from '../../api/vet.api';
 import { getPets } from '../../api/pet.api';
 import { formatCurrency, formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Info } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowLeft, CheckCircle2, MapPin, Info, Mail } from 'lucide-react';
 
 const buildCalendarDays = (monthDate) => {
   const year = monthDate.getFullYear();
@@ -31,6 +32,7 @@ export default function BookingPage() {
   const { vetId } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [vet, setVet] = useState(null);
   const [pets, setPets] = useState([]);
@@ -41,6 +43,9 @@ export default function BookingPage() {
   const [step, setStep] = useState(1);
   const [selectedPetId, setSelectedPetId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showInfoOverlay, setShowInfoOverlay] = useState(false);
+  const [confirmedAppointment, setConfirmedAppointment] = useState(null);
+  const [bookingError, setBookingError] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -98,21 +103,52 @@ export default function BookingPage() {
     setSelectedSlot('');
   };
 
-  const handleSubmit = async () => {
+  const handleConfirmBooking = async () => {
     if (!selectedPetId) {
       addToast('Please select a pet', 'danger');
       return;
     }
+    setBookingError('');
+    setSubmitting(true);
+
     try {
-      setSubmitting(true);
-      await bookAppointment({ vetId, petId: selectedPetId, date: selectedDate, timeSlot: selectedSlot });
-      addToast('Appointment booked!', 'success');
-      navigate('/dashboard');
-    } catch (apiError) {
-      addToast(getErrorMessage(apiError), 'danger');
+      const response = await bookAppointment({
+        vetId: vet._id,
+        petId: selectedPetId,
+        date: selectedDate,
+        timeSlot: selectedSlot,
+      });
+
+      // Defensively extract the appointment from any possible response shape
+      const appointment =
+        response?.data?.appointment ||
+        response?.data?.data?.appointment ||
+        response?.appointment ||
+        response?.data ||
+        response;
+
+      if (!appointment || !appointment._id) {
+        throw new Error('Could not read booking confirmation from server response');
+      }
+
+      // Show the static info overlay — no auto-navigation, no spinner
+      setConfirmedAppointment(appointment);
+      setShowInfoOverlay(true);
+    } catch (error) {
+      const message =
+        typeof error === 'string'
+          ? error
+          : error?.response?.data?.message || error?.message || 'Booking failed. Please try again.';
+      setBookingError(message);
+      addToast(message, 'danger');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleOverlayContinue = () => {
+    setShowInfoOverlay(false);
+    navigate('/dashboard');
   };
 
   if (loading) {
@@ -124,8 +160,41 @@ export default function BookingPage() {
   const total = fee + serviceCharge;
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="bg-white min-h-screen relative">
+      {showInfoOverlay && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-[fadeInUp_0.3s_ease]">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-[#EFF6FF] flex items-center justify-center">
+                <Mail className="w-8 h-8 text-[#0046CE]" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-neutral-900" style={{ fontFamily: 'Literata, serif' }}>
+              Your appointment request has been sent
+            </h2>
+            <p className="text-neutral-500 text-sm mt-3 leading-relaxed">
+              Dr. {vet?.name} will confirm your appointment shortly. You will
+              receive an email at <strong className="text-neutral-700">{user?.email}</strong> once
+              it is confirmed, along with all the details.
+            </p>
+            <button
+              onClick={handleOverlayContinue}
+              className="mt-6 w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-semibold transition"
+            >
+              Got it →
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto">
+        
+        {/* Back link */}
+        <div 
+          onClick={() => navigate(`/vets/${vetId}`)} 
+          className="text-sm text-[#0046CE] cursor-pointer mb-6 flex items-center gap-1 hover:underline w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Profile
+        </div>
         
         {/* Header */}
         <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Book an Appointment</h1>
@@ -163,10 +232,10 @@ export default function BookingPage() {
         </div>
 
         {/* Two column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-[24px]">
           
-          {/* Left (col-span-3) — Calendar & Slots */}
-          <div className="md:col-span-3">
+          {/* Left — Calendar & Slots */}
+          <div>
             
             {/* Calendar */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
@@ -219,10 +288,10 @@ export default function BookingPage() {
             {selectedDate && (
               <div className="mt-6">
                 <h2 className="text-sm font-semibold text-[#1E293B] flex items-center gap-1">
-                  <Info className="w-4 h-4 text-[#0046CE]" /> Available Time Slots
+                  <Clock className="w-4 h-4 text-[#0046CE]" /> Available Time Slots
                 </h2>
                 
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] mt-3">
                   {slots.length > 0 ? slots.map((slot) => {
                     const isAvailable = slot.available !== false && !slot.booked;
                     const isSelected = selectedSlot === slot.slot;
@@ -250,12 +319,12 @@ export default function BookingPage() {
               </div>
             )}
           </div>
-
-          {/* Right (col-span-2) — Booking summary card */}
-          <div className="md:col-span-2">
+ 
+          {/* Right — Booking summary card */}
+          <div>
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm sticky top-6">
               
-              <img src={vet?.imageUrl || '/profile.png'} alt={vet?.name} className="w-full h-20 object-cover rounded-lg bg-[#F1F5F9]" />
+              <img src={vet?.profilePhoto || vet?.imageUrl || '/profile.png'} alt={vet?.name} className="w-full h-20 object-cover rounded-lg bg-[#F1F5F9]" />
               
               <h3 className="font-semibold text-[#1E293B] mt-3">{vet?.name}</h3>
               <p className="text-sm text-[#64748B]">{vet?.specialisation || 'General Practice'}</p>
@@ -266,7 +335,7 @@ export default function BookingPage() {
                   <span>{vet?.clinicName || vet?.location || 'Clinic Details Unavailable'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                  <CalendarIcon className="w-4 h-4 flex-shrink-0" />
+                  <Calendar className="w-4 h-4 flex-shrink-0" />
                   <span>{selectedDate ? formatDate(selectedDate) : 'Select a date'} {selectedSlot && `• ${selectedSlot}`}</span>
                 </div>
               </div>
@@ -303,11 +372,15 @@ export default function BookingPage() {
               </div>
 
               <button 
-                onClick={handleSubmit} 
+                onClick={handleConfirmBooking} 
                 disabled={!selectedDate || !selectedSlot || !selectedPetId || submitting}
                 className="w-full bg-[#0046CE] text-white rounded-lg py-3 text-sm font-semibold mt-4 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {submitting ? 'Confirming...' : 'Confirm booking →'}
+                {submitting ? 'Sending...' : (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" /> Confirm booking
+                  </span>
+                )}
               </button>
               
               <div className="text-xs text-[#64748B] text-center mt-2">

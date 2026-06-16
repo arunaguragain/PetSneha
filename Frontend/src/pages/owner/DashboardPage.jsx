@@ -349,10 +349,17 @@ export default function DashboardPage() {
                   Call Now
                 </button>
                 <button
-                  onClick={() => navigate('/vets')}
+                  onClick={() => {
+                    const id = savedVet?._id || savedVet?.id;
+                    if (id) {
+                      navigate(`/vets/${id}/book`);
+                    } else {
+                      navigate('/vets');
+                    }
+                  }}
                   className="w-full mt-2.5 border border-[#0046CE] text-[#0046CE] rounded-xl py-3 text-sm font-semibold hover:bg-[#EFF6FF] transition bg-transparent"
                 >
-                  Book appointment
+                  Book →
                 </button>
               </div>
             </div>
