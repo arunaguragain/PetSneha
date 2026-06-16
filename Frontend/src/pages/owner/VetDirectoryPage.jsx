@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { setSavedVet } from '../../utils/ownerState';
 import { Search, MapPin, Receipt, PawPrint, Heart, Star, Check } from 'lucide-react';
 
+
 export default function VetDirectoryPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -135,7 +136,12 @@ export default function VetDirectoryPage() {
               <div>
                 {/* Top row */}
                 <div className="flex items-start gap-3">
-                  <img src={vet.imageUrl || '/profile.png'} alt={vet.name} className="w-16 h-16 rounded-xl object-cover bg-[#F1F5F9]" />
+                  <img
+                    src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                    alt={vet.name}
+                    className="w-16 h-16 rounded-xl object-cover bg-[#F1F5F9]"
+                    onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

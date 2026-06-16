@@ -87,14 +87,32 @@ export default function VetProfilePage() {
             {/* Profile header */}
             <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
               <div className="w-24 h-24 rounded-xl object-cover border-2 border-[#E2E8F0] relative flex-shrink-0 bg-[#F1F5F9]">
-                <img src={vet.imageUrl || '/profile.png'} alt={vet.name} className="w-full h-full rounded-xl object-cover" />
-                <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
+                <img
+                  src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                  alt={vet.name}
+                  className="w-full h-full rounded-xl object-cover"
+                  onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                />
+                {vet.isVerified ? (
+                  <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title="Verified Vet">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                ) : (
+                  <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title="Pending Verification">
+                    <span className="text-white text-[10px] font-bold">⏱</span>
+                  </div>
+                )}
               </div>
               
               <div>
-                <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{vet.name}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{vet.name}</h1>
+                  {vet.isVerified ? (
+                    <VerifiedBadge />
+                  ) : (
+                    <Badge variant="warning">Pending Verification</Badge>
+                  )}
+                </div>
                 <div className="inline-flex gap-2 mt-1">
                   <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">DVM</span>
                   <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">MVSc</span>
@@ -259,7 +277,12 @@ export default function VetProfilePage() {
             <h2 className="text-lg font-semibold text-[#1E293B] mb-4">Write a Review</h2>
             <form className="space-y-4" onSubmit={handleSubmitReview}>
               <div className="flex items-center gap-3 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">
-                <img src={vet.imageUrl || '/profile.png'} alt={vet.name} className="w-10 h-10 rounded-full object-cover bg-[#E2E8F0]" />
+                <img
+                  src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                  alt={vet.name}
+                  className="w-10 h-10 rounded-full object-cover bg-[#E2E8F0]"
+                  onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                />
                 <div>
                   <p className="font-semibold text-sm text-[#1E293B]">{vet.name}</p>
                   <p className="text-xs text-[#64748B]">{vet.clinicName || vet.location}</p>

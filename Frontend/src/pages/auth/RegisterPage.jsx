@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { isValidEmail } from '../../utils/helpers';
 
 const featureItems = [
@@ -40,6 +41,7 @@ function GoogleMark() {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const auth = useAuth();
+  const { addToast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,9 +90,13 @@ export default function RegisterPage() {
 
     try {
       await auth.register(name.trim(), email.trim(), password, confirmPassword, 'petOwner');
-      navigate('/onboarding', { replace: true });
+      // Clear the auto-login session — user must log in explicitly
+      auth.clearSession();
+      navigate('/login', { replace: true, state: { email: email.trim() } });
     } catch (apiError) {
-      setError(typeof apiError === 'string' ? apiError : 'Could not connect to server. Please try again.');
+      const message = apiError?.response?.data?.message || apiError?.message || 'Registration failed. Please try again.';
+      setError(message);
+      addToast(message, 'danger');
     } finally {
       setLoading(false);
     }
