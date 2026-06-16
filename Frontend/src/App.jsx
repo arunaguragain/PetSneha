@@ -32,6 +32,8 @@ import CheckoutPage from './pages/owner/CheckoutPage';
 import VetDashboardPage from './pages/vet/VetDashboardPage';
 import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
+import VetLandingPage from './pages/vet/VetLandingPage';
+import VetRegisterPage from './pages/vet/VetRegisterPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 function AuthenticatedLayout() {
@@ -107,6 +109,8 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/vets-landing" element={<VetLandingPage />} />
+      <Route path="/vet/register" element={<VetRegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
