@@ -63,8 +63,8 @@ export function AuthProvider({ children }) {
     return currentUser;
   };
 
-  const register = async (name, email, password, confirmPassword, userRole) => {
-    const response = await registerUser({ name, email, password, confirmPassword, role: userRole });
+  const register = async (name, email, password, confirmPassword, userRole, phone) => {
+    const response = await registerUser({ name, email, phone, password, confirmPassword, role: userRole });
     const currentUser = response?.data?.user || null;
     const authToken = response?.data?.token || null;
 
