@@ -24,7 +24,7 @@ async function findAll(filter = {}) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findById(id) {
-  return Vet.findById(id);
+  return Vet.findById(id).populate('reviews.authorId', 'name profilePhoto');
 }
 
 /**

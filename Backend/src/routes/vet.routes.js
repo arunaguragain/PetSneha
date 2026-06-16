@@ -25,7 +25,7 @@ router.post(
 
 router.get('/:id/reviews', [param('id').isMongoId().withMessage('Valid vet ID is required.')], validateRequest, vetController.getReviews);
 
-router.post('/:id/reviews', [param('id').isMongoId().withMessage('Valid vet ID is required.'), body('appointmentId').isMongoId().withMessage('Valid appointment ID is required.'), body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5.')], protect, validateRequest, vetController.submitReview);
+router.post('/:id/reviews', [param('id').isMongoId().withMessage('Valid vet ID is required.'), body('appointmentId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Invalid appointment ID.'), body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5.')], protect, validateRequest, vetController.submitReview);
 
 router.patch('/:id/status', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, restrictTo('vet', 'admin'), validateRequest, vetController.toggleOpenStatus);
 

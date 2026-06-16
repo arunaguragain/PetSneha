@@ -22,13 +22,16 @@ async function register(payload) {
     throw new AppError('Email already exists.', 409);
   }
 
+  const allowedRoles = ['petOwner', 'vet'];
+  const role = allowedRoles.includes(payload.role) ? payload.role : 'petOwner';
+
   const password = await bcrypt.hash(payload.password, 12);
   const user = await userRepository.create({
     name: payload.name,
     email: payload.email,
     password,
     phone: payload.phone,
-    role: 'petOwner',
+    role,
   });
 
   return { token: generateToken(user), user: toPublicUser(user) };
