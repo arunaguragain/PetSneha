@@ -44,7 +44,7 @@ function buildFilter(query) {
  * @returns {Promise<Array<object>>}
  */
 async function listVets(query) {
-  return vetRepository.findAll(buildFilter(query));
+  return vetRepository.findAllPublic(buildFilter(query));
 }
 
 /**
