@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const footerLinks = ['Privacy Policy', 'Terms of Service', 'Contact Us', 'About Us'];
 
@@ -12,12 +13,16 @@ export default function LandingFooter({ logoSrc }) {
             <span className="text-label-lg font-display text-white">PetSneha</span>
           </div>
 
-          <nav className="flex flex-wrap gap-6 text-sm text-white/70">
+          <nav className="flex flex-wrap gap-6 text-sm text-white/70 items-center">
             {footerLinks.map((link) => (
               <a key={link} href="#top" className="transition hover:text-white">
                 {link}
               </a>
             ))}
+            <span className="text-white/30 hidden md:inline">|</span>
+            <Link to="/vets-landing" className="transition text-primary-400 hover:text-primary-300 font-semibold">
+              Are you a vet? Join PetSneha →
+            </Link>
           </nav>
         </div>
 
