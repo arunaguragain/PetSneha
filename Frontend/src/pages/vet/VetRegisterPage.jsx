@@ -224,10 +224,10 @@ export default function VetRegisterPage() {
       {/* NAVBAR */}
       <header className="navbar bg-white sticky top-0 z-40 border-b border-neutral-200">
         <div className="w-full h-full flex items-center px-6 justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <div onClick={() => navigate('/vets-landing')} className="cursor-pointer hover:opacity-80 flex items-center gap-3">
             <img src="/logo.png" alt="PetSneha logo" className="h-8 w-8 object-contain" />
             <span className="text-label-lg font-display text-primary-600 text-lg">PetSneha</span>
-          </Link>
+          </div>
 
           <div className="flex items-center gap-3">
             <span className="text-sm text-neutral-500 hidden sm:inline">Already registered?</span>
@@ -250,7 +250,7 @@ export default function VetRegisterPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(255,255,255,0.12),transparent_18%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.08),transparent_14%)] pointer-events-none" />
           
           <div className="relative space-y-10">
-            <div className="flex items-center gap-3">
+            <div onClick={() => navigate('/vets-landing')} className="cursor-pointer hover:opacity-80 flex items-center gap-3">
               <img src="/logo.png" alt="PetSneha logo" className="h-10 w-10 object-contain brightness-0 invert" />
               <span className="text-[28px] font-display font-semibold leading-none text-white">PetSneha</span>
             </div>
