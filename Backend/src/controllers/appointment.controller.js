@@ -18,6 +18,14 @@ const listAppointments = catchAsync(async (req, res) => {
 });
 
 /**
+ * Gets a single appointment by id for the current user.
+ */
+const getAppointment = catchAsync(async (req, res) => {
+  const appointment = await appointmentService.getAppointmentById(req.user, req.params.id);
+  sendItem(res, 'appointment', appointment);
+});
+
+/**
  * Books a new appointment.
  */
 const bookAppointment = catchAsync(async (req, res) => {
@@ -59,6 +67,7 @@ const getAvailableSlots = catchAsync(async (req, res) => {
 
 module.exports = {
   listAppointments,
+  getAppointment,
   bookAppointment,
   rescheduleAppointment,
   cancelAppointment,

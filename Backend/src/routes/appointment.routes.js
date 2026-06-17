@@ -12,6 +12,8 @@ router.get('/appointments', appointmentController.listAppointments);
 
 router.post('/appointments', [body('vetId').isMongoId().withMessage('Valid vet ID is required.'), body('petId').isMongoId().withMessage('Valid pet ID is required.'), body('date').notEmpty().withMessage('Date is required.'), body('timeSlot').notEmpty().withMessage('Time slot is required.')], validateRequest, appointmentController.bookAppointment);
 
+router.get('/appointments/:id', [param('id').isMongoId().withMessage('Valid appointment ID is required.')], validateRequest, appointmentController.getAppointment);
+
 router.patch('/appointments/:id/cancel', [param('id').isMongoId().withMessage('Valid appointment ID is required.')], validateRequest, appointmentController.cancelAppointment);
 
 router.patch('/appointments/:id/complete', [param('id').isMongoId().withMessage('Valid appointment ID is required.')], validateRequest, appointmentController.completeAppointment);

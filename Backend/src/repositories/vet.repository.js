@@ -56,7 +56,13 @@ async function deleteById(id) {
 }
 
 async function findAllPublic(filters = {}) {
-  const query = { isVerified: true };
+  const query = {};
+
+  if (filters.isVerified !== undefined) {
+    query.isVerified = filters.isVerified === 'true' || filters.isVerified === true;
+  } else if (filters.verified !== undefined) {
+    query.isVerified = filters.verified === 'true' || filters.verified === true;
+  }
 
   // Support both raw query param names and built filter structures
   if (filters.maxFee) {
