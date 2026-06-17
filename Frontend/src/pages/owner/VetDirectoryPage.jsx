@@ -130,41 +130,46 @@ export default function VetDirectoryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mt-6">
           {loading ? (
             Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 bg-[#F8FAFC] rounded-xl animate-pulse border border-[#E2E8F0]" />)
-          ) : filteredVets.map((vet) => (
-            <div 
-              key={vet._id} 
-              className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between"
-              onClick={() => navigate(`/vets/${vet._id}`)}
-            >
-              <div>
-                {/* Top row */}
-                <div className="flex items-start gap-3">
-                  <img
-                    src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
-                    alt={vet.name}
-                    className="w-16 h-16 rounded-xl object-cover bg-[#F1F5F9]"
-                    onError={(e) => { e.currentTarget.src = '/profile.png'; }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-[#1E293B] text-base truncate">{vet.name}</h3>
-                        <span className="inline-flex items-center gap-1 bg-[#EFF6FF] text-[#0046CE] text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">
-                          <Check className="w-3 h-3" /> Verified
-                        </span>
-                      </div>
-                      {vet.reviewCount > 0 ? (
-                        <div className="text-sm text-[#64748B] flex items-center gap-1 flex-shrink-0">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" /> {vet.rating} ({vet.reviewCount})
+          ) : filteredVets.map((vet) => {
+            const isVerified = Boolean(vet.isVerified);
+            return (
+              <div 
+                key={vet._id} 
+                className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                onClick={() => navigate(`/vets/${vet._id}`)}
+              >
+                <div>
+                  {/* Top row */}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                      alt={vet.name}
+                      className="w-16 h-16 rounded-xl object-cover bg-[#F1F5F9]"
+                      onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-[#1E293B] text-base truncate">{vet.name}</h3>
+                          <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${isVerified ? 'bg-[#EFF6FF] text-[#0046CE]' : 'bg-[#FEF3C7] text-[#B45309]'}`}>
+                            {isVerified ? <><Check className="w-3 h-3" /> Verified</> : 'Under review'}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="text-xs text-[#94A3B8] font-medium flex-shrink-0">No reviews yet</div>
-                      )}
+                        {isVerified ? (
+                          vet.reviewCount > 0 ? (
+                            <div className="text-sm text-[#64748B] flex items-center gap-1 flex-shrink-0">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" /> {vet.rating} ({vet.reviewCount})
+                            </div>
+                          ) : (
+                            <div className="text-xs text-[#94A3B8] font-medium flex-shrink-0">No reviews yet</div>
+                          )
+                        ) : null}
+                      </div>
+                      <div className="text-sm text-[#64748B] mt-1 truncate">{vet.specialisation || 'General Practice'}</div>
                     </div>
-                    <div className="text-sm text-[#64748B] mt-1 truncate">{vet.specialisation || 'General Practice'}</div>
                   </div>
                 </div>
-                
+
                 {/* Location row */}
                 <div className="flex items-center gap-4 mt-3 text-xs text-[#64748B] flex-wrap">
                   <div className="flex items-center gap-1 whitespace-nowrap">
@@ -174,29 +179,29 @@ export default function VetDirectoryPage() {
                     <Receipt className="w-3.5 h-3.5" /> {formatCurrency(vet.consultationFee || vet.fee || 800)}
                   </div>
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <PawPrint className="w-3.5 h-3.5" /> Small Animal Care
+                    <PawPrint className="w-3.5 h-3.5" /> Animal Care
                   </div>
                 </div>
+
+                {/* Bottom row */}
+                <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={() => navigate(`/vets/${vet._id}/book`)}
+                    className="flex-1 bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium transition"
+                  >
+                    Book Now
+                  </button>
+                  <button 
+                    onClick={() => handleSaveVet(vet)}
+                    className="w-10 h-10 border border-[#E2E8F0] hover:border-red-500 rounded-lg flex items-center justify-center text-[#64748B] hover:text-red-500 transition flex-shrink-0"
+                    title="Save Vet"
+                  >
+                    <Heart className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              
-              {/* Bottom row */}
-              <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
-                <button 
-                  onClick={() => navigate(`/vets/${vet._id}/book`)}
-                  className="flex-1 bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium transition"
-                >
-                  Book Now
-                </button>
-                <button 
-                  onClick={() => handleSaveVet(vet)}
-                  className="w-10 h-10 border border-[#E2E8F0] hover:border-red-500 rounded-lg flex items-center justify-center text-[#64748B] hover:text-red-500 transition flex-shrink-0"
-                  title="Save Vet"
-                >
-                  <Heart className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

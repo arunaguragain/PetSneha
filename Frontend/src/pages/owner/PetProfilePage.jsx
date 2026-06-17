@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Divider, Input, Select, Skeleton, StarRating, Tabs, Textarea, VerifiedBadge } from '../../components/ui';
-import { deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord } from '../../api/pet.api';
-import { getErrorMessage, formatDate, unwrapItems, unwrapItem, getPetEmoji, getStatusTone } from '../../utils/api';
+import { cancelAppointment, deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord } from '../../api/pet.api';
+import { getErrorMessage, formatCurrency, formatDate, unwrapItems, unwrapItem, getPetEmoji, getStatusTone } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { Download, Plus, Calendar as CalendarIcon, Mail, Bell, Edit2, Trash2, ArrowRight, Check } from 'lucide-react';
@@ -44,6 +44,40 @@ export default function PetProfilePage() {
     if (photoSrc.startsWith('http')) return photoSrc;
     const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5050/api').replace('/api', '');
     return `${baseUrl}${photoSrc}`;
+  };
+
+  const refreshAppointments = async () => {
+    try {
+      const appointmentsRes = await getAppointments();
+      const appointmentsList = appointmentsRes.data?.appointments
+        || appointmentsRes.data?.items
+        || (Array.isArray(appointmentsRes.data) ? appointmentsRes.data : appointmentsRes || []);
+      setAppointments(appointmentsList.filter((appointment) => String(appointment.petId || appointment.pet?._id || appointment.pet?.id) === String(petId)));
+    } catch (error) {
+      addToast(getErrorMessage(error) || 'Unable to refresh appointments', 'danger');
+    }
+  };
+
+  const handleAppointmentCancel = async (appointmentId) => {
+    const confirmed = await confirm({
+      title: 'Cancel appointment',
+      message: 'Are you sure you want to cancel this appointment? This cannot be undone.',
+      confirmText: 'Yes, cancel',
+      cancelText: 'Keep appointment',
+      variant: 'danger',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await cancelAppointment(appointmentId);
+      addToast('Appointment cancelled successfully', 'success');
+      await refreshAppointments();
+    } catch (apiError) {
+      addToast(getErrorMessage(apiError), 'danger');
+    }
   };
 
   const getSpeciesBadgeClass = (species) => {
@@ -400,21 +434,42 @@ export default function PetProfilePage() {
         {activeTab === 'appointments' && (
           <div className="mt-6">
             <h2 className="text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Appointments</h2>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-4">
               {appointments.length > 0 ? appointments.map((appointment) => (
-                <div key={appointment._id || appointment.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-[#1E293B]">{appointment.vet?.name || appointment.vetName || 'Vet Visit'}</h3>
-                    <div className="text-sm text-[#64748B] mt-1">{formatDate(appointment.date || appointment.appointmentDate)} • {appointment.timeSlot || appointment.time || 'Time pending'}</div>
+                <Card key={appointment._id || appointment.id} className="p-4 shadow-sm hover:shadow-md transition">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="space-y-2">
+                      <p className="text-sm text-[#64748B]">{appointment.vet?.clinicName || appointment.vet?.name || appointment.vetName || 'Vet clinic'}</p>
+                      <h3 className="font-semibold text-[#1E293B]">{appointment.vet?.name ? `Dr. ${appointment.vet.name}` : appointment.vetName || 'Vet visit'}</h3>
+                      <div className="text-sm text-[#475569] flex flex-wrap gap-2 items-center">
+                        <span>{formatDate(appointment.date || appointment.appointmentDate)}</span>
+                        <span>•</span>
+                        <span>{appointment.timeSlot || appointment.time || 'Time pending'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:items-end">
+                      <span className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap ${
+                        getStatusTone(appointment.status) === 'success' ? 'bg-[#F0FDF4] text-[#166534]' : 
+                        getStatusTone(appointment.status) === 'warning' ? 'bg-[#FFFBEB] text-[#92400E]' : 
+                        'bg-[#FEF2F2] text-[#B91C1C]'
+                      }`}>
+                        {appointment.status || 'Pending'}
+                      </span>
+                      <p className="text-sm text-[#475569]">Fee: {formatCurrency(appointment.fee)}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="secondary" size="sm" onClick={() => navigate(`/appointments/${appointment._id || appointment.id}`)}>
+                          View details
+                        </Button>
+                        {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
+                          <Button variant="danger" size="sm" onClick={() => handleAppointmentCancel(appointment._id || appointment.id)}>
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                    getStatusTone(appointment.status) === 'success' ? 'bg-[#F0FDF4] text-[#166534]' : 
-                    getStatusTone(appointment.status) === 'warning' ? 'bg-[#FFFBEB] text-[#92400E]' : 
-                    'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]'
-                  }`}>
-                    {appointment.status || 'Pending'}
-                  </span>
-                </div>
+                </Card>
               )) : (
                 <div className="border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
                   No past or upcoming appointments found.

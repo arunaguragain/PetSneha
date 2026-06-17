@@ -1,10 +1,11 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Spinner } from './ui';
 
 export default function ProtectedRoute({ allowedRoles = [] }) {
   const { user, loading, role } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -15,7 +16,7 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ redirect: location.pathname + location.search }} />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {

@@ -21,3 +21,5 @@ export const createReminder = (data) => axiosInstance.post('/reminders', data);
 export const updateReminder = (id, data) => axiosInstance.patch(`/reminders/${id}`, data);
 export const deleteReminder = (id) => axiosInstance.delete(`/reminders/${id}`);
 export const getAppointments = () => axiosInstance.get('/appointments');
+export const cancelAppointment = (id) => axiosInstance.patch(`/appointments/${id}/cancel`);
+export const getAppointment = (id) => axiosInstance.get(`/appointments/${id}`);

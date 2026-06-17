@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { isValidEmail } from '../../utils/helpers';
@@ -41,6 +41,7 @@ function LoginFieldIcon({ src, alt }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,11 +77,14 @@ export default function LoginPage() {
 
     try {
       const user = await auth.login(email.trim(), password);
-      const targetPath = {
-        petOwner: '/dashboard',
-        vet: '/vet/dashboard',
-        admin: '/admin/dashboard',
-      }[user?.role || auth.role] || '/dashboard';
+      const savedRedirect = location.state?.redirect;
+      const targetPath = savedRedirect
+        || {
+          petOwner: '/dashboard',
+          vet: '/vet/dashboard',
+          admin: '/admin/dashboard',
+        }[user?.role || auth.role]
+        || '/dashboard';
 
       navigate(targetPath, { replace: true });
     } catch (apiError) {
