@@ -34,6 +34,7 @@ import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
 import VetLandingPage from './pages/vet/VetLandingPage';
 import VetRegisterPage from './pages/vet/VetRegisterPage';
+import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 function AuthenticatedLayout() {
@@ -127,6 +128,7 @@ export default function App() {
           <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />
+          <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
           <Route path="/pets/:petId/edit" element={<EditPetPage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
           <Route path="/reminders/success" element={<ReminderSuccessPage />} />
