@@ -109,6 +109,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/vet/login" element={<LoginPage variant="vet" />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vets-landing" element={<VetLandingPage />} />
       <Route path="/vet/register" element={<VetRegisterPage />} />
