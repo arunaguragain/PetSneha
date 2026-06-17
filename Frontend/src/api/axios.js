@@ -32,7 +32,7 @@ axiosInstance.interceptors.response.use(
       console.log('401 detected — clearing token and redirecting from:', window.location.pathname);
       // Only clear token and redirect if we are on a protected page.
       // Public/auth pages do not need a redirect — it causes a redirect loop.
-      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/vets-landing', '/vet/register'];
+      const publicPaths = ['/', '/login', '/vet/login', '/register', '/forgot-password', '/reset-password', '/vets-landing', '/vet/register'];
       const isPublicPage = publicPaths.some((p) => window.location.pathname === p || window.location.pathname.startsWith('/reset-password/'));
 
       if (!isPublicPage) {

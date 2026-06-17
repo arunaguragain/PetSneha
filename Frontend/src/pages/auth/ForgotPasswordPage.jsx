@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { forgotPassword } from '../../api/auth.api';
-import { Button, Card, IconBox, Input, InfoBox, PetSnehaLogo } from '../../components/ui';
+import { Button, Card, IconBox, Input, InfoBox } from '../../components/ui';
 import { isValidEmail } from '../../utils/helpers';
 
 export default function ForgotPasswordPage() {
+  const [searchParams] = useSearchParams();
+  const isVetFlow = searchParams.get('role') === 'vet';
+  const loginPath = isVetFlow ? '/vet/login' : '/login';
+  const accentClass = isVetFlow ? 'text-success' : 'text-primary-600';
+  const iconClass = isVetFlow ? 'mx-auto bg-success-50 text-success-700' : 'mx-auto bg-primary-50 text-primary-600';
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +26,10 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await forgotPassword({ email });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('petsneha_password_reset_login_path', loginPath);
+      }
+      await forgotPassword({ email, role: isVetFlow ? 'vet' : undefined });
       setSubmitted(true);
     } catch (apiError) {
       setError(typeof apiError === 'string' ? apiError : 'Could not connect to server. Please try again.');
@@ -39,12 +48,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-[420px]">
         <Card className="w-full rounded-2xl p-8 shadow-md">
           <div className="mx-auto flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="PetSneha logo"
-              className="h-8 w-8 object-contain"
-            />
-            <span className="text-[22px] font-display font-semibold leading-none  text-primary-600">
+            <img src="/logo.png" alt="PetSneha logo" className="h-8 w-8 object-contain" />
+            <span className={`text-[22px] font-display font-semibold leading-none ${accentClass}`}>
               PetSneha
             </span>
           </div>
@@ -52,7 +57,7 @@ export default function ForgotPasswordPage() {
           {!submitted ? (
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
               <div className="flex justify-center">
-                <IconBox size="lg" className="mx-auto bg-primary-50 text-primary-600">
+                <IconBox size="lg" className={iconClass}>
                   <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
                     <path d="M7 11V8.5C7 5.46243 9.46243 3 12.5 3C15.5376 3 18 5.46243 18 8.5V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <path d="M6.5 11H18.5C19.3284 11 20 11.6716 20 12.5V19.5C20 20.3284 19.3284 21 18.5 21H6.5C5.67157 21 5 20.3284 5 19.5V12.5C5 11.6716 5.67157 11 6.5 11Z" stroke="currentColor" strokeWidth="2" />
@@ -69,13 +74,13 @@ export default function ForgotPasswordPage() {
 
               <Input label="Email address" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Enter your email address" />
 
-              <Button type="submit" fullWidth loading={loading}>
+              <Button type="submit" fullWidth loading={loading} className={isVetFlow ? 'bg-success text-white hover:bg-success-600' : ''}>
                 Send reset link
               </Button>
 
               <div className="text-center">
-                <Link to="/login" className="text-primary-600">
-                  ← Back to login
+                <Link to={loginPath} className={accentClass}>
+                  Back to login
                 </Link>
               </div>
             </form>
@@ -92,13 +97,13 @@ export default function ForgotPasswordPage() {
                 <p className="text-body-md text-neutral-400">We sent a password reset link to {email}</p>
               </div>
 
-              <Button type="button" variant="ghost" fullWidth className="text-primary-600" onClick={submitRequest} loading={loading}>
+              <Button type="button" variant="ghost" fullWidth className={accentClass} onClick={submitRequest} loading={loading}>
                 Didn't receive the email? Resend
               </Button>
 
               <div className="text-center">
-                <Link to="/login" className="text-primary-600">
-                  ← Back to login
+                <Link to={loginPath} className={accentClass}>
+                  Back to login
                 </Link>
               </div>
             </div>

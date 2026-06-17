@@ -4,7 +4,6 @@ import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { isValidEmail } from '../../utils/helpers';
 
-
 function GoogleMark() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -35,20 +34,45 @@ function EyeOffIcon() {
   );
 }
 
-function LoginFieldIcon({ src, alt }) {
-  return <img src={src} alt={alt} className="h-5 w-5 object-contain" />;
-}
-
-export default function LoginPage() {
+export default function LoginPage({ variant = 'owner' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
-  const [email, setEmail] = useState('');
+  const isVetLogin = variant === 'vet';
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const theme = isVetLogin
+    ? {
+        panelClass: 'bg-[linear-gradient(135deg,#065F46_0%,#059669_48%,#0046CE_100%)]',
+        buttonClass: 'bg-success text-white hover:bg-success-600',
+        linkClass: 'text-success hover:text-success-600',
+        homePath: '/vets-landing',
+        signupPath: '/vet/register',
+        headline: 'Grow your veterinary practice across Nepal.',
+        copy: 'Access your verified clinic profile, appointments, and patient care tools in one professional workspace.',
+        eyebrow: 'VERIFIED CARE, SIMPLE PRACTICE MANAGEMENT',
+        title: 'Vet Login',
+        subtitle: 'Login to manage appointments, credentials, and your public vet profile.',
+        signupText: 'Register as a vet',
+      }
+    : {
+        panelClass: 'bg-[linear-gradient(135deg,#0046CE_0%,#0037A7_55%,#0052D9_100%)]',
+        buttonClass: 'bg-primary-600 text-white hover:bg-primary-700',
+        linkClass: 'text-primary-600 hover:text-primary-700',
+        homePath: '/',
+        signupPath: '/register',
+        headline: 'Advancing Pet Care Across Nepal.',
+        copy: 'Access elite veterinary experts, digital health records, and premium pet supplies in one professional ecosystem.',
+        eyebrow: 'TRUST & PRECISION IN EVERY INTERACTION',
+        title: 'Welcome Back',
+        subtitle: "Login to manage your pet's health records and appointments.",
+        signupText: 'Create an account',
+      };
 
   const validate = () => {
     const nextErrors = {};
@@ -97,43 +121,32 @@ export default function LoginPage() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-neutral-50">
       <div className="grid h-full lg:grid-cols-2">
-        <section className="relative flex h-full overflow-hidden bg-[linear-gradient(135deg,#0046CE_0%,#0037A7_55%,#0052D9_100%)] px-8 py-8 text-white sm:px-12 lg:px-16 lg:py-10">
+        <section className={`relative flex h-full overflow-hidden px-8 py-8 text-white sm:px-12 lg:px-16 lg:py-10 ${theme.panelClass}`}>
           <div className="absolute inset-0 bg-[url('/decorative-bg.png')] bg-cover bg-center opacity-100 mix-blend-screen" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(255,255,255,0.24),transparent_18%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.08),transparent_14%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
 
-          <div className="relative flex w-full flex-col gap-40">
-            <div onClick={() => navigate('/')} className="cursor-pointer hover:opacity-80 flex items-center gap-3">
+          <div className="relative flex w-full flex-col justify-between">
+            <div onClick={() => navigate(theme.homePath)} className="cursor-pointer hover:opacity-80 flex items-center gap-3">
               <img src="/logo.png" alt="PetSneha logo" className="h-10 w-10 object-contain brightness-0 invert" />
               <span className="text-[28px] font-display font-semibold leading-none text-white">PetSneha</span>
             </div>
 
-            <div className="max-w-xl space-y-48 py-8 lg:py-0">
-              <div className="space-y-4">
-                <h1 className="text-heading-lg font-display text-white sm:text-[42px] lg:text-[48px]">
-                  Advancing Pet Care
-                  Across Nepal.
-                </h1>
-                <p className="max-w-lg text-[14px] leading-6 text-white/75">Access elite veterinary experts, digital health records, and
-                  premium pet supplies in one professional ecosystem.</p>
-              </div>
-
-              <div className="space-y-98">
-                <div className="space-y-98"></div>
-                <p className="text-caption text-white">TRUST & PRECISION IN EVERY INTERACTION</p>
-              </div>
- 
+            <div className="max-w-xl space-y-4">
+              <h1 className="text-heading-lg font-display text-white sm:text-[42px] lg:text-[48px]">
+                {theme.headline}
+              </h1>
+              <p className="max-w-lg text-[14px] leading-6 text-white/75">{theme.copy}</p>
             </div>
+
+            <p className="text-caption text-white">{theme.eyebrow}</p>
           </div>
         </section>
 
         <section className="flex h-full items-center justify-center overflow-hidden bg-neutral-50 px-5 py-6 sm:px-8 lg:px-12 lg:py-0">
           <div className="w-full max-w-[520px] space-y-6">
             <div className="space-y-1">
-              <h2 className="text-heading-lg font-display text-neutral-900">Welcome Back</h2>
-              <p className="text-sm text-neutral-500">
-                Login in to manage your pet's health records <br />
-                and appointments
-              </p>
+              <h2 className="text-heading-lg font-display text-neutral-900">{theme.title}</h2>
+              <p className="text-sm text-neutral-500">{theme.subtitle}</p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -156,7 +169,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   error={fieldErrors.password}
-                  placeholder="••••••••"
+                  placeholder="Password"
                   leftIcon={<img src="/lock.png" alt="lock icon" className="w-4 h-4"/>}
                   rightIcon={
                     <button
@@ -170,7 +183,7 @@ export default function LoginPage() {
                   }
                 />
                 <div className="flex justify-end">
-                  <Link to="/forgot-password" className="text-xs font-semibold text-primary-600">
+                  <Link to={isVetLogin ? '/forgot-password?role=vet' : '/forgot-password'} className={`text-xs font-semibold ${theme.linkClass}`}>
                     Forgot password?
                   </Link>
                 </div>
@@ -178,8 +191,8 @@ export default function LoginPage() {
 
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
 
-              <Button type="submit" fullWidth loading={loading} className="justify-center bg-primary-600 text-white hover:bg-primary-700">
-                Login to account →
+              <Button type="submit" fullWidth loading={loading} className={`justify-center ${theme.buttonClass}`}>
+                Login to account
               </Button>
 
               <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
@@ -197,8 +210,8 @@ export default function LoginPage() {
 
               <p className="pt-2 text-center text-sm text-neutral-500">
                 Don't have an account?{' '}
-                <Link to="/register" className="font-semibold text-primary-600">
-                  Create an account
+                <Link to={theme.signupPath} className={`font-semibold ${theme.linkClass}`}>
+                  {theme.signupText}
                 </Link>
               </p>
             </form>
