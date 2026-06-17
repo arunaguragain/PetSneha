@@ -76,16 +76,8 @@ function RecordsGateway() {
   if (petId) {
     return <Navigate to={`/pets/${petId}`} replace />;
   }
-  
-  return <Navigate to="/dashboard" replace />;
-}
 
-function PlaceholderPage({ title, subtitle }) {
-  return (
-    <Card className="p-8">
-      <PageHeader title={title} subtitle={subtitle} />
-    </Card>
-  );
+  return <Navigate to="/dashboard" replace />;
 }
 
 function UnauthorizedPage() {
