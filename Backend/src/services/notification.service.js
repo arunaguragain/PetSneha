@@ -16,21 +16,47 @@ function formatCurrency(value) {
   return `NPR ${Number(value || 0).toFixed(2)}`;
 }
 
+function formatPersonName(name, prefix = 'Dr.') {
+  if (!name) return 'N/A';
+  return /^dr\.?(\s|$)/i.test(name.trim()) ? name.trim() : `${prefix} ${name.trim()}`;
+}
+
+function paragraph(text) {
+  return `<p style="margin:0 0 18px;color:#334155;font-size:16px;line-height:1.75;">${text}</p>`;
+}
+
+function actionButton(href, label) {
+  return `<p style="margin:24px 0 0;"><a href="${href}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:999px;font-weight:600;">${label}</a></p>`;
+}
+
 function shell(title, body) {
   return `
     <div style="font-family:Arial,sans-serif;background:#f7f5f1;padding:24px;color:#1f2937;">
       <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:20px;padding:28px;border:1px solid #e5e7eb;">
-        <h1 style="margin:0 0 18px;font-size:26px;line-height:1.2;color:#0f172a;">${title}</h1>
-        ${body}
+        <h1 style="margin:0 0 18px;font-size:28px;line-height:1.15;color:#0f172a;font-weight:700;">${title}</h1>
+        <div style="font-size:16px;line-height:1.75;color:#334155;">
+          ${body}
+        </div>
       </div>
     </div>`;
 }
 
 function detailsBox(rows) {
   return `
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:18px;margin:18px 0;">
-      ${rows.map((row) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid #e2e8f0;"><strong>${row.label}</strong><span>${row.value}</span></div>`).join('')}
-    </div>`;
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;margin:18px 0;overflow:hidden;">
+      <tbody>
+        ${rows
+          .map(
+            (row, index) => `
+              <tr style="background:${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                <td style="padding:14px 18px;font-weight:700;color:#0f172a;width:35%;vertical-align:top;">${row.label}</td>
+                <td style="padding:14px 18px;color:#334155;text-align:right;vertical-align:top;">${row.value}</td>
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
+    </table>`;
 }
 
 async function sendMail({ to, subject, html }) {
@@ -67,27 +93,100 @@ async function sendPasswordResetEmail(user, token) {
  * @param {object} vet
  * @returns {Promise<import('nodemailer').SentMessageInfo>}
  */
-async function sendBookingConfirmationEmail(user, appointment, vet) {
-  const subject = `✓ Appointment confirmed — Dr. ${vet.name} · ${formatDate(appointment.date)}`;
+async function sendBookingConfirmationEmail(user, appointment, vet, pet) {
+  const subject = `✓ Appointment confirmed — ${formatPersonName(vet.name)} · ${formatDate(appointment.date)}`;
   const html = shell(
     'Your appointment is confirmed',
     `
-      <p>Hi ${user.name || 'there'}, your appointment has been confirmed.</p>
+      ${paragraph(`Hi ${user.name || 'there'}, your appointment has been confirmed.`)}
       ${detailsBox([
-        { label: 'Vet', value: `Dr. ${vet.name}` },
+        { label: 'Vet', value: formatPersonName(vet.name) },
         { label: 'Clinic', value: vet.clinicName || 'N/A' },
         { label: 'Date', value: formatDate(appointment.date) },
-        { label: 'Time', value: appointment.timeSlot },
-        { label: 'Pet', value: appointment.petName || 'Your pet' },
+        { label: 'Time', value: appointment.timeSlot || 'TBD' },
+        { label: 'Pet', value: appointment.petName || pet?.name || 'Your pet' },
         { label: 'Fee', value: formatCurrency(appointment.fee) },
       ])}
-      <p>Arrive a few minutes early so the doctor can review the history calmly.</p>
-      <p><a href="${process.env.CLIENT_URL}/appointments/${appointment._id}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">View appointment</a></p>
-      <p><a href="${process.env.CLIENT_URL}/appointments/${appointment._id}?action=cancel" style="color:#b91c1c;">Cancel appointment</a></p>
+      ${paragraph('Arrive a few minutes early so the doctor can review the history calmly.')}
+      ${actionButton(`${process.env.CLIENT_URL}/appointments/${appointment._id}`, 'View appointment')}
     `
   );
 
   return sendMail({ to: user.email, subject, html });
+}
+
+async function sendBookingRequestReceivedEmail(user, appointment, vet) {
+  const subject = `Appointment request received — ${formatPersonName(vet.name)} · ${formatDate(appointment.date)}`;
+  const html = shell(
+    'Appointment request received',
+    `
+      ${paragraph(`Hi ${user.name || 'there'}, your booking request has been received.`)}
+      ${detailsBox([
+        { label: 'Vet', value: formatPersonName(vet.name) },
+        { label: 'Clinic', value: vet.clinicName || 'N/A' },
+        { label: 'Date', value: formatDate(appointment.date) },
+        { label: 'Time', value: appointment.timeSlot || 'TBD' },
+        { label: 'Pet', value: appointment.petName || 'Your pet' },
+        { label: 'Fee', value: formatCurrency(appointment.fee) },
+      ])}
+      ${paragraph(`Dr. ${vet.name} will confirm or decline this appointment shortly.`)}
+      ${actionButton(`${process.env.CLIENT_URL}/appointments/${appointment._id}`, 'View appointment')}
+    `
+  );
+
+  return sendMail({ to: user.email, subject, html });
+}
+
+async function sendNewBookingRequestEmail(vet, appointment, petOwner, pet) {
+  const subject = `New booking request — ${petOwner.name || 'Pet owner'} for ${formatDate(appointment.date)}`;
+  const html = shell(
+    'New booking request',
+    `
+      <p>Hi Dr. ${vet.name},</p>
+      <p>You have a new booking request from ${petOwner.name || 'a pet owner'}.</p>
+      ${detailsBox([
+        { label: 'Pet owner', value: petOwner.name || petOwner.email },
+        { label: 'Pet', value: pet.name || 'N/A' },
+        { label: 'Date', value: formatDate(appointment.date) },
+        { label: 'Time', value: appointment.timeSlot },
+        { label: 'Fee', value: formatCurrency(appointment.fee) },
+      ])}
+      <div style="margin:20px 0 0;">
+        <p>Review and confirm the request on your dashboard.</p>
+        <p><a href="${process.env.CLIENT_URL}/vet/dashboard" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">Go to dashboard</a></p>
+      </div>
+    `
+  );
+
+  return sendMail({ to: vet.email, subject, html });
+}
+
+async function sendAppointmentCancelledEmail(recipient, appointment, isVet) {
+  const subject = `Appointment cancelled — ${formatDate(appointment.date)}`;
+  const detailsUrl = isVet
+    ? `${process.env.CLIENT_URL}/vet/dashboard`
+    : `${process.env.CLIENT_URL}/appointments/${appointment._id || appointment.id}`;
+
+  const html = shell(
+    'Appointment cancelled',
+    `
+      <p>Hi ${recipient.name || 'there'},</p>
+      <p>${isVet ? 'A consultation has been cancelled.' : 'Your appointment has been cancelled.'}</p>
+      ${detailsBox([
+        { label: 'Vet', value: `   ${appointment.vetName || appointment.vet?.name || 'N/A'}` },
+        { label: 'Pet', value:   appointment.petName || appointment.pet?.name || 'N/A' },
+        { label: 'Date', value: formatDate(appointment.date) },
+        { label: 'Time', value: appointment.timeSlot },
+        { label: 'Status', value: appointment.status || 'Cancelled' },
+      ])}
+      <div style="margin:20px 0 0;">
+        <p>If you need to reschedule, you can do so from the appointments section.</p>
+        <p><a href="${detailsUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">View appointments</a></p>
+      </div>
+    `
+  );
+
+  return sendMail({ to: recipient.email, subject, html });
 }
 
 /**
@@ -125,7 +224,9 @@ async function sendOrderConfirmationEmail(user, order) {
         { label: 'Payment method', value: order.paymentMethod.toUpperCase() },
         { label: 'Total', value: formatCurrency(order.total) },
       ])}
-      <p><a href="${process.env.CLIENT_URL}/orders/${order._id}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">Track order</a></p>
+      <div style="margin:20px 0 0;">
+        <p><a href="${process.env.CLIENT_URL}/orders/${order._id}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">Track order</a></p>
+      </div>
     `
   );
 
@@ -154,8 +255,10 @@ async function sendReminderEmail(user, reminder, pet, savedVet) {
         { label: 'Days remaining', value: reminder.leadTimeDays },
         { label: 'Saved vet', value: vetInfo },
       ])}
-      <p><a href="${process.env.CLIENT_URL}/appointments/new?petId=${pet._id}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">Book appointment</a></p>
-      <p><a href="${process.env.CLIENT_URL}/reminders/${reminder._id}?action=dismiss" style="color:#b91c1c;">Dismiss reminder</a></p>
+      <div style="margin:20px 0 0;">
+        <p><a href="${process.env.CLIENT_URL}/appointments/new?petId=${pet._id}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:12px 18px;border-radius:999px;">Book appointment</a></p>
+        <p><a href="${process.env.CLIENT_URL}/reminders/${reminder._id}?action=dismiss" style="color:#b91c1c;">Dismiss reminder</a></p>
+      </div>
     `
   );
 
@@ -165,6 +268,9 @@ async function sendReminderEmail(user, reminder, pet, savedVet) {
 module.exports = {
   sendPasswordResetEmail,
   sendBookingConfirmationEmail,
+  sendBookingRequestReceivedEmail,
+  sendNewBookingRequestEmail,
+  sendAppointmentCancelledEmail,
   sendOrderConfirmationEmail,
   sendReminderEmail,
   formatDate,

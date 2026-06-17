@@ -15,7 +15,9 @@ function parseNumber(value) {
 function buildFilter(query) {
   const filter = {};
 
-  if (query.verified !== undefined) {
+  if (query.isVerified !== undefined) {
+    filter.isVerified = query.isVerified === 'true';
+  } else if (query.verified !== undefined) {
     filter.isVerified = query.verified === 'true';
   }
 

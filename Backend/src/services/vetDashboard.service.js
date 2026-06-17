@@ -148,7 +148,24 @@ async function vetCancelAppointment(userId, appointmentId, reason) {
     throw new AppError('This appointment cannot be cancelled.', 400);
   }
 
-  return vetDashboardRepository.updateAppointmentStatus(appointmentId, 'cancelled', reason || appointment.notes);
+  const updated = await vetDashboardRepository.updateAppointmentStatus(appointmentId, 'cancelled', reason || appointment.notes);
+  const user = await userRepository.findById(updated.petOwnerId);
+  const pet = await petRepository.findById(updated.petId);
+
+  const appointmentPayload = updated.toObject();
+  appointmentPayload.petName = pet?.name;
+  appointmentPayload.vetName = vet?.name;
+  appointmentPayload.pet = pet;
+  appointmentPayload.vet = vet;
+
+  try {
+    await notificationService.sendAppointmentCancelledEmail(user, appointmentPayload, false);
+    await notificationService.sendAppointmentCancelledEmail(vet, appointmentPayload, true);
+  } catch (error) {
+    console.error('Failed to send appointment cancellation emails:', error.message);
+  }
+
+  return updated;
 }
 
 /**
