@@ -54,7 +54,7 @@ export default function VetLandingPage() {
             <Button
               variant="ghost"
               className="font-semibold px-4 py-2 hover:bg-neutral-100 text-sm text-neutral-700"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/vet/login')}
             >
               Login
             </Button>
