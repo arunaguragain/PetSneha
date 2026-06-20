@@ -18,6 +18,8 @@ router.patch('/appointments/:id/cancel', [param('id').isMongoId().withMessage('V
 
 router.patch('/appointments/:id/complete', [param('id').isMongoId().withMessage('Valid appointment ID is required.')], validateRequest, appointmentController.completeAppointment);
 
+router.patch('/appointments/:id/confirm', [param('id').isMongoId().withMessage('Valid appointment ID is required.')], validateRequest, appointmentController.confirmAppointment);
+
 router.patch('/appointments/:id', [param('id').isMongoId().withMessage('Valid appointment ID is required.'), body('timeSlot').notEmpty().withMessage('Time slot is required.')], validateRequest, appointmentController.rescheduleAppointment);
 
 router.get('/vets/:vetId/slots', [param('vetId').isMongoId().withMessage('Valid vet ID is required.'), query('date').notEmpty().withMessage('Date is required.')], validateRequest, appointmentController.getAvailableSlots);

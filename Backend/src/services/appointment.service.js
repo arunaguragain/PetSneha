@@ -283,6 +283,43 @@ async function getAvailableSlots(vetId, dateValue) {
   return buildSlots(vet, date, bookedAppointments);
 }
 
+/**
+ * Confirms an appointment.
+ * @param {{ id: string, role: string }} currentUser
+ * @param {string} appointmentId
+ * @returns {Promise<object>}
+ */
+async function confirmAppointment(currentUser, appointmentId) {
+  if (!['vet', 'admin'].includes(currentUser.role)) {
+    throw new AppError('Only vets can confirm appointments.', 403);
+  }
+
+  const appointment = await appointmentRepository.findById(appointmentId);
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
+
+  if (currentUser.role === 'vet') {
+    const vet = await resolveVetProfile(currentUser);
+    if (appointment.vetId.toString() !== vet._id.toString()) {
+      throw new AppError('You can only confirm your own appointments.', 403);
+    }
+  }
+
+  const updated = await appointmentRepository.updateById(appointmentId, { status: 'confirmed' });
+
+  try {
+    const user = await userRepository.findById(updated.petOwnerId);
+    const pet = await petRepository.findById(updated.petId);
+    const vet = await vetRepository.findById(updated.vetId);
+    await notificationService.sendBookingConfirmationEmail(user, updated, vet, pet);
+  } catch (err) {
+    console.error('Failed to send booking confirmation email:', err.message);
+  }
+
+  return updated;
+}
+
 module.exports = {
   listAppointments,
   bookAppointment,
@@ -290,5 +327,6 @@ module.exports = {
   rescheduleAppointment,
   cancelAppointment,
   completeAppointment,
+  confirmAppointment,
   getAvailableSlots,
 };
