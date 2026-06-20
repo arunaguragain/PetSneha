@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../context/ToastContext';
 import { updateLanguage } from '../api/user.api';
 import { getPets } from '../api/pet.api';
-import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2 } from 'lucide-react';
+import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar } from 'lucide-react';
 import { getPetEmoji } from '../utils/api';
 
 const navItemsByRole = {
@@ -177,48 +177,67 @@ export default function Navbar() {
                   
                   {/* Menu items */}
                   <div className="py-2">
-                    <button className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
-                      <User size={18} className="text-[#0046CE]" />
-                      My profile
-                    </button>
-                    
-                    <div className="w-full px-6 py-2">
-                      <div className="flex items-center gap-3 text-sm font-semibold text-[#475569] mb-2">
-                        <PawPrint size={18} className="text-[#0046CE]" />
-                        My pets
-                      </div>
-                      <div className="pl-7 space-y-2">
-                        {pets.map((pet) => (
-                          <div 
-                            key={pet._id || pet.id} 
-                            onClick={() => {
-                              setIsDropdownOpen(false);
-                              navigate(`/pets/${pet._id || pet.id}`);
-                            }}
-                            className="flex items-center justify-between py-1.5 border border-[#E2E8F0] rounded-xl px-3 cursor-pointer hover:bg-[#F8FAFC]"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-[#F1F5F9] overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                {pet.photo ? (
-                                  <img src={getPhotoUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <span className="text-[10px]">{getPetEmoji(pet.species)}</span>
-                                )}
-                              </div>
-                              <span className="text-sm font-medium text-[#1E293B]">{pet.name}</span>
-                            </div>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border ${getSpeciesBadgeClass(pet.species)}`}>
-                              {pet.species || 'PET'}
-                            </span>
+                    {role === 'vet' ? (
+                      <>
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/dashboard'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <User size={18} className="text-[#0046CE]" />
+                          My dashboard
+                        </button>
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/appointments'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <Calendar size={18} className="text-[#0046CE]" />
+                          My schedule
+                        </button>
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/articles'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <PawPrint size={18} className="text-[#0046CE]" />
+                          My articles
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <User size={18} className="text-[#0046CE]" />
+                          My profile
+                        </button>
+                        
+                        <div className="w-full px-6 py-2">
+                          <div className="flex items-center gap-3 text-sm font-semibold text-[#475569] mb-2">
+                            <PawPrint size={18} className="text-[#0046CE]" />
+                            My pets
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="pl-7 space-y-2">
+                            {pets.map((pet) => (
+                              <div 
+                                key={pet._id || pet.id} 
+                                onClick={() => {
+                                  setIsDropdownOpen(false);
+                                  navigate(`/pets/${pet._id || pet.id}`);
+                                }}
+                                className="flex items-center justify-between py-1.5 border border-[#E2E8F0] rounded-xl px-3 cursor-pointer hover:bg-[#F8FAFC]"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-[#F1F5F9] overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                    {pet.photo ? (
+                                      <img src={getPhotoUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-[10px]">{getPetEmoji(pet.species)}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-sm font-medium text-[#1E293B]">{pet.name}</span>
+                                </div>
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border ${getSpeciesBadgeClass(pet.species)}`}>
+                                  {pet.species || 'PET'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-                    <button onClick={() => navigate('/pets/new')} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
-                      <PlusCircle size={18} className="text-[#0046CE]" />
-                      Add pet
-                    </button>
+                        <button onClick={() => navigate('/pets/new')} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <PlusCircle size={18} className="text-[#0046CE]" />
+                          Add pet
+                        </button>
+                      </>
+                    )}
 
                     <div className="my-2 border-t border-[#E2E8F0]"></div>
 

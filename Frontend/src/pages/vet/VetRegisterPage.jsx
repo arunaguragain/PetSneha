@@ -70,6 +70,7 @@ export default function VetRegisterPage() {
   const [specialisation, setSpecialisation] = useState('');
   const [consultationFee, setConsultationFee] = useState('');
   const [location, setLocation] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
   const [availableDays, setAvailableDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   const [openTime, setOpenTime] = useState('09:00');
   const [closeTime, setCloseTime] = useState('17:00');
@@ -166,6 +167,7 @@ export default function VetRegisterPage() {
         specialisation: specialisation.trim(),
         consultationFee: parseInt(consultationFee, 10),
         location: location.trim(),
+        profilePhoto: profilePhoto.trim(),
         availability: {
           days: availableDays,
           openTime: is24Hours ? '00:00' : openTime,
@@ -450,6 +452,15 @@ export default function VetRegisterPage() {
                     placeholder="Chabahil, Kathmandu"
                     className={compactInputClass}
                     leftIcon={<MapPin className={inputIconClass} />}
+                  />
+
+                  <Input
+                    label="Profile Photo URL"
+                    value={profilePhoto}
+                    onChange={(e) => setProfilePhoto(e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className={compactInputClass}
+                    leftIcon={<User className={inputIconClass} />}
                   />
 
                   <div className="space-y-1.5">
