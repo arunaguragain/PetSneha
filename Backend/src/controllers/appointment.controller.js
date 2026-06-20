@@ -58,6 +58,14 @@ const completeAppointment = catchAsync(async (req, res) => {
 });
 
 /**
+ * Marks an appointment as confirmed.
+ */
+const confirmAppointment = catchAsync(async (req, res) => {
+  const appointment = await appointmentService.confirmAppointment(req.user, req.params.id);
+  sendItem(res, 'appointment', appointment);
+});
+
+/**
  * Returns available slots for a vet.
  */
 const getAvailableSlots = catchAsync(async (req, res) => {
@@ -72,5 +80,6 @@ module.exports = {
   rescheduleAppointment,
   cancelAppointment,
   completeAppointment,
+  confirmAppointment,
   getAvailableSlots,
 };

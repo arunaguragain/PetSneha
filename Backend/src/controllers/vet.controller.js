@@ -1,5 +1,6 @@
 const catchAsync = require('../utils/catchAsync');
 const vetService = require('../services/vet.service');
+const vetDashboardService = require('../services/vetDashboard.service');
 
 function sendList(res, items) {
   return res.status(200).json({ status: 'success', results: items.length, data: { items } });
@@ -81,6 +82,14 @@ const getReviews = catchAsync(async (req, res) => {
   sendList(res, reviews);
 });
 
+/**
+ * Reply to a review.
+ */
+const replyToReview = catchAsync(async (req, res) => {
+  const updatedVet = await vetDashboardService.replyToReview(req.user.id, req.params.reviewId, req.body.reply);
+  sendItem(res, 'vet', updatedVet);
+});
+
 module.exports = {
   listVets,
   getVet,
@@ -91,4 +100,5 @@ module.exports = {
   verifyVet,
   submitReview,
   getReviews,
+  replyToReview,
 };
