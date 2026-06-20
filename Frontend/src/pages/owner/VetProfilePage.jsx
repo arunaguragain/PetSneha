@@ -209,6 +209,13 @@ export default function VetProfilePage() {
                       
                       <p className="text-sm text-[#1E293B] mt-2">{review.comment || review.content}</p>
                       
+                      {review.reply && (
+                        <div className="bg-white border border-[#E2E8F0] p-3 rounded-lg mt-3 ml-4 space-y-1">
+                          <p className="text-xs font-bold text-[#0046CE]">Response from Vet:</p>
+                          <p className="text-sm text-[#1E293B] font-medium">"{review.reply}"</p>
+                        </div>
+                      )}
+                      
                       <div className="bg-white border border-[#E2E8F0] text-xs px-2 py-1 rounded-full mt-3 inline-flex items-center gap-1 text-[#64748B]">
                         Treat for: Dog
                       </div>
