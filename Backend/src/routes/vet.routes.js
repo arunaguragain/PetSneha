@@ -35,4 +35,6 @@ router.patch('/:id', [param('id').isMongoId().withMessage('Valid vet ID is requi
 
 router.get('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], validateRequest, vetController.getVet);
 
+router.patch('/:id/reviews/:reviewId/reply', [param('id').isMongoId().withMessage('Valid vet ID is required.'), param('reviewId').isMongoId().withMessage('Valid review ID is required.'), body('reply').trim().notEmpty().withMessage('Reply content is required.')], protect, restrictTo('vet', 'admin'), validateRequest, vetController.replyToReview);
+
 module.exports = router;

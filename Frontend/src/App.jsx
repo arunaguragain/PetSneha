@@ -34,6 +34,7 @@ import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
 import VetLandingPage from './pages/vet/VetLandingPage';
 import VetRegisterPage from './pages/vet/VetRegisterPage';
+import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 function AuthenticatedLayout() {
@@ -75,16 +76,8 @@ function RecordsGateway() {
   if (petId) {
     return <Navigate to={`/pets/${petId}`} replace />;
   }
-  
-  return <Navigate to="/dashboard" replace />;
-}
 
-function PlaceholderPage({ title, subtitle }) {
-  return (
-    <Card className="p-8">
-      <PageHeader title={title} subtitle={subtitle} />
-    </Card>
-  );
+  return <Navigate to="/dashboard" replace />;
 }
 
 function UnauthorizedPage() {
@@ -108,6 +101,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/vet/login" element={<LoginPage variant="vet" />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vets-landing" element={<VetLandingPage />} />
       <Route path="/vet/register" element={<VetRegisterPage />} />
@@ -127,6 +121,7 @@ export default function App() {
           <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />
+          <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
           <Route path="/pets/:petId/edit" element={<EditPetPage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
           <Route path="/reminders/success" element={<ReminderSuccessPage />} />

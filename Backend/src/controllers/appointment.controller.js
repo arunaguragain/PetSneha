@@ -18,6 +18,14 @@ const listAppointments = catchAsync(async (req, res) => {
 });
 
 /**
+ * Gets a single appointment by id for the current user.
+ */
+const getAppointment = catchAsync(async (req, res) => {
+  const appointment = await appointmentService.getAppointmentById(req.user, req.params.id);
+  sendItem(res, 'appointment', appointment);
+});
+
+/**
  * Books a new appointment.
  */
 const bookAppointment = catchAsync(async (req, res) => {
@@ -50,6 +58,14 @@ const completeAppointment = catchAsync(async (req, res) => {
 });
 
 /**
+ * Marks an appointment as confirmed.
+ */
+const confirmAppointment = catchAsync(async (req, res) => {
+  const appointment = await appointmentService.confirmAppointment(req.user, req.params.id);
+  sendItem(res, 'appointment', appointment);
+});
+
+/**
  * Returns available slots for a vet.
  */
 const getAvailableSlots = catchAsync(async (req, res) => {
@@ -59,9 +75,11 @@ const getAvailableSlots = catchAsync(async (req, res) => {
 
 module.exports = {
   listAppointments,
+  getAppointment,
   bookAppointment,
   rescheduleAppointment,
   cancelAppointment,
   completeAppointment,
+  confirmAppointment,
   getAvailableSlots,
 };

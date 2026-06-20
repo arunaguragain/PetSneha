@@ -57,3 +57,25 @@ export const getRoleLabel = (role) =>
     vet: 'Veterinary Doctor',
     admin: 'Administrator',
   })[role] || role;
+
+/**
+ * Open Google Maps directions to a location
+ * @param {string} locationQuery - clinic name + address/area
+ */
+export const openGoogleMapsDirections = (locationQuery) => {
+  const encoded = encodeURIComponent(locationQuery)
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${encoded}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+/**
+ * Get a Google Maps embed URL for a location preview (no API key needed
+ * for basic embed, but for production use Maps Embed API key)
+ * @param {string} locationQuery
+ * @returns {string} embed URL
+ */
+export const getGoogleMapsEmbedUrl = (locationQuery) => {
+  const encoded = encodeURIComponent(locationQuery)
+  return `https://maps.google.com/maps?q=${encoded}&t=&z=14&ie=UTF8&iwloc=&output=embed`
+}
+

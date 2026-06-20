@@ -109,7 +109,7 @@ export default function RegisterPage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_82%,rgba(255,255,255,0.22),transparent_18%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.08),transparent_14%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0))]" />
 
           <div className="relative flex w-full flex-col gap-20">
-            <div className="flex items-center gap-3">
+            <div onClick={() => navigate('/')} className="cursor-pointer hover:opacity-80 flex items-center gap-3">
               <img src="/logo.png" alt="PetSneha logo" className="h-10 w-10 object-contain brightness-0 invert" />
               <span className="text-[28px] font-display font-semibold leading-none text-white">PetSneha</span>
             </div>
