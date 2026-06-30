@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -7,26 +7,26 @@ import {
   BookOpen, 
   MessageSquare, 
   User, 
-  ShieldCheck, 
   Plus, 
   Trash2, 
   Send, 
   Star,
-  Clock,
-  MapPin,
   Stethoscope,
-  Briefcase,
-  DollarSign,
   Heart,
   TrendingUp,
   Users,
   CheckCircle,
   AlertTriangle,
-  Award,
   ChevronLeft,
   ChevronRight,
   Wifi,
-  WifiOff
+  WifiOff,
+  XCircle,
+  Bell,
+  ThumbsUp,
+  ThumbsDown,
+  ExternalLink,
+  Clock
 } from 'lucide-react';
 import { 
   Avatar, 
@@ -51,6 +51,7 @@ import {
   getMyVetArticles,
   replyToReview 
 } from '../../api/vetDashboard.api';
+import { getForumPosts, addForumAnswer } from '../../api/content.api';
 import { updateVetProfile } from '../../api/vet.api';
 import { getErrorMessage, formatDate } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
@@ -68,8 +69,15 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const [appointments, setAppointments] = useState([]);
   const [articles, setArticles] = useState([]);
   
+  // Forum states
+  const [forumPosts, setForumPosts] = useState([]);
+  const [forumLoading, setForumLoading] = useState(false);
+  const [forumAnswers, setForumAnswers] = useState({});
+  const [submittingAnswer, setSubmittingAnswer] = useState(null);
+  
   // Form states
   const [articleForm, setArticleForm] = useState({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+  const [articleImageFile, setArticleImageFile] = useState(null);
   const [submittingArticle, setSubmittingArticle] = useState(false);
   const [replyTexts, setReplyTexts] = useState({});
   const [replyingToId, setReplyingToId] = useState(null);
@@ -84,6 +92,32 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     prescriptions: [{ medicine: '', dosage: '', duration: '' }]
   });
   const [submittingRecord, setSubmittingRecord] = useState(false);
+
+  // Dynamic Notifications Feed computed from appointments
+  const notifications = useMemo(() => {
+    const list = [];
+    appointments.forEach(appt => {
+      if (appt.status === 'pending') {
+        list.push({
+          id: `init-${appt._id}`,
+          type: 'info',
+          title: 'New Booking',
+          message: `${appt.owner?.name || appt.user?.name || 'Client'} requested an appointment for ${appt.pet?.name || 'Pet'} on ${formatDate(appt.date)} at ${appt.timeSlot}`,
+          time: new Date(appt.createdAt || Date.now())
+        });
+      }
+      if (appt.status === 'cancelled') {
+        list.push({
+          id: `cancel-${appt._id}`,
+          type: 'danger',
+          title: 'Cancelled',
+          message: `Appointment for ${appt.pet?.name || 'Pet'} (Owner: ${appt.owner?.name || appt.user?.name || 'Client'}) on ${formatDate(appt.date)} was cancelled.`,
+          time: new Date(appt.updatedAt || appt.createdAt || Date.now())
+        });
+      }
+    });
+    return list.sort((a, b) => b.time - a.time).slice(0, 5);
+  }, [appointments]);
 
   // Profile Form state
   const [profileForm, setProfileForm] = useState({
@@ -189,9 +223,32 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     }
     try {
       setSubmittingArticle(true);
-      await submitVetArticle(articleForm);
+      
+      let payload;
+      let headers = {};
+      if (articleImageFile) {
+        payload = new FormData();
+        payload.append('title', articleForm.title);
+        payload.append('content', articleForm.content);
+        payload.append('summary', articleForm.summary || '');
+        payload.append('readTime', articleForm.readTime || 5);
+        payload.append('image', articleImageFile);
+        if (articleForm.tags && articleForm.tags.length > 0) {
+          payload.append('tags', articleForm.tags[0]);
+        }
+        headers = { 'Content-Type': 'multipart/form-data' };
+      } else {
+        payload = articleForm;
+      }
+
+      await submitVetArticle(payload, headers);
       addToast('Practitioner knowledge article published draft successfully', 'success');
       setArticleForm({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+      setArticleImageFile(null);
+      
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+
       const articlesRes = await getMyVetArticles();
       setArticles(articlesRes.data?.articles || articlesRes.data?.items || (Array.isArray(articlesRes.data) ? articlesRes.data : articlesRes || []));
     } catch (err) {
@@ -357,8 +414,50 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     { id: 'articles', label: 'Knowledge Hub', icon: BookOpen },
     { id: 'reviews', label: 'Patient Reviews', icon: MessageSquare },
     { id: 'profile', label: 'Profile Settings', icon: User },
-    { id: 'credentials', label: 'Credentials', icon: ShieldCheck },
+    { id: 'forum', label: 'Community Forum', icon: Users },
   ];
+
+  // Load forum posts when forum tab is opened
+  useEffect(() => {
+    if (activeTab === 'forum' && forumPosts.length === 0) {
+      setForumLoading(true);
+      getForumPosts()
+        .then(res => {
+          const list = res.data?.posts || res.data?.items || (Array.isArray(res.data) ? res.data : res || []);
+          setForumPosts(list);
+        })
+        .catch(err => addToast(getErrorMessage(err), 'danger'))
+        .finally(() => setForumLoading(false));
+    }
+  }, [activeTab]);
+
+  // Compute weekly appointment data from real appointments
+  const weeklyChartData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const counts = Array(7).fill(0);
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    appointments.forEach(appt => {
+      const d = new Date(appt.date);
+      if (d >= startOfWeek) {
+        counts[d.getDay()] += 1;
+      }
+    });
+    const maxCount = Math.max(...counts, 1);
+    return days.map((day, i) => ({ day, count: counts[i], pct: Math.round((counts[i] / maxCount) * 100) }));
+  }, [appointments]);
+
+  // Compute real clinic performance stats
+  const clinicStats = useMemo(() => {
+    const total = appointments.length;
+    const completed = appointments.filter(a => a.status === 'completed').length;
+    const cancelled = appointments.filter(a => a.status === 'cancelled').length;
+    const successRate = total > 0 ? Math.round(((total - cancelled) / total) * 100) : 0;
+    const feedbackRate = total > 0 ? Math.round((reviewsList.length / total) * 100) : 0;
+    return { successRate, feedbackRate, completed, cancelled, total };
+  }, [appointments, reviewsList]);
 
   if (loading && !dashboard) {
     return (
@@ -372,12 +471,11 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] bg-[#F8FAFC]">
+    <div className="flex h-[calc(100vh-64px)] bg-[#F8FAFC] overflow-hidden">
       {/* VetStream Left Workspace Sidebar */}
-      <aside className="w-72 bg-white border-r border-[#E2E8F0] flex flex-col justify-between shrink-0">
-        <div>
+      <aside className="w-72 bg-white border-r border-[#E2E8F0] flex flex-col shrink-0 h-full overflow-hidden">
           {/* Header Info */}
-          <div className="p-6 border-b border-[#E2E8F0]">
+          <div className="p-6 border-b border-[#E2E8F0] shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Avatar name={dashboard?.vet?.name || 'Dr.'} size="lg" className="border-2 border-[#0046CE]/10" />
@@ -390,7 +488,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
             </div>
             
             {/* Quick Status toggle */}
-            <div className="mt-5 flex items-center justify-between bg-neutral-50 rounded-xl p-3 border border-[#E2E8F0]">
+            <div className="mt-4 flex items-center justify-between bg-neutral-50 rounded-xl p-3 border border-[#E2E8F0]">
               <span className="text-xs font-semibold text-neutral-600 flex items-center gap-2">
                 {isVetOnline ? <Wifi className="h-3.5 w-3.5 text-success animate-pulse" /> : <WifiOff className="h-3.5 w-3.5 text-neutral-400" />}
                 {isVetOnline ? 'Receiving Bookings' : 'Offline'}
@@ -404,8 +502,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
+          {/* Navigation Links — takes remaining space, no scroll */}
+          <nav className="flex-1 p-4 space-y-1 overflow-hidden">
             {sidebarItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -425,20 +523,14 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               );
             })}
           </nav>
-        </div>
-
-        {/* Footnote branding */}
-        <div className="p-6 border-t border-[#E2E8F0]">
-          <p className="text-xs text-center text-neutral-400 font-semibold">VETSTREAM workspace v1.0</p>
-        </div>
       </aside>
 
-      {/* Main Workspace Workspace */}
-      <main className="flex-1 p-10 overflow-y-auto">
+      {/* Main Workspace */}
+      <main className="flex-1 px-8 py-8 overflow-y-auto">
         
         {/* Verification banner if not verified */}
         {dashboard?.vet && !dashboard.vet.isVerified && (
-          <div className="mb-8 p-4 bg-danger-50 border border-danger-200 rounded-2xl flex items-start gap-4">
+          <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-2xl flex items-start gap-4">
             <div className="p-2.5 bg-danger-100 rounded-xl text-danger-700">
               <AlertTriangle className="h-6 w-6" />
             </div>
@@ -447,9 +539,6 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               <p className="text-sm text-danger-700 mt-1">
                 Your medical license credentials are being verified by PetSneha admins. Some client booking features might be restricted until verification is complete.
               </p>
-              <button onClick={() => setActiveTab('credentials')} className="mt-2 text-xs font-bold text-[#0046CE] hover:underline">
-                View Verification Progress &rarr;
-              </button>
             </div>
           </div>
         )}
@@ -513,93 +602,79 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               </Card>
             </div>
 
-            {/* Performance Index & Simulated Chart */}
+            {/* Performance Index & Real Chart */}
             <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2 p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
                 <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4">
                   <div>
-                    <h3 className="font-bold text-neutral-900 text-lg">Patient Visits Trends</h3>
-                    <p className="text-xs text-neutral-500 mt-1">Overview of clinical consultations completed</p>
+                    <h3 className="font-bold text-neutral-900 text-lg">This Week's Appointments</h3>
+                    <p className="text-xs text-neutral-500 mt-1">Daily appointment count for the current week</p>
                   </div>
                   <Badge variant="primary" className="flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" /> +12.4% MoM
+                    <TrendingUp className="h-3 w-3" /> {appointments.filter(a => a.status === 'completed').length} Completed
                   </Badge>
                 </div>
-                {/* Simulated Graph SVG */}
-                <div className="h-64 mt-6 flex items-end justify-between gap-2 px-4 relative">
-                  {/* Grid Lines */}
+                {/* Real appointment chart bars */}
+                <div className="h-56 mt-6 flex items-end justify-between gap-2 px-2 relative">
                   <div className="absolute inset-x-0 top-0 border-t border-neutral-100" />
                   <div className="absolute inset-x-0 top-1/3 border-t border-neutral-100" />
                   <div className="absolute inset-x-0 top-2/3 border-t border-neutral-100" />
-                  
-                  {/* Columns */}
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-neutral-200 rounded-t-lg h-24 transition-all hover:bg-[#0046CE]" />
-                    <span className="text-xs font-semibold text-neutral-400">Mon</span>
-                  </div>
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-neutral-200 rounded-t-lg h-36 transition-all hover:bg-[#0046CE]" />
-                    <span className="text-xs font-semibold text-neutral-400">Tue</span>
-                  </div>
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-[#0046CE]/70 rounded-t-lg h-48 transition-all hover:bg-[#0046CE]" />
-                    <span className="text-xs font-semibold text-neutral-400">Wed</span>
-                  </div>
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-[#0046CE]/70 rounded-t-lg h-32 transition-all hover:bg-[#0046CE]" />
-                    <span className="text-xs font-semibold text-neutral-400">Thu</span>
-                  </div>
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-[#0046CE] rounded-t-lg h-56 transition-all hover:bg-[#0046CE]-600" />
-                    <span className="text-xs font-semibold text-neutral-400">Fri</span>
-                  </div>
-                  <div className="w-1/6 flex flex-col items-center gap-2 z-10">
-                    <div className="w-full bg-neutral-300 rounded-t-lg h-16 transition-all hover:bg-[#0046CE]" />
-                    <span className="text-xs font-semibold text-neutral-400">Sat</span>
-                  </div>
+                  {weeklyChartData.map(({ day, count, pct }) => (
+                    <div key={day} className="flex-1 flex flex-col items-center gap-2 z-10">
+                      <span className="text-[10px] font-bold text-neutral-500">{count > 0 ? count : ''}</span>
+                      <div 
+                        className={`w-full rounded-t-lg transition-all group-hover:opacity-80 ${
+                          pct > 0 ? 'bg-[#0046CE]' : 'bg-neutral-100'
+                        }`} 
+                        style={{ height: `${Math.max(pct * 1.8, pct > 0 ? 12 : 4)}px` }} 
+                        title={`${count} appointment${count !== 1 ? 's' : ''}`}
+                      />
+                      <span className="text-[10px] font-semibold text-neutral-400">{day}</span>
+                    </div>
+                  ))}
                 </div>
               </Card>
 
-              {/* Clinic Performance card */}
+              {/* Clinic Performance card — real computed data */}
               <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex flex-col justify-between">
                 <div>
                   <h3 className="font-bold text-neutral-900 text-lg">Clinic Performance</h3>
-                  <p className="text-xs text-neutral-500 mt-1">Insights on satisfaction & response rate</p>
+                  <p className="text-xs text-neutral-500 mt-1">Real-time satisfaction &amp; activity insights</p>
                   
-                  <div className="mt-8 space-y-4">
+                  <div className="mt-6 space-y-5">
                     <div>
                       <div className="flex justify-between text-sm font-semibold text-neutral-700">
                         <span>Appointment Success Rate</span>
-                        <span>94%</span>
+                        <span>{clinicStats.successRate}%</span>
                       </div>
                       <div className="w-full bg-neutral-100 h-2 rounded-full mt-2">
-                        <div className="bg-success h-full rounded-full" style={{ width: '94%' }} />
+                        <div className="bg-success h-full rounded-full transition-all" style={{ width: `${clinicStats.successRate}%` }} />
                       </div>
                     </div>
 
                     <div>
                       <div className="flex justify-between text-sm font-semibold text-neutral-700">
-                        <span>Average Consultation Duration</span>
-                        <span>22 mins</span>
+                        <span>Completed Consultations</span>
+                        <span>{clinicStats.completed}</span>
                       </div>
                       <div className="w-full bg-neutral-100 h-2 rounded-full mt-2">
-                        <div className="bg-[#0046CE] h-full rounded-full" style={{ width: '75%' }} />
+                        <div className="bg-[#0046CE] h-full rounded-full transition-all" style={{ width: `${clinicStats.total > 0 ? Math.round((clinicStats.completed / clinicStats.total) * 100) : 0}%` }} />
                       </div>
                     </div>
 
                     <div>
                       <div className="flex justify-between text-sm font-semibold text-neutral-700">
                         <span>Patient Feedback Rate</span>
-                        <span>82%</span>
+                        <span>{clinicStats.feedbackRate}%</span>
                       </div>
                       <div className="w-full bg-neutral-100 h-2 rounded-full mt-2">
-                        <div className="bg-warning h-full rounded-full" style={{ width: '82%' }} />
+                        <div className="bg-warning h-full rounded-full transition-all" style={{ width: `${Math.min(clinicStats.feedbackRate, 100)}%` }} />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-neutral-100 mt-6">
+                <div className="pt-4 border-t border-neutral-100 mt-4">
                   <Button variant="secondary" fullWidth onClick={() => setActiveTab('reviews')}>
                     Manage Patient Reviews
                   </Button>
@@ -607,74 +682,129 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               </Card>
             </div>
 
-            {/* Recent Appointments table */}
-            <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
-              <div className="flex justify-between items-center pb-4 border-b border-[#E2E8F0]">
-                <div>
-                  <h3 className="font-bold text-neutral-900 text-lg">Recent Appointments</h3>
-                  <p className="text-xs text-neutral-500 mt-1">Pending and incoming patient visits</p>
-                </div>
-                <Button size="sm" as={Link} to="/vet/appointments">View Schedule</Button>
+            {/* Recent Appointments grid */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl h-full">
+                  <div className="flex justify-between items-center pb-4 border-b border-[#E2E8F0]">
+                    <div>
+                      <h3 className="font-bold text-neutral-900 text-lg">Recent Appointments</h3>
+                      <p className="text-xs text-neutral-500 mt-1">Pending and incoming patient visits</p>
+                    </div>
+                    <Button size="sm" as={Link} to="/vet/appointments">View Schedule</Button>
+                  </div>
+
+                  <div className="overflow-x-auto mt-4">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#E2E8F0] text-neutral-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="py-3 px-2">Patient Pet</th>
+                          <th className="py-3 px-2">Owner Name</th>
+                          <th className="py-3 px-2">Scheduled Date</th>
+                          <th className="py-3 px-2">Time Slot</th>
+                          <th className="py-3 px-2">Status</th>
+                          <th className="py-3 px-2 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {appointments.slice(0, 5).map((appt) => (
+                          <tr key={appt._id} className="border-b border-neutral-100 hover:bg-[#F8FAFC]/50 transition">
+                            <td className="py-3 px-2 font-semibold text-neutral-900 flex items-center gap-2">
+                              <Avatar name={appt.pet?.name} size="sm" />
+                              {appt.pet?.name || 'Unspecified'}
+                            </td>
+                            <td className="py-3 px-2 text-neutral-600">{appt.owner?.name || appt.user?.name || 'Owner'}</td>
+                            <td className="py-3 px-2 text-neutral-600">{formatDate(appt.date)}</td>
+                            <td className="py-3 px-2 text-neutral-600">{appt.timeSlot || 'Pending Slot'}</td>
+                            <td className="py-3 px-2">
+                              <Badge variant={
+                                appt.status === 'confirmed' ? 'success' :
+                                appt.status === 'completed' ? 'primary' :
+                                appt.status === 'cancelled' ? 'danger' : 'neutral'
+                              }>
+                                {appt.status}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2 text-right">
+                              <div className="inline-flex gap-2">
+                                {appt.status === 'pending' && (
+                                  <button 
+                                    onClick={() => handleConfirm(appt._id)}
+                                    className="p-2 bg-success-50 text-success-700 hover:bg-success-100 rounded-xl transition shadow-sm border border-success-200/50"
+                                    title="Approve Appointment"
+                                  >
+                                    <CheckCircle className="h-5 w-5" />
+                                  </button>
+                                )}
+                                {appt.status === 'confirmed' && (
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedAppointmentId(appt._id);
+                                      setActiveTab('records');
+                                    }}
+                                    className="p-2 bg-[#EFF6FF] text-[#0046CE] hover:bg-[#DBEAFE] rounded-xl transition shadow-sm border border-[#BFDBFE]"
+                                    title="Diagnose & Complete"
+                                  >
+                                    <Stethoscope className="h-5 w-5" />
+                                  </button>
+                                )}
+                                {appt.status !== 'completed' && appt.status !== 'cancelled' && (
+                                  <button 
+                                    onClick={() => handleCancel(appt._id)}
+                                    className="p-2 bg-danger-50 text-danger-700 hover:bg-danger-100 rounded-xl transition shadow-sm border border-danger-200/50"
+                                    title="Cancel Booking"
+                                  >
+                                    <XCircle className="h-5 w-5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {appointments.length === 0 && (
+                          <tr>
+                            <td colSpan="6" className="text-center py-8 text-neutral-400">No appointments found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
               </div>
 
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#E2E8F0] text-neutral-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="py-3 px-2">Patient Pet</th>
-                      <th className="py-3 px-2">Owner Name</th>
-                      <th className="py-3 px-2">Scheduled Date</th>
-                      <th className="py-3 px-2">Time Slot</th>
-                      <th className="py-3 px-2">Status</th>
-                      <th className="py-3 px-2 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {appointments.slice(0, 5).map((appt) => (
-                      <tr key={appt._id} className="border-b border-neutral-100 hover:bg-[#F8FAFC]/50 transition">
-                        <td className="py-3 px-2 font-semibold text-neutral-900 flex items-center gap-2">
-                          <Avatar name={appt.pet?.name} size="sm" />
-                          {appt.pet?.name || 'Unspecified'}
-                        </td>
-                        <td className="py-3 px-2 text-neutral-600">{appt.owner?.name || appt.user?.name || 'Owner'}</td>
-                        <td className="py-3 px-2 text-neutral-600">{formatDate(appt.date)}</td>
-                        <td className="py-3 px-2 text-neutral-600">{appt.timeSlot || 'Pending Slot'}</td>
-                        <td className="py-3 px-2">
-                          <Badge variant={
-                            appt.status === 'confirmed' ? 'success' :
-                            appt.status === 'completed' ? 'primary' :
-                            appt.status === 'cancelled' ? 'danger' : 'neutral'
-                          }>
-                            {appt.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <div className="inline-flex gap-2">
-                            {appt.status === 'pending' && (
-                              <Button size="sm" variant="success" className="px-3" onClick={() => handleConfirm(appt._id)}>Confirm</Button>
-                            )}
-                            {appt.status === 'confirmed' && (
-                              <Button size="sm" className="px-3" onClick={() => {
-                                setSelectedAppointmentId(appt._id);
-                                setActiveTab('records');
-                              }}>Diagnose</Button>
-                            )}
-                            {appt.status !== 'completed' && appt.status !== 'cancelled' && (
-                              <Button size="sm" variant="danger" className="px-3" onClick={() => handleCancel(appt._id)}>Cancel</Button>
-                            )}
+              <div className="lg:col-span-1">
+                <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl h-full flex flex-col justify-between">
+                  <div>
+                    <div className="pb-4 border-b border-[#E2E8F0]">
+                      <h3 className="font-bold text-neutral-900 text-lg">Activity Notifications</h3>
+                      <p className="text-xs text-neutral-500 mt-1 font-medium">Real-time alerts for booking initiations & cancellations</p>
+                    </div>
+
+                    <div className="mt-4 space-y-4 max-h-[320px] overflow-y-auto pr-1">
+                      {notifications.map((notif) => (
+                        <div key={notif.id} className="border border-neutral-100 p-3.5 rounded-xl space-y-1.5 bg-neutral-50/50 hover:bg-neutral-50 transition">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                              notif.type === 'danger' ? 'bg-danger-50 text-danger-700' : 'bg-[#EFF6FF] text-[#0046CE]'
+                            }`}>
+                              {notif.title}
+                            </span>
+                            <span className="text-[10px] text-neutral-400 font-semibold">{notif.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {appointments.length === 0 && (
-                      <tr>
-                        <td colSpan="6" className="text-center py-8 text-neutral-400">No appointments found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          <p className="text-xs text-neutral-700 font-medium leading-relaxed">{notif.message}</p>
+                        </div>
+                      ))}
+                      {notifications.length === 0 && (
+                        <div className="text-center py-12 text-neutral-400">
+                          <Bell className="h-8 w-8 mx-auto stroke-1" />
+                          <p className="text-xs mt-2 font-semibold">No recent booking actions.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
               </div>
-            </Card>
+            </div>
           </div>
         )}
 
@@ -774,18 +904,38 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {appt.timeSlot}</span>
                       </div>
 
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex gap-2 pt-2 justify-end">
                         {appt.status === 'pending' && (
-                          <Button size="sm" variant="success" fullWidth onClick={() => handleConfirm(appt._id)}>Confirm</Button>
+                          <button 
+                            onClick={() => handleConfirm(appt._id)}
+                            className="flex-1 p-2 bg-success-50 text-success-700 hover:bg-success-100 rounded-xl transition flex items-center justify-center border border-success-200/50"
+                            title="Approve"
+                          >
+                            <CheckCircle className="h-4.5 w-4.5 mr-1" />
+                            <span className="text-xs font-semibold">Approve</span>
+                          </button>
                         )}
                         {appt.status === 'confirmed' && (
-                          <Button size="sm" fullWidth onClick={() => {
-                            setSelectedAppointmentId(appt._id);
-                            setActiveTab('records');
-                          }}>Diagnose</Button>
+                          <button 
+                            onClick={() => {
+                              setSelectedAppointmentId(appt._id);
+                              setActiveTab('records');
+                            }}
+                            className="flex-1 p-2 bg-[#EFF6FF] text-[#0046CE] hover:bg-[#DBEAFE] rounded-xl transition flex items-center justify-center border border-[#BFDBFE]"
+                            title="Diagnose"
+                          >
+                            <Stethoscope className="h-4.5 w-4.5 mr-1" />
+                            <span className="text-xs font-semibold">Diagnose</span>
+                          </button>
                         )}
                         {appt.status !== 'completed' && appt.status !== 'cancelled' && (
-                          <Button size="sm" variant="danger" fullWidth onClick={() => handleCancel(appt._id)}>Cancel</Button>
+                          <button 
+                            onClick={() => handleCancel(appt._id)}
+                            className="p-2 bg-danger-50 text-danger-700 hover:bg-danger-100 rounded-xl transition flex items-center justify-center border border-danger-200/50"
+                            title="Cancel"
+                          >
+                            <XCircle className="h-4.5 w-4.5" />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -869,31 +1019,28 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                       <div className="flex-1">
                         <input 
                           type="text"
-                          placeholder="Medicine name"
+                          placeholder="Medicine name (optional)"
                           className="input"
                           value={prescription.medicine}
                           onChange={(e) => updatePrescriptionRow(index, 'medicine', e.target.value)}
-                          required
                         />
                       </div>
                       <div className="w-1/3">
                         <input 
                           type="text"
-                          placeholder="Dosage (e.g. 1 tab twice daily)"
+                          placeholder="Dosage (optional)"
                           className="input"
                           value={prescription.dosage}
                           onChange={(e) => updatePrescriptionRow(index, 'dosage', e.target.value)}
-                          required
                         />
                       </div>
                       <div className="w-1/4">
                         <input 
                           type="text"
-                          placeholder="Duration (e.g. 5 days)"
+                          placeholder="Duration (optional)"
                           className="input"
                           value={prescription.duration}
                           onChange={(e) => updatePrescriptionRow(index, 'duration', e.target.value)}
-                          required
                         />
                       </div>
                       {clinicalRecordForm.prescriptions.length > 1 && (
@@ -938,6 +1085,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               <form onSubmit={handlePublishArticle} className="mt-6 space-y-4">
                 <Input 
                   label="Article Title" 
+                  name="articleTitle"
+                  autoComplete="off"
                   placeholder="e.g. Understanding Pet Heatstroke in Summer"
                   value={articleForm.title}
                   onChange={(e) => setArticleForm(prev => ({ ...prev, title: e.target.value }))}
@@ -946,6 +1095,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 
                 <Input 
                   label="Summary / Catchphrase" 
+                  name="articleSummary"
+                  autoComplete="off"
                   placeholder="e.g. Critical tips for owners to spot early indicators of pet overheating."
                   value={articleForm.summary}
                   onChange={(e) => setArticleForm(prev => ({ ...prev, summary: e.target.value }))}
@@ -967,6 +1118,16 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                     <option value="Emergency Care">Emergency Care</option>
                     <option value="Pet Behavior">Pet Behavior</option>
                   </Select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Featured Image / Picture (Optional)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    className="input" 
+                    onChange={(e) => setArticleImageFile(e.target.files[0])}
+                  />
                 </div>
 
                 <Textarea 
@@ -1047,9 +1208,9 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 <Card key={rev._id} className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
-                      <Avatar name="Patient" size="md" />
+                      <Avatar name={rev.authorId?.name || 'Pet Owner'} size="md" />
                       <div>
-                        <p className="font-semibold text-neutral-900">Pet Owner Review</p>
+                        <p className="font-semibold text-neutral-900">{rev.authorId?.name || 'Pet Owner'}</p>
                         <p className="text-xs text-neutral-400">{new Date(rev.createdAt || Date.now()).toLocaleDateString()}</p>
                       </div>
                     </div>
@@ -1223,96 +1384,127 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
           </Card>
         )}
 
-        {/* Tab 7: Credentials & Onboarding Journey */}
-        {activeTab === 'credentials' && (
-          <div className="grid gap-8 lg:grid-cols-3 max-w-5xl mx-auto">
-            {/* Onboarding steps list */}
-            <Card className="lg:col-span-2 p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-6">
+        {/* Credentials tab removed as requested */}
+
+        {/* Tab 8: Community Forum (embedded with sidebar) */}
+        {activeTab === 'forum' && (
+          <div className="space-y-6 max-w-5xl">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-neutral-900 text-lg">Onboarding & Verification Journey</h3>
-                <p className="text-xs text-neutral-500 mt-1">Complete credentials verification to enable all features</p>
+                <h1 className="font-display text-3xl text-neutral-900 font-bold">Community Forum</h1>
+                <p className="text-neutral-500 mt-1 text-sm">Browse questions from pet owners and share your expertise.</p>
               </div>
+              <Link to="/forum/new" className="btn btn-primary btn-sm flex items-center gap-2">
+                <Plus className="h-4 w-4" /> New Post
+              </Link>
+            </div>
 
-              <div className="space-y-6 mt-6">
-                <div className="flex gap-4 items-start">
-                  <div className="p-2 bg-success-100 text-success-700 rounded-xl">
-                    <CheckCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-neutral-900 text-sm">Personal Identity Verification</h5>
-                    <p className="text-xs text-neutral-500 mt-1">Owner verified matching registration detail.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start">
-                  <div className={`p-2 rounded-xl ${dashboard?.vet?.isVerified ? 'bg-success-100 text-success-700' : 'bg-[#EFF6FF] text-[#0046CE]'}`}>
-                    {dashboard?.vet?.isVerified ? <CheckCircle className="h-5 w-5" /> : <Clock className="h-5 w-5 animate-pulse" />}
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-neutral-900 text-sm">Medical License Verification</h5>
-                    <p className="text-xs text-neutral-500 mt-1">License Number: <span className="font-mono text-neutral-950 font-semibold">{dashboard?.vet?.licenseNumber || 'PENDING'}</span></p>
-                    <p className="text-xs text-neutral-400 mt-1">Currently being reviewed against Nepal Veterinary Council records.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start">
-                  <div className="p-2 bg-success-100 text-success-700 rounded-xl">
-                    <CheckCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-neutral-900 text-sm">Clinic Details & Coordinates</h5>
-                    <p className="text-xs text-neutral-500 mt-1">Location verified at: {dashboard?.vet?.location || 'Unspecified location'}</p>
-                  </div>
-                </div>
+            {forumLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-28 bg-white border border-[#E2E8F0] rounded-2xl animate-pulse" />
+                ))}
               </div>
-            </Card>
+            ) : forumPosts.length > 0 ? (
+              <div className="space-y-4">
+                {forumPosts.map(post => (
+                  <Card key={post._id} className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-3 hover:border-[#0046CE]/30 transition">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#EFF6FF] flex items-center justify-center font-bold text-[#0046CE] text-sm">
+                          {(post.author?.name || 'M')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-neutral-900 text-sm">{post.author?.name || 'Community Member'}</p>
+                          <p className="text-xs text-neutral-400">{formatDate(post.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {post.species && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0046CE] uppercase tracking-wide">{post.species}</span>
+                        )}
+                        <Link 
+                          to={`/forum/${post._id}`}
+                          onClick={e => e.stopPropagation()}
+                          className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-[#0046CE] transition"
+                          title="Open full thread"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
 
-            {/* Trust Score */}
-            <Card className="p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex flex-col justify-between">
-              <div>
-                <h3 className="font-bold text-neutral-900 text-lg">Trust Score</h3>
-                <p className="text-xs text-neutral-500 mt-1">Based on credentials accuracy</p>
+                    <h3 className="font-bold text-neutral-900">{post.title}</h3>
+                    <p className="text-sm text-neutral-600 line-clamp-2">{post.content}</p>
 
-                {/* Score Graphic */}
-                <div className="mt-8 text-center relative flex flex-col items-center justify-center">
-                  <svg className="w-36 h-36 transform -rotate-90">
-                    <circle 
-                      cx="72" 
-                      cy="72" 
-                      r="64" 
-                      stroke="#E2E8F0" 
-                      strokeWidth="10" 
-                      fill="transparent" 
-                    />
-                    <circle 
-                      cx="72" 
-                      cy="72" 
-                      r="64" 
-                      stroke="#0046CE" 
-                      strokeWidth="12" 
-                      fill="transparent" 
-                      strokeDasharray="402"
-                      strokeDashoffset={402 - (402 * trustScoreProgress) / 100}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute text-center">
-                    <span className="text-3xl font-extrabold text-neutral-900">{trustScoreProgress}%</span>
-                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1">
-                      {dashboard?.vet?.isVerified ? 'VERIFIED' : 'PARTIAL'}
-                    </p>
-                  </div>
-                </div>
+                    <div className="flex items-center gap-4 text-xs text-neutral-500 pt-1 border-t border-neutral-100">
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="h-3.5 w-3.5" /> {post.likesCount || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="h-3.5 w-3.5" /> {post.answersCount || post.answerCount || 0} Answers
+                      </span>
+                    </div>
+
+                    {/* Quick answer box */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <Avatar name={dashboard?.vet?.name || 'Dr'} size="sm" />
+                      <input
+                        type="text"
+                        placeholder="Write an expert answer as a vet..."
+                        className="input flex-1 py-2 text-sm"
+                        value={forumAnswers[post._id] || ''}
+                        onChange={e => setForumAnswers(prev => ({ ...prev, [post._id]: e.target.value }))}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && forumAnswers[post._id]?.trim()) {
+                            setSubmittingAnswer(post._id);
+                            try {
+                              await addForumAnswer(post._id, { content: forumAnswers[post._id] });
+                              addToast('Answer posted!', 'success');
+                              setForumAnswers(prev => ({ ...prev, [post._id]: '' }));
+                              setForumPosts(prev => prev.map(p => p._id === post._id ? { ...p, answersCount: (p.answersCount || 0) + 1 } : p));
+                            } catch (err) {
+                              addToast(getErrorMessage(err), 'danger');
+                            } finally {
+                              setSubmittingAnswer(null);
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        className="btn btn-primary btn-sm flex items-center gap-1"
+                        disabled={!forumAnswers[post._id]?.trim() || submittingAnswer === post._id}
+                        onClick={async () => {
+                          if (!forumAnswers[post._id]?.trim()) return;
+                          setSubmittingAnswer(post._id);
+                          try {
+                            await addForumAnswer(post._id, { content: forumAnswers[post._id] });
+                            addToast('Answer posted!', 'success');
+                            setForumAnswers(prev => ({ ...prev, [post._id]: '' }));
+                            setForumPosts(prev => prev.map(p => p._id === post._id ? { ...p, answersCount: (p.answersCount || 0) + 1 } : p));
+                          } catch (err) {
+                            addToast(getErrorMessage(err), 'danger');
+                          } finally {
+                            setSubmittingAnswer(null);
+                          }
+                        }}
+                      >
+                        {submittingAnswer === post._id ? <span className="inline-block animate-spin h-3.5 w-3.5 rounded-full border-2 border-white border-r-transparent" /> : <Send className="h-3.5 w-3.5" />}
+                        Answer
+                      </button>
+                    </div>
+                  </Card>
+                ))}
               </div>
-
-              <div className="pt-6 border-t border-neutral-100 mt-6 text-center">
-                <p className="text-xs text-neutral-500">
-                  {dashboard?.vet?.isVerified 
-                    ? 'Verified badge is displayed publicly on your clinic listing.' 
-                    : 'Submit pending credentials to reach 100% Verified status.'}
-                </p>
-              </div>
-            </Card>
+            ) : (
+              <Card className="p-12 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl text-center">
+                <Users className="h-10 w-10 mx-auto text-neutral-300 stroke-1" />
+                <p className="text-neutral-500 mt-3 text-sm">No community posts yet.</p>
+                <Link to="/forum/new" className="btn btn-primary btn-sm mt-4 inline-flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Start a Discussion
+                </Link>
+              </Card>
+            )}
           </div>
         )}
 
