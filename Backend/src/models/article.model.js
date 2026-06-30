@@ -12,6 +12,7 @@ const articleSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     isPublished: { type: Boolean, default: false },
     readTime: { type: Number },
+    imageUrl: { type: String, trim: true },
     views: { type: Number, default: 0 },
   },
   { timestamps: true }

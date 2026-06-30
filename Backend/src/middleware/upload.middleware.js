@@ -6,6 +6,7 @@ const uploadsRoot = path.join(process.cwd(), 'uploads');
 const uploadFolders = {
   pets: path.join(uploadsRoot, 'pets'),
   products: path.join(uploadsRoot, 'products'),
+  articles: path.join(uploadsRoot, 'articles'),
 };
 
 Object.values(uploadFolders).forEach((folder) => {
@@ -40,5 +41,6 @@ function createUploader(folderKey) {
 
 const petUpload = createUploader('pets');
 const productUpload = createUploader('products');
+const articleUpload = createUploader('articles');
 
-module.exports = { createUploader, petUpload, productUpload };
+module.exports = { createUploader, petUpload, productUpload, articleUpload };
