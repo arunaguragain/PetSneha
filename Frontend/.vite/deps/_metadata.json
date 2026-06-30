@@ -1,49 +1,49 @@
 {
-  "hash": "0d7b6f1b",
+  "hash": "db5c329f",
   "configHash": "10d1ce41",
-  "lockfileHash": "bcbaa7e7",
-  "browserHash": "43403d82",
+  "lockfileHash": "e99ae732",
+  "browserHash": "5ace353d",
   "optimized": {
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "4daf555c",
+      "fileHash": "33fe23de",
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "d6f9951b",
+      "fileHash": "15918472",
       "needsInterop": true
     },
     "react-router-dom": {
       "src": "../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "737a24de",
+      "fileHash": "52adf792",
       "needsInterop": false
     },
     "i18next": {
       "src": "../../node_modules/i18next/dist/esm/i18next.js",
       "file": "i18next.js",
-      "fileHash": "6bd8d3d1",
+      "fileHash": "d6e7450e",
       "needsInterop": false
     },
     "react-i18next": {
       "src": "../../node_modules/react-i18next/dist/es/index.js",
       "file": "react-i18next.js",
-      "fileHash": "7d4fb443",
+      "fileHash": "49b3e09f",
       "needsInterop": false
     },
     "lucide-react": {
       "src": "../../node_modules/lucide-react/dist/esm/lucide-react.mjs",
       "file": "lucide-react.js",
-      "fileHash": "f88e6a06",
+      "fileHash": "6f153247",
       "needsInterop": false
     },
     "axios": {
       "src": "../../node_modules/axios/index.js",
       "file": "axios.js",
-      "fileHash": "409042cb",
+      "fileHash": "af950595",
       "needsInterop": false
     }
   },
