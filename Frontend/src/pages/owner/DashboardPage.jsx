@@ -6,7 +6,7 @@ import { getAppointments, getPets } from '../../api/pet.api';
 import { getErrorMessage, getPetEmoji, unwrapItems } from '../../utils/api';
 import { getSavedVet } from '../../utils/ownerState';
 import { useToast } from '../../context/ToastContext';
-import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight, Clock, Pencil, Plus, MapPin, Phone, Heart, Star, ShoppingCart, MoreHorizontal, Syringe, ClipboardList, Dumbbell, BookOpen, Utensils } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight, Clock, Pencil, Plus, MapPin, Phone, Heart, Star, ShoppingCart, MoreHorizontal, Syringe, ClipboardList, Dumbbell, BookOpen, Utensils, PawPrint } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -224,8 +224,8 @@ export default function DashboardPage() {
               {pets.length === 0 ? (
                 /* Empty state */
                 <div className="bg-white border-2 border-dashed border-[#BFDBFE] rounded-2xl py-12 flex flex-col items-center justify-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center text-2xl">
-                    🐾
+                  <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center text-[#0046CE]">
+                    <PawPrint size={28} />
                   </div>
                   <p className="text-sm font-medium text-[#64748B]">No pets added yet.</p>
                   <button
@@ -249,8 +249,8 @@ export default function DashboardPage() {
                           {photoUrl ? (
                             <img src={photoUrl} className="w-full h-full object-cover" alt={pet.name} />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl">
-                              {getPetEmoji(pet.species)}
+                            <div className="w-full h-full flex items-center justify-center text-[#0046CE]">
+                              <PawPrint size={28} />
                             </div>
                           )}
                         </div>

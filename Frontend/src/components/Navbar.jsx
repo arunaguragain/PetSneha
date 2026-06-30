@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../context/ToastContext';
 import { updateLanguage } from '../api/user.api';
 import { getPets } from '../api/pet.api';
-import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar } from 'lucide-react';
+import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar, LayoutDashboard, BookOpen } from 'lucide-react';
 import { getPetEmoji } from '../utils/api';
 
 const navItemsByRole = {
@@ -93,9 +93,14 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
+    const wasVet = role === 'vet';
     logout();
     addToast('You have been signed out', 'success');
-    navigate('/login');
+    if (wasVet) {
+      navigate('/vets-landing');
+    } else {
+      navigate('/login');
+    }
   };
 
   const getSpeciesBadgeClass = (species) => {
@@ -180,7 +185,7 @@ export default function Navbar() {
                     {role === 'vet' ? (
                       <>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/dashboard'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
-                          <User size={18} className="text-[#0046CE]" />
+                          <LayoutDashboard size={18} className="text-[#0046CE]" />
                           My dashboard
                         </button>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/appointments'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
@@ -188,7 +193,7 @@ export default function Navbar() {
                           My schedule
                         </button>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/articles'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
-                          <PawPrint size={18} className="text-[#0046CE]" />
+                          <BookOpen size={18} className="text-[#0046CE]" />
                           My articles
                         </button>
                       </>
@@ -219,7 +224,7 @@ export default function Navbar() {
                                     {pet.photo ? (
                                       <img src={getPhotoUrl(pet.photo)} alt={pet.name} className="w-full h-full object-cover" />
                                     ) : (
-                                      <span className="text-[10px]">{getPetEmoji(pet.species)}</span>
+                                      <PawPrint size={14} className="text-[#0046CE]" />
                                     )}
                                   </div>
                                   <span className="text-sm font-medium text-[#1E293B]">{pet.name}</span>

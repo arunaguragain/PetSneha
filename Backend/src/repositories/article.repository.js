@@ -15,7 +15,15 @@ async function create(payload) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findAllPublished(filter = {}) {
-  return Article.find({ ...filter, isPublished: true }).sort('-createdAt');
+  const list = await Article.find({ ...filter, isPublished: true })
+    .populate('authorId')
+    .sort('-createdAt');
+  return list.map((doc) => {
+    if (!doc) return doc;
+    const obj = doc.toObject();
+    obj.author = obj.authorId;
+    return obj;
+  });
 }
 
 /**
@@ -24,7 +32,11 @@ async function findAllPublished(filter = {}) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findById(id) {
-  return Article.findById(id);
+  const doc = await Article.findById(id).populate('authorId');
+  if (!doc) return null;
+  const obj = doc.toObject();
+  obj.author = obj.authorId;
+  return obj;
 }
 
 /**
