@@ -115,6 +115,14 @@ export default function App() {
         </Route>
       </Route>
 
+      <Route element={<ProtectedRoute allowedRoles={['petOwner', 'vet']} />}>
+        <Route element={<AuthenticatedLayout />}>
+          <Route path="/forum" element={<ForumPage />} />
+          <Route path="/forum/new" element={<ForumCreatePage />} />
+          <Route path="/forum/:postId" element={<ForumPostPage />} />
+        </Route>
+      </Route>
+
       <Route element={<ProtectedRoute allowedRoles={['petOwner']} />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -132,9 +140,6 @@ export default function App() {
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/new" element={<ArticleCreatePage />} />
           <Route path="/articles/:articleId" element={<ArticleDetailPage />} />
-          <Route path="/forum" element={<ForumPage />} />
-          <Route path="/forum/new" element={<ForumCreatePage />} />
-          <Route path="/forum/:postId" element={<ForumPostPage />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/products/:productId" element={<ProductPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
