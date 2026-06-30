@@ -197,6 +197,7 @@ async function submitArticle(userId, articleData) {
     isPublished: false,
     isVerified: false,
     readTime: articleData.readTime,
+    imageUrl: articleData.imageUrl,
   });
 }
 
