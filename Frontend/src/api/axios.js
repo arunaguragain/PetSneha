@@ -30,14 +30,28 @@ axiosInstance.interceptors.response.use(
 
     if (error?.response?.status === 401 && typeof window !== 'undefined') {
       console.log('401 detected — clearing token and redirecting from:', window.location.pathname);
-      // Only clear token and redirect if we are on a protected page.
-      // Public/auth pages do not need a redirect — it causes a redirect loop.
-      const publicPaths = ['/', '/login', '/vet/login', '/register', '/forgot-password', '/reset-password', '/vets-landing', '/vet/register'];
-      const isPublicPage = publicPaths.some((p) => window.location.pathname === p || window.location.pathname.startsWith('/reset-password/'));
+      // Don't redirect if this is a logout request (which may naturally return 401)
+      const isLogoutRequest = error?.config?.url?.includes('/auth/logout');
+      
+      if (!isLogoutRequest) {
+        // Only clear token and redirect if we are on a protected page.
+        // Public/auth pages do not need a redirect — it causes a redirect loop.
+        const publicPaths = ['/', '/login', '/vet/login', '/register', '/forgot-password', '/reset-password', '/vets-landing', '/vet/register'];
+        const isPublicPage = publicPaths.some((p) => window.location.pathname === p || window.location.pathname.startsWith('/reset-password/'));
 
-      if (!isPublicPage) {
+        if (!isPublicPage) {
+          const role = localStorage.getItem('petsneha_role');
+          localStorage.removeItem('petsneha_token');
+          localStorage.removeItem('petsneha_role');
+          
+          // Redirect to role-specific login page
+          const loginPath = role === 'vet' ? '/vet/login' : '/login';
+          window.location.href = loginPath;
+        }
+      } else {
+        // For logout requests, just clear the token silently
         localStorage.removeItem('petsneha_token');
-        window.location.href = '/login';
+        localStorage.removeItem('petsneha_role');
       }
     }
 
