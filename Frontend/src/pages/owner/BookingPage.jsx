@@ -324,7 +324,7 @@ export default function BookingPage() {
           <div>
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm sticky top-6">
               
-              <img src={vet?.profilePhoto || vet?.imageUrl || '/profile.png'} alt={vet?.name} className="w-full h-20 object-cover rounded-lg bg-[#F1F5F9]" />
+              <img src={getImageUrl(vet?.profilePhoto || vet?.imageUrl)} alt={vet?.name} className="w-full h-20 object-cover rounded-lg bg-[#F1F5F9]" />
               
               <h3 className="font-semibold text-[#1E293B] mt-3">{vet?.name}</h3>
               <p className="text-sm text-[#64748B]">{vet?.specialisation || 'General Practice'}</p>

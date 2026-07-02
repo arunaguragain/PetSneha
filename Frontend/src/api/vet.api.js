@@ -9,4 +9,12 @@ export const cancelAppointment = (id) => axiosInstance.patch(`/appointments/${id
 export const submitReview = (vetId, data) => axiosInstance.post(`/vets/${vetId}/reviews`, data);
 export const saveVet = (vetId) => axiosInstance.patch('/users/me', { savedVetId: vetId });
 export const createVetProfile = (data) => axiosInstance.post('/vets', data);
-export const updateVetProfile = (id, data) => axiosInstance.patch(`/vets/${id}`, data);
+export const updateVetProfile = (id, data) => {
+  // For FormData with file uploads, don't set Content-Type header
+  // Let the browser set it to multipart/form-data
+  const config = {};
+  if (data instanceof FormData) {
+    config.headers = { 'Content-Type': undefined };
+  }
+  return axiosInstance.patch(`/vets/${id}`, data, config);
+};

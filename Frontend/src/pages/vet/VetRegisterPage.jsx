@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock,
+  Eye,
+  EyeOff,
   FileBadge,
   Hospital,
   Info,
@@ -19,12 +21,14 @@ import {
   Stethoscope,
   User,
   Wallet,
+  X,
 } from 'lucide-react';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
-import { isValidEmail } from '../../utils/helpers';
+import { isValidEmail, validatePassword } from '../../utils/helpers';
 import { createVetProfile } from '../../api/vet.api';
+import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
 
 const benefitsList = [
   {
@@ -64,6 +68,8 @@ export default function VetRegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [clinicName, setClinicName] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
@@ -71,6 +77,8 @@ export default function VetRegisterPage() {
   const [consultationFee, setConsultationFee] = useState('');
   const [location, setLocation] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
   const [availableDays, setAvailableDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   const [openTime, setOpenTime] = useState('09:00');
   const [closeTime, setCloseTime] = useState('17:00');
@@ -82,6 +90,18 @@ export default function VetRegisterPage() {
       setAvailableDays(availableDays.filter((d) => d !== day));
     } else {
       setAvailableDays([...availableDays, day]);
+    }
+  };
+
+  const handleProfilePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProfilePhotoPreview(event.target?.result || '');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -100,8 +120,9 @@ export default function VetRegisterPage() {
       nextErrors.phone = 'Enter a valid phone number.';
     }
 
-    if (!password || password.length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.';
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      nextErrors.password = passwordValidation.errors[0];
     }
 
     if (confirmPassword !== password) {
@@ -160,21 +181,36 @@ export default function VetRegisterPage() {
     try {
       await auth.register(name.trim(), email.trim(), password, confirmPassword, 'vet', phone.trim());
 
-      await createVetProfile({
+      const vetData = {
         name: name.trim(),
         clinicName: clinicName.trim(),
         licenseNumber: licenseNumber.trim(),
         specialisation: specialisation.trim(),
         consultationFee: parseInt(consultationFee, 10),
         location: location.trim(),
-        profilePhoto: profilePhoto.trim(),
         availability: {
           days: availableDays,
           openTime: is24Hours ? '00:00' : openTime,
           closeTime: is24Hours ? '23:59' : closeTime,
           is24Hours
         }
-      });
+      };
+
+      // Handle profile photo upload
+      if (profilePhotoFile) {
+        const formData = new FormData();
+        Object.keys(vetData).forEach(key => {
+          if (key === 'availability') {
+            formData.append(key, JSON.stringify(vetData[key]));
+          } else {
+            formData.append(key, vetData[key]);
+          }
+        });
+        formData.append('profilePhoto', profilePhotoFile);
+        await createVetProfile(formData);
+      } else {
+        await createVetProfile(vetData);
+      }
 
       addToast('Registration submitted!', 'success');
       setRegisteredEmail(email.trim());
@@ -339,25 +375,45 @@ export default function VetRegisterPage() {
                   <Input
                     label="Password"
                     required
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     error={errors.password}
                     placeholder="Password"
                     className={compactInputClass}
                     leftIcon={<Lock className={inputIconClass} />}
+                    rightIcon={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((current) => !current)}
+                        className="text-neutral-500 transition hover:text-neutral-700"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    }
                   />
 
                   <Input
                     label="Confirm"
                     required
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     error={errors.confirmPassword}
                     placeholder="Confirm"
                     className={compactInputClass}
                     leftIcon={<ShieldCheck className={inputIconClass} />}
+                    rightIcon={
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((current) => !current)}
+                        className="text-neutral-500 transition hover:text-neutral-700"
+                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    }
                   />
 
                   <InfoBox type="info" className="rounded-xl p-2.5 text-xs">
@@ -454,14 +510,34 @@ export default function VetRegisterPage() {
                     leftIcon={<MapPin className={inputIconClass} />}
                   />
 
-                  <Input
-                    label="Profile Photo URL"
-                    value={profilePhoto}
-                    onChange={(e) => setProfilePhoto(e.target.value)}
-                    placeholder="https://example.com/photo.jpg"
-                    className={compactInputClass}
-                    leftIcon={<User className={inputIconClass} />}
-                  />
+                  <div className="form-group">
+                    <label className="form-label">Profile Photo</label>
+                    <div className="relative">
+                      {profilePhotoPreview && (
+                        <div className="mb-3 relative w-24 h-24 rounded-xl overflow-hidden bg-neutral-100 flex items-center justify-center">
+                          <img src={profilePhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfilePhotoFile(null);
+                              setProfilePhotoPreview('');
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePhotoChange}
+                        className="input"
+                        placeholder="Choose a photo"
+                      />
+                    </div>
+                    <p className="form-hint">Upload a professional photo (JPG, PNG, up to 2MB)</p>
+                  </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-label-lg font-bold text-neutral-800">Available days</label>

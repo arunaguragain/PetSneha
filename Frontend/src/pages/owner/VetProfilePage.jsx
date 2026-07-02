@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap } from 'lucide-react';
 import { openGoogleMapsDirections } from '../../utils/helpers';
 import { useAuth } from '../../hooks/useAuth';
+import { getImageUrl } from '../../utils/imageUrl';
 
 export default function VetProfilePage() {
   const { vetId } = useParams();
@@ -96,7 +97,7 @@ export default function VetProfilePage() {
             <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
               <div className="w-24 h-24 rounded-xl object-cover border-2 border-[#E2E8F0] relative flex-shrink-0 bg-[#F1F5F9]">
                 <img
-                  src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                  src={getImageUrl(vet.profilePhoto || vet.imageUrl)}
                   alt={vet.name}
                   className="w-full h-full rounded-xl object-cover"
                   onError={(e) => { e.currentTarget.src = '/profile.png'; }}
@@ -326,7 +327,7 @@ export default function VetProfilePage() {
             <form className="space-y-4" onSubmit={handleSubmitReview}>
               <div className="flex items-center gap-3 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">
                 <img
-                  src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                  src={getImageUrl(vet.profilePhoto || vet.imageUrl)}
                   alt={vet.name}
                   className="w-10 h-10 rounded-full object-cover bg-[#E2E8F0]"
                   onError={(e) => { e.currentTarget.src = '/profile.png'; }}
