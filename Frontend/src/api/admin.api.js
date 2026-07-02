@@ -16,5 +16,5 @@ export const removePost = (id) => axiosInstance.delete(`/admin/forum/${id}`);
 export const pinPost = (id) => axiosInstance.patch(`/admin/forum/${id}/pin`);
 export const getPendingProducts = () => axiosInstance.get('/admin/products/pending');
 export const approveProduct = (id) => axiosInstance.patch(`/admin/products/${id}/approve`);
-export const rejectProduct = (id) => axiosInstance.patch(`/admin/products/${id}/reject`);
+export const rejectProduct = (id, reason) => axiosInstance.patch(`/admin/products/${id}/reject`, { reason });
 export const getAllOrders = (params) => axiosInstance.get('/admin/orders', { params });
