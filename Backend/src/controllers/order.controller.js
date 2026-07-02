@@ -41,4 +41,20 @@ const cancelOrder = catchAsync(async (req, res) => {
   sendItem(res, 'order', order);
 });
 
-module.exports = { listOrders, getOrder, placeOrder, cancelOrder };
+/**
+ * Gets seller orders.
+ */
+const getSellerOrders = catchAsync(async (req, res) => {
+  const orders = await orderService.getSellerOrders(req.user);
+  sendList(res, orders);
+});
+
+/**
+ * Updates an order's status.
+ */
+const updateOrderStatus = catchAsync(async (req, res) => {
+  const order = await orderService.updateOrderStatus(req.user, req.params.id, req.body.status);
+  sendItem(res, 'order', order);
+});
+
+module.exports = { listOrders, getOrder, placeOrder, cancelOrder, getSellerOrders, updateOrderStatus };

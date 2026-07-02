@@ -6,11 +6,12 @@ const adminRepository = require('../repositories/admin.repository');
  * @returns {Promise}
  */
 async function getAdminDashboard() {
-  const [stats, pendingVets, pendingArticles, reportedPosts] = await Promise.all([
+  const [stats, pendingVets, pendingArticles, reportedPosts, pendingProducts] = await Promise.all([
     adminRepository.getPlatformStats(),
     adminRepository.getPendingVets(),
     adminRepository.getPendingArticles(),
     adminRepository.getReportedPosts(),
+    adminRepository.getPendingProducts(),
   ]);
 
   return {
@@ -18,6 +19,7 @@ async function getAdminDashboard() {
     pendingVetCount: pendingVets.length,
     pendingArticleCount: pendingArticles.length,
     reportedPostCount: reportedPosts.length,
+    pendingProductCount: pendingProducts.length,
   };
 }
 

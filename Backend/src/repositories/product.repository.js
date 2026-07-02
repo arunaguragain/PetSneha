@@ -46,4 +46,13 @@ async function deleteById(id) {
   return Product.findByIdAndDelete(id);
 }
 
-module.exports = { create, findAll, findById, updateById, deleteById };
+/**
+ * Finds products by seller's user ID.
+ * @param {string} userId
+ * @returns {Promise<Array<import('mongoose').Document>>}
+ */
+async function findBySellerUserId(userId) {
+  return Product.find({ sellerId: userId }).sort('-createdAt');
+}
+
+module.exports = { create, findAll, findById, updateById, deleteById, findBySellerUserId };
