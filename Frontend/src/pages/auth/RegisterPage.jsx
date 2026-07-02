@@ -3,7 +3,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
-import { isValidEmail } from '../../utils/helpers';
+import { isValidEmail, validatePassword } from '../../utils/helpers';
+import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
+
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <path fill="#4285F4" d="M21.35 11.1h-9.18v2.95h5.27c-.23 1.27-1 2.35-2.08 3.07v2.55h3.36c1.97-1.81 3.11-4.47 3.11-7.57 0-.74-.07-1.43-.18-2z" />
+      <path fill="#34A853" d="M12.17 22c2.73 0 5.03-.9 6.7-2.43l-3.36-2.55c-.93.62-2.13.99-3.34.99-2.57 0-4.76-1.73-5.54-4.05H3.18v2.62C4.84 19.53 8.22 22 12.17 22z" />
+      <path fill="#FBBC05" d="M6.63 13.96c-.2-.62-.32-1.28-.32-1.96s.12-1.34.32-1.96V7.42H3.18A9.96 9.96 0 0 0 2 12c0 1.62.39 3.15 1.18 4.58l3.45-2.62z" />
+      <path fill="#EA4335" d="M12.17 5.88c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.18 2.9 14.88 2 12.17 2 8.22 2 4.84 4.47 3.18 7.42l3.45 2.62c.78-2.32 2.97-4.16 5.54-4.16z" />
+    </svg>
+  );
+}
+
+function FieldIcon({ src, alt }) {
+  return <img src={src} alt={alt} className="h-5 w-5 object-contain" />;
+}
 
 const featureItems = [
   {
@@ -23,21 +39,6 @@ const featureItems = [
   },
 ];
 
-function FieldIcon({ src, alt }) {
-  return <img src={src} alt={alt} className="h-5 w-5 object-contain" />;
-}
-
-function GoogleMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path fill="#4285F4" d="M21.35 11.1h-9.18v2.95h5.27c-.23 1.27-1 2.35-2.08 3.07v2.55h3.36c1.97-1.81 3.11-4.47 3.11-7.57 0-.74-.07-1.43-.18-2z" />
-      <path fill="#34A853" d="M12.17 22c2.73 0 5.03-.9 6.7-2.43l-3.36-2.55c-.93.62-2.13.99-3.34.99-2.57 0-4.76-1.73-5.54-4.05H3.18v2.62C4.84 19.53 8.22 22 12.17 22z" />
-      <path fill="#FBBC05" d="M6.63 13.96c-.2-.62-.32-1.28-.32-1.96s.12-1.34.32-1.96V7.42H3.18A9.96 9.96 0 0 0 2 12c0 1.62.39 3.15 1.18 4.58l3.45-2.62z" />
-      <path fill="#EA4335" d="M12.17 5.88c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.18 2.9 14.88 2 12.17 2 8.22 2 4.84 4.47 3.18 7.42l3.45 2.62c.78-2.32 2.97-4.16 5.54-4.16z" />
-    </svg>
-  );
-}
-
 export default function RegisterPage() {
   const navigate = useNavigate();
   const auth = useAuth();
@@ -46,6 +47,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agree, setAgree] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
@@ -62,8 +65,9 @@ export default function RegisterPage() {
       nextErrors.email = 'Enter a valid email address.';
     }
 
-    if (!password || password.length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.';
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      nextErrors.password = passwordValidation.errors[0];
     }
 
     if (confirmPassword !== password) {
@@ -187,23 +191,43 @@ export default function RegisterPage() {
                 <Input
                   label="Password"
                   required
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   minLength={8}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   error={fieldErrors.password}
                   placeholder="••••••••"
                   leftIcon={<img src="/lock.png" alt="lock icon" className="w-3 h-4"/>}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      className="text-neutral-500 transition hover:text-neutral-700"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                    </button>
+                  }
                 />
                 <Input
                   label="Confirm"
                   required
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   error={fieldErrors.confirmPassword}
                   placeholder="••••••••"
                   leftIcon={<img src="/shield.png" alt="shield icon" className="w-4 h-4"/>}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((current) => !current)}
+                      className="text-neutral-500 transition hover:text-neutral-700"
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeIcon /> : <EyeOffIcon />}
+                    </button>
+                  }
                 />
               </div>
 
