@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../context/ToastContext';
 import { updateLanguage } from '../api/user.api';
 import { getPets } from '../api/pet.api';
-import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar, LayoutDashboard, BookOpen } from 'lucide-react';
+import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar, LayoutDashboard, BookOpen, ShoppingBag } from 'lucide-react';
 import { getPetEmoji } from '../utils/api';
 
 const navItemsByRole = {
@@ -21,6 +21,7 @@ const navItemsByRole = {
     { label: 'Dashboard', href: '/vet/dashboard' },
     { label: 'Appointments', href: '/vet/appointments' },
     { label: 'Articles', href: '/vet/articles' },
+    { label: 'Products', href: '/vet/products' },
   ],
   admin: [{ label: 'Admin', href: '/admin/dashboard' }],
 };
@@ -95,14 +96,9 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    const wasVet = role === 'vet';
-    logout();
+    const loginPath = logout();
     addToast('You have been signed out', 'success');
-    if (wasVet) {
-      navigate('/vet/login');
-    } else {
-      navigate('/login');
-    }
+    navigate(loginPath);
   };
 
   const getSpeciesBadgeClass = (species) => {
@@ -198,6 +194,10 @@ export default function Navbar() {
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/articles'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <BookOpen size={18} className="text-[#0046CE]" />
                           My articles
+                        </button>
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/products'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                          <ShoppingBag size={18} className="text-[#0046CE]" />
+                          My products
                         </button>
                       </>
                     ) : (

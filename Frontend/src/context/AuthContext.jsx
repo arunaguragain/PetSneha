@@ -6,6 +6,12 @@ export const AuthContext = React.createContext();
 const TOKEN_KEY = 'petsneha_token';
 const ROLE_KEY = 'petsneha_role';
 
+const getLoginPathForRole = (userRole) => {
+  if (userRole === 'admin') return '/admin/login';
+  if (userRole === 'vet') return '/vet/login';
+  return '/login';
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
@@ -92,8 +98,10 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    const loginPath = getLoginPathForRole(role || user?.role || localStorage.getItem(ROLE_KEY));
     void logoutUser();
     clearSession();
+    return loginPath;
   };
 
   const refreshUser = async () => {
@@ -123,6 +131,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
       clearSession,
+      getLoginPathForRole,
       refreshUser,
     }),
     [language, loading, role, token, user],
