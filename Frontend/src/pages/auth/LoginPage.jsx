@@ -20,7 +20,10 @@ export default function LoginPage({ variant = 'owner' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
+  
   const isVetLogin = variant === 'vet';
+  const isAdminLogin = variant === 'admin';
+  
   const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,33 +31,55 @@ export default function LoginPage({ variant = 'owner' }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const theme = isVetLogin
-    ? {
-        panelClass: 'bg-[linear-gradient(135deg,#065F46_0%,#059669_48%,#0046CE_100%)]',
-        buttonClass: 'bg-success text-white hover:bg-success-600',
-        linkClass: 'text-success hover:text-success-600',
-        homePath: '/vets-landing',
-        signupPath: '/vet/register',
-        headline: 'Grow your veterinary practice across Nepal.',
-        copy: 'Access your verified clinic profile, appointments, and patient care tools in one professional workspace.',
-        eyebrow: 'VERIFIED CARE, SIMPLE PRACTICE MANAGEMENT',
-        title: 'Vet Login',
-        subtitle: 'Login to manage appointments, credentials, and your public vet profile.',
-        signupText: 'Register as a vet',
-      }
-    : {
-        panelClass: 'bg-[linear-gradient(135deg,#0046CE_0%,#0037A7_55%,#0052D9_100%)]',
-        buttonClass: 'bg-primary-600 text-white hover:bg-primary-700',
-        linkClass: 'text-primary-600 hover:text-primary-700',
-        homePath: '/',
-        signupPath: '/register',
-        headline: 'Advancing Pet Care Across Nepal.',
-        copy: 'Access elite veterinary experts, digital health records, and premium pet supplies in one professional ecosystem.',
-        eyebrow: 'TRUST & PRECISION IN EVERY INTERACTION',
-        title: 'Welcome Back',
-        subtitle: "Login to manage your pet's health records and appointments.",
-        signupText: 'Create an account',
-      };
+  const themes = {
+    vet: {
+      panelClass: 'bg-[linear-gradient(135deg,#065F46_0%,#059669_48%,#0046CE_100%)]',
+      buttonClass: 'bg-success text-white hover:bg-success-600',
+      linkClass: 'text-success hover:text-success-600',
+      homePath: '/vets-landing',
+      signupPath: '/vet/register',
+      headline: 'Grow your veterinary practice across Nepal.',
+      copy: 'Access your verified clinic profile, appointments, and patient care tools in one professional workspace.',
+      eyebrow: 'VERIFIED CARE, SIMPLE PRACTICE MANAGEMENT',
+      title: 'Vet Login',
+      subtitle: 'Login to manage appointments, credentials, and your public vet profile.',
+      signupText: 'Register as a vet',
+      showSignup: true,
+      showSocial: true,
+    },
+    admin: {
+      panelClass: 'bg-[linear-gradient(135deg,#2E1065_0%,#6D28D9_55%,#4C1D95_100%)]',
+      buttonClass: 'bg-neutral-900 text-white hover:bg-neutral-800',
+      linkClass: 'text-violet-700 hover:text-violet-600',
+      homePath: '/',
+      signupPath: null,
+      headline: 'Platform oversight for PetSneha.',
+      copy: 'Verify vets and products, moderate community content, and manage accounts from a single control panel.',
+      eyebrow: 'RESTRICTED ACCESS · ADMIN ONLY',
+      title: 'Admin Login',
+      subtitle: 'Sign in with an authorized administrator account.',
+      signupText: null,
+      showSignup: false,
+      showSocial: false,
+    },
+    owner: {
+      panelClass: 'bg-[linear-gradient(135deg,#0046CE_0%,#0037A7_55%,#0052D9_100%)]',
+      buttonClass: 'bg-primary-600 text-white hover:bg-primary-700',
+      linkClass: 'text-primary-600 hover:text-primary-700',
+      homePath: '/',
+      signupPath: '/register',
+      headline: 'Advancing Pet Care Across Nepal.',
+      copy: 'Access elite veterinary experts, digital health records, and premium pet supplies in one professional ecosystem.',
+      eyebrow: 'TRUST & PRECISION IN EVERY INTERACTION',
+      title: 'Welcome Back',
+      subtitle: "Login to manage your pet's health records and appointments.",
+      signupText: 'Create an account',
+      showSignup: true,
+      showSocial: true,
+    }
+  };
+
+  const theme = themes[variant] || themes.owner;
 
   const validate = () => {
     const nextErrors = {};
@@ -164,11 +189,13 @@ export default function LoginPage({ variant = 'owner' }) {
                     </button>
                   }
                 />
-                <div className="flex justify-end">
-                  <Link to={isVetLogin ? '/forgot-password?role=vet' : '/forgot-password'} className={`text-xs font-semibold ${theme.linkClass}`}>
-                    Forgot password?
-                  </Link>
-                </div>
+                {!isAdminLogin && (
+                  <div className="flex justify-end">
+                    <Link to={isVetLogin ? '/forgot-password?role=vet' : '/forgot-password'} className={`text-xs font-semibold ${theme.linkClass}`}>
+                      Forgot password?
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
@@ -177,25 +204,35 @@ export default function LoginPage({ variant = 'owner' }) {
                 Login to account
               </Button>
 
-              <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
-                <div className="h-px flex-1 bg-neutral-200" />
-                <span>or continue with</span>
-                <div className="h-px flex-1 bg-neutral-200" />
+              {theme.showSocial && (
+                <>
+                  <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                    <div className="h-px flex-1 bg-neutral-200" />
+                    <span>or continue with</span>
+                    <div className="h-px flex-1 bg-neutral-200" />
+                  </div>
+
+                  <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
+                    <span className="flex items-center gap-2">
+                      <GoogleMark />
+                      Continue with Google
+                    </span>
+                  </Button>
+                </>
+              )}
+
+              <div className="pt-2 text-center text-sm text-neutral-500">
+                {theme.showSignup ? (
+                  <>
+                    Don't have an account?{' '}
+                    <Link to={theme.signupPath} className={`font-semibold ${theme.linkClass}`}>
+                      {theme.signupText}
+                    </Link>
+                  </>
+                ) : (
+                  <p>Admin accounts are provisioned internally and cannot be self-registered.</p>
+                )}
               </div>
-
-              <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
-                <span className="flex items-center gap-2">
-                  <GoogleMark />
-                  Continue with Google
-                </span>
-              </Button>
-
-              <p className="pt-2 text-center text-sm text-neutral-500">
-                Don't have an account?{' '}
-                <Link to={theme.signupPath} className={`font-semibold ${theme.linkClass}`}>
-                  {theme.signupText}
-                </Link>
-              </p>
             </form>
           </div>
         </section>

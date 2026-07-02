@@ -412,6 +412,10 @@ export default function VetLandingPage() {
             <Link to="/" className="text-emerald-400 font-semibold hover:text-emerald-300 transition">
               Looking for a vet? →
             </Link>
+            <span className="text-neutral-700">|</span>
+            <Link to="/admin/login" className="text-neutral-500 font-semibold hover:text-white transition">
+              Admin Panel
+            </Link>
           </div>
         </div>
       </footer>
