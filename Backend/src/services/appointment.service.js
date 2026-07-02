@@ -24,10 +24,11 @@ function toTimeString(totalMinutes) {
 
 function buildSlots(vet, date, bookedAppointments) {
   const bookedSlots = new Set(bookedAppointments.map((appointment) => appointment.timeSlot));
-  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Asia/Kathmandu' }).format(new Date(date)).toLowerCase();
+  const dayNameLong = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Asia/Kathmandu' }).format(new Date(date)).toLowerCase();
+  const dayNameShort = dayNameLong.substring(0, 3);
   const allowedDays = (vet.availability?.days || []).map((day) => day.toLowerCase());
 
-  if (!vet.availability?.is24Hours && allowedDays.length > 0 && !allowedDays.includes(dayName)) {
+  if (!vet.availability?.is24Hours && allowedDays.length > 0 && !allowedDays.includes(dayNameLong) && !allowedDays.includes(dayNameShort)) {
     return [];
   }
 
@@ -105,7 +106,7 @@ async function bookAppointment(currentUser, payload) {
     petId: pet._id,
     date,
     timeSlot: payload.timeSlot,
-    status: 'confirmed',
+    status: 'pending',
     fee: vet.consultationFee,
     notes: payload.notes,
   });
@@ -114,10 +115,88 @@ async function bookAppointment(currentUser, payload) {
     const user = await userRepository.findById(currentUser.id);
     const appointmentPayload = appointment.toObject();
     appointmentPayload.petName = pet.name;
-    await notificationService.sendBookingConfirmationEmail(user, appointmentPayload, vet);
-    await appointmentRepository.updateById(appointment._id, { confirmationEmailSent: true });
+
+    await notificationService.sendBookingRequestReceivedEmail(user, appointmentPayload, vet);
+    await notificationService.sendNewBookingRequestEmail(vet, appointmentPayload, user, pet);
   } catch (error) {
-    // Booking succeeds even if the email provider is temporarily unavailable.
+    console.error('Failed to send booking request emails:', error.message);
+  }
+
+  return appointment;
+}
+
+async function getAppointmentById(currentUser, appointmentId) {
+  const appointment = await appointmentRepository.findById(appointmentId);
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
+
+  if (currentUser.role !== 'admin') {
+    if (currentUser.role === 'vet') {
+      const vet = await vetRepository.findByUserId(currentUser.id);
+      if (!vet || appointment.vetId.toString() !== vet._id.toString()) {
+        throw new AppError('You do not have access to this appointment.', 403);
+      }
+    } else if (appointment.petOwnerId.toString() !== currentUser.id) {
+      throw new AppError('You can only view your own appointments.', 403);
+    }
+  }
+
+  return appointment;
+}
+
+/**
+ * Cancels an appointment.
+ * @param {{ id: string, role: string }} currentUser
+ * @param {string} appointmentId
+ * @returns {Promise<object>}
+ */
+async function cancelAppointment(currentUser, appointmentId) {
+  const appointment = await appointmentRepository.findById(appointmentId);
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
+
+  if (currentUser.role !== 'admin' && appointment.petOwnerId.toString() !== currentUser.id) {
+    throw new AppError('You can only cancel your own appointments.', 403);
+  }
+
+  const updated = await appointmentRepository.updateById(appointmentId, { status: 'cancelled' });
+  const pet = await petRepository.findById(appointment.petId);
+  const vet = await vetRepository.findById(appointment.vetId);
+  const user = await userRepository.findById(appointment.petOwnerId);
+
+  const appointmentPayload = updated.toObject();
+  appointmentPayload.petName = pet?.name || appointment.petName;
+  appointmentPayload.vetName = vet?.name;
+  appointmentPayload.pet = pet;
+  appointmentPayload.vet = vet;
+
+  try {
+    await notificationService.sendAppointmentCancelledEmail(user, appointmentPayload, false);
+    await notificationService.sendAppointmentCancelledEmail(vet, appointmentPayload, true);
+  } catch (error) {
+    console.error('Failed to send appointment cancellation emails:', error.message);
+  }
+
+  return updated;
+}
+
+async function getAppointmentById(currentUser, appointmentId) {
+  const appointment = await appointmentRepository.findById(appointmentId);
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
+
+  if (currentUser.role !== 'admin') {
+    if (currentUser.role === 'vet') {
+      const vet = await vetRepository.findByUserId(currentUser.id);
+      if (!vet || appointment.vetId.toString() !== vet._id.toString()) {
+        throw new AppError('You do not have access to this appointment.', 403);
+      }
+    } else if (appointment.petOwnerId.toString() !== currentUser.id) {
+      throw new AppError('You can only view your own appointments.', 403);
+    }
   }
 
   return appointment;
@@ -160,24 +239,6 @@ async function rescheduleAppointment(currentUser, appointmentId, payload) {
   });
 }
 
-/**
- * Cancels an appointment.
- * @param {{ id: string, role: string }} currentUser
- * @param {string} appointmentId
- * @returns {Promise<object>}
- */
-async function cancelAppointment(currentUser, appointmentId) {
-  const appointment = await appointmentRepository.findById(appointmentId);
-  if (!appointment) {
-    throw new AppError('Appointment not found.', 404);
-  }
-
-  if (currentUser.role !== 'admin' && appointment.petOwnerId.toString() !== currentUser.id) {
-    throw new AppError('You can only cancel your own appointments.', 403);
-  }
-
-  return appointmentRepository.updateById(appointmentId, { status: 'cancelled' });
-}
 
 /**
  * Marks an appointment complete.
@@ -222,11 +283,50 @@ async function getAvailableSlots(vetId, dateValue) {
   return buildSlots(vet, date, bookedAppointments);
 }
 
+/**
+ * Confirms an appointment.
+ * @param {{ id: string, role: string }} currentUser
+ * @param {string} appointmentId
+ * @returns {Promise<object>}
+ */
+async function confirmAppointment(currentUser, appointmentId) {
+  if (!['vet', 'admin'].includes(currentUser.role)) {
+    throw new AppError('Only vets can confirm appointments.', 403);
+  }
+
+  const appointment = await appointmentRepository.findById(appointmentId);
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
+
+  if (currentUser.role === 'vet') {
+    const vet = await resolveVetProfile(currentUser);
+    if (appointment.vetId.toString() !== vet._id.toString()) {
+      throw new AppError('You can only confirm your own appointments.', 403);
+    }
+  }
+
+  const updated = await appointmentRepository.updateById(appointmentId, { status: 'confirmed' });
+
+  try {
+    const user = await userRepository.findById(updated.petOwnerId);
+    const pet = await petRepository.findById(updated.petId);
+    const vet = await vetRepository.findById(updated.vetId);
+    await notificationService.sendBookingConfirmationEmail(user, updated, vet, pet);
+  } catch (err) {
+    console.error('Failed to send booking confirmation email:', err.message);
+  }
+
+  return updated;
+}
+
 module.exports = {
   listAppointments,
   bookAppointment,
+  getAppointmentById,
   rescheduleAppointment,
   cancelAppointment,
   completeAppointment,
+  confirmAppointment,
   getAvailableSlots,
 };

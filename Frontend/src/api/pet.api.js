@@ -9,7 +9,17 @@ export const createPet = (formData) =>
     },
     transformRequest: (data) => data, // Prevent Axios from stringifying FormData
   });
-export const updatePet = (id, data) => axiosInstance.patch(`/pets/${id}`, data);
+export const updatePet = (id, data) => {
+  if (data instanceof FormData) {
+    return axiosInstance.patch(`/pets/${id}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      transformRequest: (d) => d,
+    });
+  }
+  return axiosInstance.patch(`/pets/${id}`, data);
+};
 export const deletePet = (id) => axiosInstance.delete(`/pets/${id}`);
 export const getHealthRecords = (petId) => axiosInstance.get(`/pets/${petId}/records`);
 export const createHealthRecord = (petId, data) => axiosInstance.post(`/pets/${petId}/records`, data);

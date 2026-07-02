@@ -29,7 +29,12 @@ const getProduct = catchAsync(async (req, res) => {
  * Creates a product.
  */
 const createProduct = catchAsync(async (req, res) => {
-  const product = await productService.createProduct(req.user, req.body);
+  let images = req.body.images;
+  if (req.files && req.files.length > 0) {
+    images = req.files.map(file => `/uploads/products/${file.filename}`);
+  }
+  const payload = { ...req.body, images };
+  const product = await productService.createProduct(req.user, payload, req.files);
   sendItem(res, 'product', product, 201);
 });
 
@@ -37,7 +42,12 @@ const createProduct = catchAsync(async (req, res) => {
  * Updates a product.
  */
 const updateProduct = catchAsync(async (req, res) => {
-  const product = await productService.updateProduct(req.user, req.params.id, req.body);
+  let images = req.body.images;
+  if (req.files && req.files.length > 0) {
+    images = req.files.map(file => `/uploads/products/${file.filename}`);
+  }
+  const payload = { ...req.body, images };
+  const product = await productService.updateProduct(req.user, req.params.id, payload, req.files);
   sendItem(res, 'product', product);
 });
 
@@ -49,4 +59,12 @@ const deleteProduct = catchAsync(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { listProducts, getProduct, createProduct, updateProduct, deleteProduct };
+/**
+ * Gets products for the currently logged-in vet.
+ */
+const getMyProducts = catchAsync(async (req, res) => {
+  const products = await productService.getMyProducts(req.user);
+  sendList(res, products);
+});
+
+module.exports = { listProducts, getProduct, createProduct, updateProduct, deleteProduct, getMyProducts };

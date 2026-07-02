@@ -28,7 +28,18 @@ async function findAppointmentsByVetId(vetId, filters = {}) {
     };
   }
 
-  return Appointment.find(query).sort({ date: 1, timeSlot: 1 });
+  const list = await Appointment.find(query)
+    .populate('petId')
+    .populate('petOwnerId')
+    .sort({ date: 1, timeSlot: 1 });
+
+  return list.map((appt) => {
+    const obj = appt.toObject();
+    obj.pet = obj.petId;
+    obj.owner = obj.petOwnerId;
+    obj.user = obj.petOwnerId;
+    return obj;
+  });
 }
 
 /**
@@ -38,7 +49,15 @@ async function findAppointmentsByVetId(vetId, filters = {}) {
  * @returns {Promise}
  */
 async function findAppointmentByIdAndVet(appointmentId, vetId) {
-  return Appointment.findOne({ _id: appointmentId, vetId });
+  const appt = await Appointment.findOne({ _id: appointmentId, vetId })
+    .populate('petId')
+    .populate('petOwnerId');
+  if (!appt) return null;
+  const obj = appt.toObject();
+  obj.pet = obj.petId;
+  obj.owner = obj.petOwnerId;
+  obj.user = obj.petOwnerId;
+  return obj;
 }
 
 /**
@@ -63,7 +82,10 @@ async function updateAppointmentStatus(appointmentId, status, notes) {
  * @returns {Promise}
  */
 async function findVetByUserId(userId) {
-  return Vet.findOne({ userId });
+  return Vet.findOne({ userId }).populate({
+    path: 'reviews.authorId',
+    select: 'name email photo'
+  });
 }
 
 /**

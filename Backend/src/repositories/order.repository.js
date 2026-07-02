@@ -1,4 +1,5 @@
 const Order = require('../models/order.model');
+const Product = require('../models/product.model');
 
 /**
  * Creates an order.
@@ -16,6 +17,17 @@ async function create(payload) {
  */
 async function findByUserId(userId) {
   return Order.find({ userId }).sort('-createdAt');
+}
+
+/**
+ * Finds orders containing products sold by the given seller.
+ * @param {string} sellerId
+ * @returns {Promise<Array<import('mongoose').Document>>}
+ */
+async function findBySellerId(sellerId) {
+  const products = await Product.find({ sellerId }).select('_id');
+  const productIds = products.map(p => p._id);
+  return Order.find({ 'items.productId': { $in: productIds } }).sort('-createdAt');
 }
 
 /**
@@ -63,4 +75,4 @@ async function deleteManyByUserId(userId) {
   return Order.deleteMany({ userId });
 }
 
-module.exports = { create, findByUserId, findAll, findById, updateById, deleteById, deleteManyByUserId };
+module.exports = { create, findByUserId, findBySellerId, findAll, findById, updateById, deleteById, deleteManyByUserId };

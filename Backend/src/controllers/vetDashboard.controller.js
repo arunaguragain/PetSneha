@@ -61,7 +61,11 @@ const toggleOpenStatus = catchAsync(async (req, res) => {
  * Submit article.
  */
 const submitArticle = catchAsync(async (req, res) => {
-  const data = await vetDashboardService.submitArticle(getUserId(req), req.body);
+  const payload = {
+    ...req.body,
+    imageUrl: req.file ? `/uploads/articles/${req.file.filename}` : undefined
+  };
+  const data = await vetDashboardService.submitArticle(getUserId(req), payload);
   sendItem(res, data, 201);
 });
 

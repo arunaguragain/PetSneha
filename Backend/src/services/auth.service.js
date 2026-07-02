@@ -22,13 +22,16 @@ async function register(payload) {
     throw new AppError('Email already exists.', 409);
   }
 
+  const allowedRoles = ['petOwner', 'vet'];
+  const role = allowedRoles.includes(payload.role) ? payload.role : 'petOwner';
+
   const password = await bcrypt.hash(payload.password, 12);
   const user = await userRepository.create({
     name: payload.name,
     email: payload.email,
     password,
     phone: payload.phone,
-    role: 'petOwner',
+    role,
   });
 
   return { token: generateToken(user), user: toPublicUser(user) };
@@ -62,7 +65,15 @@ async function forgotPassword(payload) {
   const user = await userRepository.findByEmail(payload.email);
   if (user) {
     const token = jwt.sign({ id: user._id, purpose: 'reset' }, process.env.JWT_SECRET, { expiresIn: '15m' });
-    await notificationService.sendPasswordResetEmail(user, token);
+    try {
+      await notificationService.sendPasswordResetEmail(user, token);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError.message);
+      throw new AppError(
+        'We could not send the reset email right now. Please try again in a few minutes.',
+        503
+      );
+    }
   }
 
   return { message: 'If the email exists, a reset link has been sent.' };

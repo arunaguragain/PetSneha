@@ -1,5 +1,6 @@
 const catchAsync = require('../utils/catchAsync');
 const vetService = require('../services/vet.service');
+const vetDashboardService = require('../services/vetDashboard.service');
 
 function sendList(res, items) {
   return res.status(200).json({ status: 'success', results: items.length, data: { items } });
@@ -45,7 +46,53 @@ const registerVet = catchAsync(async (req, res) => {
  * Updates a vet profile.
  */
 const updateVetProfile = catchAsync(async (req, res) => {
-  const vet = await vetService.updateVetProfile(req.user, req.params.id, req.body);
+  // Log incoming data for debugging
+  console.log('Received update request with fields:', Object.keys(req.body));
+  Object.keys(req.body).forEach(key => {
+    const value = req.body[key];
+    if (typeof value === 'string') {
+      console.log(`  ${key}: ${value.length} chars`);
+    } else if (typeof value === 'object') {
+      console.log(`  ${key}: object`);
+    }
+  });
+
+  const updateData = {};
+  
+  // Whitelist and sanitize fields
+  const allowedFields = ['name', 'specialisation', 'clinicName', 'location', 'yearsExperience', 'consultationFee', 'bio', 'availability', 'isOpenNow'];
+  
+  allowedFields.forEach(field => {
+    if (field in req.body) {
+      let value = req.body[field];
+      
+      // Truncate string fields to reasonable lengths
+      if (typeof value === 'string') {
+        const maxLengths = {
+          name: 100,
+          specialisation: 100,
+          clinicName: 150,
+          location: 150,
+          bio: 500,
+        };
+        const maxLen = maxLengths[field];
+        if (maxLen && value.length > maxLen) {
+          console.log(`Truncating ${field} from ${value.length} to ${maxLen} chars`);
+          value = value.substring(0, maxLen);
+        }
+      }
+      
+      updateData[field] = value;
+    }
+  });
+  
+  // Handle file upload
+  if (req.file) {
+    updateData.profilePhoto = `/uploads/vets/${req.file.filename}`;
+  }
+  
+  console.log('Final update data fields:', Object.keys(updateData));
+  const vet = await vetService.updateVetProfile(req.user, req.params.id, updateData);
   sendItem(res, 'vet', vet);
 });
 
@@ -81,6 +128,14 @@ const getReviews = catchAsync(async (req, res) => {
   sendList(res, reviews);
 });
 
+/**
+ * Reply to a review.
+ */
+const replyToReview = catchAsync(async (req, res) => {
+  const updatedVet = await vetDashboardService.replyToReview(req.user.id, req.params.reviewId, req.body.reply);
+  sendItem(res, 'vet', updatedVet);
+});
+
 module.exports = {
   listVets,
   getVet,
@@ -91,4 +146,5 @@ module.exports = {
   verifyVet,
   submitReview,
   getReviews,
+  replyToReview,
 };

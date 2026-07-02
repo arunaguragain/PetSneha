@@ -3,6 +3,9 @@ const vetDashboardRepository = require('../repositories/vetDashboard.repository'
 const healthRecordRepository = require('../repositories/healthRecord.repository');
 const articleRepository = require('../repositories/article.repository');
 const vetRepository = require('../repositories/vet.repository');
+const userRepository = require('../repositories/user.repository');
+const petRepository = require('../repositories/pet.repository');
+const notificationService = require('./notification.service');
 
 function startOfDay(date = new Date()) {
   const value = new Date(date);
@@ -72,7 +75,21 @@ async function confirmAppointment(userId, appointmentId) {
     throw new AppError('Only pending appointments can be confirmed.', 400);
   }
 
-  return vetDashboardRepository.updateAppointmentStatus(appointmentId, 'confirmed', appointment.notes);
+  const updated = await vetDashboardRepository.updateAppointmentStatus(appointmentId, 'confirmed', appointment.notes);
+
+  // Fetch details and send confirmation email
+  const user = await userRepository.findById(updated.petOwnerId);
+  const pet = await petRepository.findById(updated.petId);
+
+  try {
+    await notificationService.sendBookingConfirmationEmail(user, updated, vet, pet);
+    updated.confirmationEmailSent = true;
+    await updated.save();
+  } catch (emailError) {
+    console.error('Failed to send booking confirmation email:', emailError.message);
+  }
+
+  return updated;
 }
 
 /**
@@ -131,7 +148,24 @@ async function vetCancelAppointment(userId, appointmentId, reason) {
     throw new AppError('This appointment cannot be cancelled.', 400);
   }
 
-  return vetDashboardRepository.updateAppointmentStatus(appointmentId, 'cancelled', reason || appointment.notes);
+  const updated = await vetDashboardRepository.updateAppointmentStatus(appointmentId, 'cancelled', reason || appointment.notes);
+  const user = await userRepository.findById(updated.petOwnerId);
+  const pet = await petRepository.findById(updated.petId);
+
+  const appointmentPayload = updated.toObject();
+  appointmentPayload.petName = pet?.name;
+  appointmentPayload.vetName = vet?.name;
+  appointmentPayload.pet = pet;
+  appointmentPayload.vet = vet;
+
+  try {
+    await notificationService.sendAppointmentCancelledEmail(user, appointmentPayload, false);
+    await notificationService.sendAppointmentCancelledEmail(vet, appointmentPayload, true);
+  } catch (error) {
+    console.error('Failed to send appointment cancellation emails:', error.message);
+  }
+
+  return updated;
 }
 
 /**
@@ -163,6 +197,7 @@ async function submitArticle(userId, articleData) {
     isPublished: false,
     isVerified: false,
     readTime: articleData.readTime,
+    imageUrl: articleData.imageUrl,
   });
 }
 
