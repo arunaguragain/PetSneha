@@ -43,7 +43,20 @@ async function findByUserId(userId) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function updateById(id, payload) {
-  return Vet.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+  try {
+    console.log('Repository updateById called with fields:', Object.keys(payload));
+    const result = await Vet.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+    console.log('Repository updateById succeeded');
+    return result;
+  } catch (err) {
+    console.error('Repository updateById error:', err.message);
+    if (err.errors) {
+      Object.entries(err.errors).forEach(([field, error]) => {
+        console.error(`  Field "${field}": ${error.message}`);
+      });
+    }
+    throw err;
+  }
 }
 
 /**

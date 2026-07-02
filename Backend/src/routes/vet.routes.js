@@ -3,6 +3,7 @@ const { body, param, query } = require('express-validator');
 const vetController = require('../controllers/vet.controller');
 const { protect, restrictTo } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validate.middleware');
+const { vetUpload, parseFormFields } = require('../middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.patch('/:id/status', [param('id').isMongoId().withMessage('Valid vet ID i
 
 router.patch('/:id/verify', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, restrictTo('admin'), validateRequest, vetController.verifyVet);
 
-router.patch('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, validateRequest, vetController.updateVetProfile);
+router.patch('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, vetUpload.single('profilePicture'), parseFormFields, validateRequest, vetController.updateVetProfile);
 
 router.get('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], validateRequest, vetController.getVet);
 
