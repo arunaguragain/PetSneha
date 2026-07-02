@@ -136,4 +136,50 @@ async function cancelOrder(currentUser, orderId) {
   return orderRepository.updateById(orderId, { status: 'cancelled' });
 }
 
-module.exports = { listOrders, getOrder, placeOrder, cancelOrder };
+/**
+ * Returns orders for the current vet.
+ * @param {{ id: string, role: string }} currentUser
+ * @returns {Promise<Array<object>>}
+ */
+async function getSellerOrders(currentUser) {
+  if (currentUser.role !== 'vet' && currentUser.role !== 'admin') {
+    throw new AppError('Only vets and admins can access seller orders.', 403);
+  }
+  
+  if (currentUser.role === 'admin') {
+    return orderRepository.findAll();
+  }
+  
+  return orderRepository.findBySellerId(currentUser.id);
+}
+
+/**
+ * Updates the status of an order.
+ * @param {{ id: string, role: string }} currentUser
+ * @param {string} orderId
+ * @param {string} status
+ * @returns {Promise<object>}
+ */
+async function updateOrderStatus(currentUser, orderId, status) {
+  const order = await orderRepository.findById(orderId);
+  if (!order) {
+    throw new AppError('Order not found.', 404);
+  }
+
+  if (currentUser.role !== 'admin') {
+    if (currentUser.role !== 'vet') {
+      throw new AppError('Only vets and admins can update order status.', 403);
+    }
+    
+    // Check if vet owns any items in this order
+    const sellerOrders = await orderRepository.findBySellerId(currentUser.id);
+    const hasAccess = sellerOrders.some(o => o._id.toString() === orderId);
+    if (!hasAccess) {
+      throw new AppError('You do not have access to this order.', 403);
+    }
+  }
+
+  return orderRepository.updateById(orderId, { status });
+}
+
+module.exports = { listOrders, getOrder, placeOrder, cancelOrder, getSellerOrders, updateOrderStatus };

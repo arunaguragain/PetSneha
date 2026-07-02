@@ -21,13 +21,16 @@ if (!productSchemaPath) {
  * @returns {Promise}
  */
 async function getPlatformStats() {
-  const [petOwners, vets, admins, totalVets, verifiedVets, pendingVets, appointments, orders, articles, forumPosts] = await Promise.all([
+  const [petOwners, vets, admins, totalVets, verifiedVets, pendingVets, totalProducts, verifiedProducts, pendingProducts, appointments, orders, articles, forumPosts] = await Promise.all([
     User.countDocuments({ role: 'petOwner' }),
     User.countDocuments({ role: 'vet' }),
     User.countDocuments({ role: 'admin' }),
     Vet.countDocuments(),
     Vet.countDocuments({ isVerified: true }),
     Vet.countDocuments({ isVerified: false }),
+    Product.countDocuments(),
+    Product.countDocuments({ isVerifiedSeller: true }),
+    Product.countDocuments({ isVerifiedSeller: false }),
     Appointment.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Article.aggregate([{ $group: { _id: '$isPublished', count: { $sum: 1 } } }]),
@@ -37,6 +40,7 @@ async function getPlatformStats() {
   return {
     users: { petOwners, vets, admins },
     vets: { total: totalVets, verified: verifiedVets, pending: pendingVets },
+    products: { total: totalProducts, verified: verifiedProducts, pending: pendingProducts },
     appointments: appointments.reduce((accumulator, item) => ({ ...accumulator, [item._id || 'unknown']: item.count }), {}),
     orders: orders.reduce((accumulator, item) => ({ ...accumulator, [item._id || 'unknown']: item.count }), {}),
     articles: articles.reduce(
