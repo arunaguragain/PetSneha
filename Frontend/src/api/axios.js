@@ -45,7 +45,7 @@ axiosInstance.interceptors.response.use(
           localStorage.removeItem('petsneha_role');
           
           // Redirect to role-specific login page
-          const loginPath = role === 'vet' ? '/vet/login' : '/login';
+          const loginPath = role === 'admin' ? '/admin/login' : role === 'vet' ? '/vet/login' : '/login';
           window.location.href = loginPath;
         }
       } else {
