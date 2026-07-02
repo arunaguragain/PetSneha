@@ -29,7 +29,9 @@ const getPhotoUrl = (photoSrc) => {
   if (!photoSrc) return '';
   if (photoSrc.startsWith('http')) return photoSrc;
   const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5050/api').replace('/api', '');
-  return `${baseUrl}${photoSrc}`;
+  // Add cache busting parameter to force fresh image
+  const timestamp = Math.floor(Date.now() / 60000); // Changes every minute
+  return `${baseUrl}${photoSrc}?t=${timestamp}`;
 };
 
 export default function Navbar() {
@@ -97,7 +99,7 @@ export default function Navbar() {
     logout();
     addToast('You have been signed out', 'success');
     if (wasVet) {
-      navigate('/vets-landing');
+      navigate('/vet/login');
     } else {
       navigate('/login');
     }
@@ -125,6 +127,7 @@ export default function Navbar() {
             <NavLink
               key={item.label}
               to={item.href}
+              end
               className={({ isActive }) =>
                 `text-sm font-semibold transition-all h-[64px] flex items-center border-b-[3px] ${
                   isActive
