@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { isValidEmail } from '../../utils/helpers';
+import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
 
 function GoogleMark() {
   return (
@@ -11,25 +12,6 @@ function GoogleMark() {
       <path fill="#34A853" d="M12.17 22c2.73 0 5.03-.9 6.7-2.43l-3.36-2.55c-.93.62-2.13.99-3.34.99-2.57 0-4.76-1.73-5.54-4.05H3.18v2.62C4.84 19.53 8.22 22 12.17 22z" />
       <path fill="#FBBC05" d="M6.63 13.96c-.2-.62-.32-1.28-.32-1.96s.12-1.34.32-1.96V7.42H3.18A9.96 9.96 0 0 0 2 12c0 1.62.39 3.15 1.18 4.58l3.45-2.62z" />
       <path fill="#EA4335" d="M12.17 5.88c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.18 2.9 14.88 2 12.17 2 8.22 2 4.84 4.47 3.18 7.42l3.45 2.62c.78-2.32 2.97-4.16 5.54-4.16z" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
-      <path d="M2 12C3.8 7 7.7 4 12 4C16.3 4 20.2 7 22 12C20.2 17 16.3 20 12 20C7.7 20 3.8 17 2 12Z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
-      <path d="M3 3L21 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M2 12C3.8 7 7.7 4 12 4C16.3 4 20.2 7 22 12C21.4 13.6 20.5 15 19.4 16.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10.5 10.5C10.2 10.9 10 11.4 10 12C10 13.1 10.9 14 12 14C12.6 14 13.1 13.8 13.5 13.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

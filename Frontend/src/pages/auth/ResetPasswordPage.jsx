@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button, Card, IconBox, Input, InfoBox } from '../../components/ui';
 import { resetPassword } from '../../api/auth.api';
+import { validatePassword } from '../../utils/helpers';
+import { EyeIcon, EyeOffIcon } from '../../components/PasswordToggle';
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
@@ -9,6 +11,8 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -30,9 +34,13 @@ export default function ResetPasswordPage() {
   const iconClass = isVetFlow ? 'mx-auto bg-success-50 text-success-700' : 'mx-auto bg-primary-50 text-primary-600';
 
   const validate = () => {
-    if (!password) return 'Password is required.';
-    if (password.length < 8) return 'Password must be at least 8 characters.';
-    if (password !== confirmPassword) return 'Passwords do not match.';
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return passwordValidation.errors[0];
+    }
+    if (password !== confirmPassword) {
+      return 'Passwords do not match.';
+    }
     return '';
   };
 
@@ -94,8 +102,40 @@ export default function ResetPasswordPage() {
 
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
 
-              <Input label="New password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter a new password" />
-              <Input label="Confirm password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm your password" />
+              <Input
+                label="New password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter a new password"
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="text-neutral-500 transition hover:text-neutral-700"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                }
+              />
+              <Input
+                label="Confirm password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Confirm your password"
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((current) => !current)}
+                    className="text-neutral-500 transition hover:text-neutral-700"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                }
+              />
 
               <Button type="submit" fullWidth loading={loading} className={isVetFlow ? 'bg-success text-white hover:bg-success-600' : ''}>
                 Reset password
