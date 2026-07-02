@@ -51,34 +51,32 @@ const productUpload = createUploader('products');
 const articleUpload = createUploader('articles');
 const vetUpload = createUploader('vets');
 
-// Middleware to parse form fields after multer processes the file
+// Middleware to clean up form fields after multer processes the multipart upload.
+// multer populates req.files with actual file objects; req.body contains all non-file fields.
+// Any "images" key in req.body is always garbage (a mangled FileList or empty object)
+// because the real image data lives in req.files — so we delete it here.
 function parseFormFields(req, res, next) {
-  console.log('parseFormFields called');
-  console.log('req.body keys:', Object.keys(req.body));
+  // Remove any stray images field from body — multer already handled files in req.files
+  delete req.body.images;
+
+  // Selectively parse JSON for known array fields (e.g. petType sent as multiple values)
+  // multer already correctly handles repeated fields as arrays, so this is mostly a no-op
+  // but we sanitize string fields just in case
   Object.keys(req.body).forEach(key => {
     const val = req.body[key];
     if (typeof val === 'string') {
-      console.log(`  ${key}: ${val.length} chars`);
-    } else if (typeof val === 'object') {
-      console.log(`  ${key}: object`);
-    }
-  });
-  
-  // Multer already populated req.body with non-file fields
-  // Parse any stringified JSON fields
-  Object.keys(req.body).forEach(key => {
-    if (typeof req.body[key] === 'string') {
       try {
-        // Try to parse as JSON if it looks like JSON
-        if (req.body[key].startsWith('{') || req.body[key].startsWith('[')) {
-          req.body[key] = JSON.parse(req.body[key]);
+        // Only parse if it looks like a JSON array/object AND the key is a known safe field
+        const safeJsonKeys = ['petType', 'tags'];
+        if (safeJsonKeys.includes(key) && (val.startsWith('{') || val.startsWith('['))) {
+          req.body[key] = JSON.parse(val);
         }
       } catch (err) {
-        // Not JSON, leave as is
+        // Not valid JSON, leave as string
       }
     }
   });
-  console.log('parseFormFields completed');
+
   next();
 }
 
