@@ -128,7 +128,27 @@ async function updateVetProfile(currentUser, vetId, payload) {
     throw new AppError('You can only update your own vet profile.', 403);
   }
 
-  return vetRepository.updateById(vetId, payload);
+  try {
+    const updated = await vetRepository.updateById(vetId, payload);
+
+    // Sync profile photo to user model if uploaded
+    if (payload.profilePhoto && vet.userId) {
+      try {
+        await userRepository.updateById(vet.userId, { photo: payload.profilePhoto });
+      } catch (err) {
+        console.error('Failed to sync photo to user model:', err);
+        // Don't throw error - profile was updated successfully
+      }
+    }
+
+    return updated;
+  } catch (err) {
+    console.error('Error updating vet profile:', err);
+    if (err.message && err.message.includes('too long')) {
+      throw new AppError('One or more fields contain too much data. Please reduce the length of your input.', 400);
+    }
+    throw err;
+  }
 }
 
 /**
