@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Input, Skeleton, VerifiedBadge } from '../../components/ui';
 import { getVets, saveVet } from '../../api/vet.api';
 import { getErrorMessage, formatCurrency, unwrapItems } from '../../utils/api';
+import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
 import { setSavedVet } from '../../utils/ownerState';
 import { Search, MapPin, Receipt, PawPrint, Heart, Star, Check, CheckCircle2, Wallet } from 'lucide-react';
@@ -142,7 +143,7 @@ export default function VetDirectoryPage() {
                   {/* Top row */}
                   <div className="flex items-start gap-3">
                     <img
-                      src={vet.profilePhoto || vet.imageUrl || '/profile.png'}
+                      src={getImageUrl(vet.profilePhoto || vet.imageUrl)}
                       alt={vet.name}
                       className="w-16 h-16 rounded-xl object-cover bg-[#F1F5F9]"
                       onError={(e) => { e.currentTarget.src = '/profile.png'; }}

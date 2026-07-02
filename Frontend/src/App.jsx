@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import VetLayout from './components/VetLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Card, PageHeader } from './components/ui';
 import { getPets } from './api/pet.api';
@@ -147,7 +148,7 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['vet']} />}>
-        <Route element={<AuthenticatedLayout />}>
+        <Route element={<VetLayout />}>
           <Route path="/vet/dashboard" element={<VetDashboardPage />} />
           <Route path="/vet/appointments" element={<VetAppointmentsPage />} />
           <Route path="/vet/articles" element={<VetArticlesPage />} />

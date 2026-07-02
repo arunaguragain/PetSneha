@@ -54,13 +54,16 @@ import {
 import { getForumPosts, addForumAnswer } from '../../api/content.api';
 import { updateVetProfile } from '../../api/vet.api';
 import { getErrorMessage, formatDate } from '../../utils/api';
+import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   
   // Navigation & UI States
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -92,6 +95,10 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     prescriptions: [{ medicine: '', dosage: '', duration: '' }]
   });
   const [submittingRecord, setSubmittingRecord] = useState(false);
+
+  // Cancellation modal states
+  const [cancellingAppointmentId, setCancellingAppointmentId] = useState(null);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   // Dynamic Notifications Feed computed from appointments
   const notifications = useMemo(() => {
@@ -136,6 +143,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     }
   });
   const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(null);
 
   // Calendar States
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -204,15 +213,31 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   };
 
   const handleCancel = async (id) => {
-    const reason = window.prompt('Please enter cancellation reason:');
-    if (reason === null) return;
+    setCancellingAppointmentId(id);
+    setCancellationReason('');
+  };
+
+  const handleConfirmCancellation = async () => {
+    if (!cancellationReason.trim()) {
+      addToast('Please provide a cancellation reason', 'danger');
+      return;
+    }
+    
     try {
-      await vetCancelAppointment(id, reason || 'Cancelled by vet');
+      await vetCancelAppointment(cancellingAppointmentId, cancellationReason);
       addToast('Appointment cancelled successfully', 'success');
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setCancellingAppointmentId(null);
+      setCancellationReason('');
     }
+  };
+
+  const handleCancelCancellation = () => {
+    setCancellingAppointmentId(null);
+    setCancellationReason('');
   };
 
   const handlePublishArticle = async (e) => {
@@ -290,14 +315,56 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     if (!dashboard?.vet?._id) return;
     try {
       setUpdatingProfile(true);
-      await updateVetProfile(dashboard.vet._id, profileForm);
+      
+      // Sanitize availability object - only include necessary fields
+      const sanitizedAvailability = {
+        days: Array.isArray(profileForm.availability?.days) ? profileForm.availability.days : [],
+        openTime: profileForm.availability?.openTime || '',
+        closeTime: profileForm.availability?.closeTime || '',
+        is24Hours: !!profileForm.availability?.is24Hours,
+      };
+      
+      const formData = new FormData();
+      Object.keys(profileForm).forEach(key => {
+        if (key === 'availability') {
+          formData.append(key, JSON.stringify(sanitizedAvailability));
+        } else if (profileForm[key] !== undefined && profileForm[key] !== null) {
+          formData.append(key, profileForm[key]);
+        }
+      });
+      
+      if (profilePictureFile) {
+        formData.append('profilePicture', profilePictureFile);
+      }
+      
+      await updateVetProfile(dashboard.vet._id, formData);
       addToast('Profile and settings updated successfully', 'success');
+      setProfilePictureFile(null);
+      setProfilePicturePreview(null);
+      await refreshUser();
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
       setUpdatingProfile(false);
     }
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveProfilePicture = () => {
+    setProfilePictureFile(null);
+    setProfilePicturePreview(null);
   };
 
   const addPrescriptionRow = () => {
@@ -370,7 +437,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   };
 
   const toggleDaySelection = (day) => {
-    const days = [...profileForm.availability.days];
+    const daysArray = profileForm.availability?.days || [];
+    const days = [...daysArray];
     const idx = days.indexOf(day);
     if (idx > -1) {
       days.splice(idx, 1);
@@ -471,9 +539,9 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-[#F8FAFC] overflow-hidden">
+    <div className="flex bg-[#F8FAFC] h-screen overflow-hidden">
       {/* VetStream Left Workspace Sidebar */}
-      <aside className="w-72 bg-white border-r border-[#E2E8F0] flex flex-col shrink-0 h-full overflow-hidden">
+      <aside className="w-72 bg-white border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-y-auto">
           {/* Header Info */}
           <div className="p-6 border-b border-[#E2E8F0] shrink-0">
             <div className="flex items-center gap-3">
@@ -526,7 +594,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       </aside>
 
       {/* Main Workspace */}
-      <main className="flex-1 px-8 py-8 overflow-y-auto">
+      <main className="flex-1 px-8 pt-8 pb-24 overflow-y-auto">
         
         {/* Verification banner if not verified */}
         {dashboard?.vet && !dashboard.vet.isVerified && (
@@ -810,8 +878,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
         {/* Tab 2: Schedule & Calendar */}
         {activeTab === 'appointments' && (
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Calendar Main Grid */}
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-display text-4xl text-neutral-900 font-bold">Schedule & Calendar</h1>
+              <p className="text-neutral-500 mt-2">Manage your clinic's appointments and calendar</p>
+            </div>
+            <div className="grid gap-8 lg:grid-cols-3">
+              {/* Calendar Main Grid */}
             <Card className="lg:col-span-2 p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
@@ -949,18 +1022,19 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 </div>
               </div>
             </Card>
+            </div>
           </div>
         )}
 
         {/* Tab 3: Clinical Record Entry */}
         {activeTab === 'records' && (
-          <Card className="max-w-4xl mx-auto p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
-            <div className="border-b border-[#E2E8F0] pb-4">
-              <h3 className="font-bold text-neutral-900 text-lg">Complete Medical Entry</h3>
-              <p className="text-xs text-neutral-500 mt-1">Document treatment notes, diagnosis and write prescriptions</p>
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-display text-4xl text-neutral-900 font-bold">Clinical Entry</h1>
+              <p className="text-neutral-500 mt-2">Document treatment notes, diagnosis and write prescriptions</p>
             </div>
-
-            <form onSubmit={handleSubmitClinicalRecord} className="mt-6 space-y-6">
+            <Card className="p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
+              <form onSubmit={handleSubmitClinicalRecord} className="space-y-6">
               {/* Select Active Appointment */}
               <div className="form-group">
                 <label className="form-label form-label-required">Select Patient & Appointment</label>
@@ -1072,17 +1146,23 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               </div>
             </form>
           </Card>
+          </div>
         )}
 
         {/* Tab 4: Knowledge Hub */}
         {activeTab === 'articles' && (
-          <div className="grid gap-8 lg:grid-cols-2">
-            {/* Create draft form */}
-            <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
-              <h3 className="font-bold text-neutral-900 text-lg">Practitioner Knowledge</h3>
-              <p className="text-xs text-neutral-500 mt-1">Publish clinical studies, owner tips, or health warnings</p>
-
-              <form onSubmit={handlePublishArticle} className="mt-6 space-y-4">
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-display text-4xl text-neutral-900 font-bold">Knowledge Hub</h1>
+              <p className="text-neutral-500 mt-2">Publish clinical studies, owner tips, or health warnings</p>
+            </div>
+            <div className="grid gap-8 lg:grid-cols-2">
+              {/* Create draft form */}
+              <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
+                <div className="border-b border-[#E2E8F0] pb-4">
+                  <h3 className="font-bold text-neutral-900 text-lg">Create New Article</h3>
+                </div>
+                <form onSubmit={handlePublishArticle} className="mt-6 space-y-4">
                 <Input 
                   label="Article Title" 
                   name="articleTitle"
@@ -1174,18 +1254,19 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 )}
               </div>
             </Card>
+            </div>
           </div>
         )}
 
         {/* Tab 5: Patient Reviews */}
         {activeTab === 'reviews' && (
-          <div className="space-y-8 max-w-4xl mx-auto">
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-display text-4xl text-neutral-900 font-bold">Patient Reviews</h1>
+              <p className="text-neutral-500 mt-2">Manage ratings, testimonials & clinic feedback</p>
+            </div>
             {/* Reviews Summary Header */}
             <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex flex-wrap items-center justify-between gap-6">
-              <div>
-                <h3 className="font-bold text-neutral-900 text-lg">Review Management</h3>
-                <p className="text-xs text-neutral-500 mt-1">Manage ratings, testimonials & clinic feedback</p>
-              </div>
 
               <div className="flex items-center gap-6">
                 <div className="text-center">
@@ -1275,11 +1356,51 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
         {/* Tab 6: Profile & Availability Settings */}
         {activeTab === 'profile' && (
-          <Card className="max-w-4xl mx-auto p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
-            <h3 className="font-bold text-neutral-900 text-lg">Profile & Availability Workspace</h3>
-            <p className="text-xs text-neutral-500 mt-1">Manage public profile details, consultation charges and scheduling hours</p>
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-display text-4xl text-neutral-900 font-bold">Profile Settings</h1>
+              <p className="text-neutral-500 mt-2">Manage public profile details, consultation charges and scheduling hours</p>
+            </div>
+            <Card className="p-8 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl">
+              <form onSubmit={handleSaveProfile} className="space-y-6">
+              {/* Profile Picture Upload */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-32 h-32 rounded-full overflow-hidden bg-neutral-100 border-2 border-dashed border-[#0046CE]/20 flex items-center justify-center">
+                  {profilePicturePreview ? (
+                    <img src={profilePicturePreview} alt="Profile preview" className="w-full h-full object-cover" />
+                  ) : dashboard?.vet?.profilePhoto ? (
+                    <img src={getImageUrl(dashboard.vet.profilePhoto)} alt="Current profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center text-neutral-400">
+                      <User className="h-8 w-8 mx-auto mb-1" />
+                      <p className="text-xs">No photo</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProfilePictureChange}
+                      className="hidden"
+                    />
+                    <span className="px-4 py-2 bg-[#0046CE] text-white rounded-lg text-sm font-semibold hover:bg-[#0046CE]/90 inline-block">
+                      Upload Photo
+                    </span>
+                  </label>
+                  {profilePictureFile && (
+                    <button 
+                      type="button"
+                      onClick={handleRemoveProfilePicture}
+                      className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-semibold hover:bg-danger-600"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
 
-            <form onSubmit={handleSaveProfile} className="mt-8 space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <Input 
                   label="Full Name" 
@@ -1337,7 +1458,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 
                 <div className="flex flex-wrap gap-2 mt-2">
                   {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
-                    const isSelected = profileForm.availability.days.includes(day);
+                    const daysArray = profileForm.availability?.days || [];
+                    const isSelected = daysArray.includes(day);
                     return (
                       <button
                         type="button"
@@ -1359,7 +1481,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                   <Input 
                     type="time"
                     label="Operative Open Time" 
-                    value={profileForm.availability.openTime}
+                    value={profileForm.availability?.openTime || '09:00'}
                     onChange={(e) => setProfileForm(prev => ({
                       ...prev,
                       availability: { ...prev.availability, openTime: e.target.value }
@@ -1368,7 +1490,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                   <Input 
                     type="time"
                     label="Operative Close Time" 
-                    value={profileForm.availability.closeTime}
+                    value={profileForm.availability?.closeTime || '17:00'}
                     onChange={(e) => setProfileForm(prev => ({
                       ...prev,
                       availability: { ...prev.availability, closeTime: e.target.value }
@@ -1382,17 +1504,18 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
               </div>
             </form>
           </Card>
+          </div>
         )}
 
         {/* Credentials tab removed as requested */}
 
         {/* Tab 8: Community Forum (embedded with sidebar) */}
         {activeTab === 'forum' && (
-          <div className="space-y-6 max-w-5xl">
+          <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="font-display text-3xl text-neutral-900 font-bold">Community Forum</h1>
-                <p className="text-neutral-500 mt-1 text-sm">Browse questions from pet owners and share your expertise.</p>
+                <h1 className="font-display text-4xl text-neutral-900 font-bold">Community Forum</h1>
+                <p className="text-neutral-500 mt-2">Browse questions from pet owners and share your expertise.</p>
               </div>
               <Link to="/forum/new" className="btn btn-primary btn-sm flex items-center gap-2">
                 <Plus className="h-4 w-4" /> New Post
@@ -1509,6 +1632,41 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
         )}
 
       </main>
+
+      {/* Cancellation Reason Modal */}
+      {cancellingAppointmentId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-neutral-900 mb-2">Cancel Appointment</h3>
+            <p className="text-sm text-neutral-600 mb-4">Please provide a reason for cancelling this appointment.</p>
+            
+            <Textarea
+              label="Cancellation Reason"
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Enter the reason for cancellation"
+              rows={3}
+            />
+            
+            <div className="flex gap-3 w-full mt-6">
+              <button 
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={handleCancelCancellation}
+              >
+                Keep
+              </button>
+              <button 
+                type="button"
+                className="btn btn-danger w-full text-white"
+                onClick={handleConfirmCancellation}
+              >
+                Cancel Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
