@@ -26,7 +26,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   ExternalLink,
-  Clock
+  Clock,
+  ShoppingBag,
+  Package,
+  X,
+  Pencil
 } from 'lucide-react';
 import { 
   Avatar, 
@@ -52,8 +56,9 @@ import {
   replyToReview 
 } from '../../api/vetDashboard.api';
 import { getForumPosts, addForumAnswer } from '../../api/content.api';
+import { getMyProducts, getProducts, addProduct, editProduct, removeProduct, getSellerOrders, updateOrderStatus } from '../../api/shop.api';
 import { updateVetProfile } from '../../api/vet.api';
-import { getErrorMessage, formatDate } from '../../utils/api';
+import { getErrorMessage, formatDate, unwrapItems } from '../../utils/api';
 import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -99,6 +104,17 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   // Cancellation modal states
   const [cancellingAppointmentId, setCancellingAppointmentId] = useState(null);
   const [cancellationReason, setCancellationReason] = useState('');
+
+  // Product states
+  const [vetProducts, setVetProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productAddOpen, setProductAddOpen] = useState(false);
+  const [productEditOpen, setProductEditOpen] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null);
+  const [productFormLoading, setProductFormLoading] = useState(false);
+  const [productForm, setProductForm] = useState({
+    name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: []
+  });
 
   // Dynamic Notifications Feed computed from appointments
   const notifications = useMemo(() => {
@@ -480,6 +496,8 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     { id: 'appointments', label: 'Schedule & Calendar', icon: Calendar },
     { id: 'records', label: 'Clinical Entry', icon: FileSpreadsheet },
     { id: 'articles', label: 'Knowledge Hub', icon: BookOpen },
+    { id: 'products', label: 'My Products', icon: ShoppingBag },
+    { id: 'orders', label: 'Orders', icon: Package },
     { id: 'reviews', label: 'Patient Reviews', icon: MessageSquare },
     { id: 'profile', label: 'Profile Settings', icon: User },
     { id: 'forum', label: 'Community Forum', icon: Users },
@@ -498,6 +516,169 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
         .finally(() => setForumLoading(false));
     }
   }, [activeTab]);
+
+  // Load vet products when products tab is opened
+  const fetchVetProducts = async () => {
+    setProductsLoading(true);
+    try {
+      const res = await getMyProducts();
+      let products = unwrapItems(res);
+
+      if (products.length === 0) {
+        const currentUserId = user?._id || user?.id;
+        const publicProducts = unwrapItems(await getProducts({ isVerifiedSeller: true }));
+        products = publicProducts.filter((product) => {
+          const sellerId = product.sellerId?._id || product.sellerId?.id || product.sellerId;
+          return currentUserId && sellerId?.toString?.() === currentUserId.toString();
+        });
+      }
+
+      setVetProducts(products);
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'products') {
+      fetchVetProducts();
+    }
+  }, [activeTab]);
+
+  const [sellerOrders, setSellerOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  const fetchSellerOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await getSellerOrders();
+      setSellerOrders(unwrapItems(res));
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchSellerOrders();
+    }
+  }, [activeTab]);
+
+  const resetProductForm = () => {
+    setProductForm({ name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: [] });
+    setCurrentProduct(null);
+  };
+
+  const handleProductFormChange = (e) => {
+    if (e.target.type === 'file') {
+      setProductForm({ ...productForm, [e.target.name]: e.target.files });
+    } else {
+      setProductForm({ ...productForm, [e.target.name]: e.target.value });
+    }
+  };
+
+  const handleProductAddSubmit = async (e) => {
+    e.preventDefault();
+    setProductFormLoading(true);
+    try {
+      const form = new FormData();
+      form.append('name', productForm.name);
+      form.append('description', productForm.description);
+      form.append('price', Number(productForm.price));
+      form.append('stock', Number(productForm.stock));
+      form.append('category', productForm.category);
+      const ptArray = productForm.petType.split(',').map(s => s.trim()).filter(Boolean);
+      ptArray.forEach(pt => form.append('petType', pt));
+      if (productForm.images && productForm.images.length) {
+        Array.from(productForm.images).forEach(file => {
+          if (file instanceof File || file instanceof Blob) {
+            form.append('images', file);
+          }
+        });
+      }
+      await addProduct(form);
+      setProductAddOpen(false);
+      resetProductForm();
+      addToast('Product submitted for approval!', 'success');
+      fetchVetProducts();
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setProductFormLoading(false);
+    }
+  };
+
+  const handleProductEditSubmit = async (e) => {
+    e.preventDefault();
+    setProductFormLoading(true);
+    try {
+      const form = new FormData();
+      form.append('name', productForm.name);
+      form.append('description', productForm.description);
+      form.append('price', Number(productForm.price));
+      form.append('stock', Number(productForm.stock));
+      form.append('category', productForm.category);
+      const ptArray = typeof productForm.petType === 'string' ? productForm.petType.split(',').map(s => s.trim()).filter(Boolean) : productForm.petType;
+      ptArray.forEach(pt => form.append('petType', pt));
+      if (productForm.images && productForm.images.length) {
+        Array.from(productForm.images).forEach(file => {
+          if (file instanceof File || file instanceof Blob) {
+            form.append('images', file);
+          } else if (typeof file === 'string') {
+            form.append('images', file);
+          }
+        });
+      }
+      await editProduct(currentProduct._id, form);
+      setProductEditOpen(false);
+      resetProductForm();
+      addToast('Product updated successfully!', 'success');
+      fetchVetProducts();
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setProductFormLoading(false);
+    }
+  };
+
+  const handleProductDelete = async (product) => {
+    const yes = await confirm('Delete this product? This action cannot be undone.');
+    if (!yes) return;
+    try {
+      await removeProduct(product._id);
+      addToast('Product deleted', 'success');
+      fetchVetProducts();
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    }
+  };
+
+  const openProductEdit = (product) => {
+    setCurrentProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      category: product.category,
+      petType: (product.petType || []).join(', '),
+      stock: product.stock,
+      images: []
+    });
+    setProductEditOpen(true);
+  };
+
+  const handleCloseProductModal = () => {
+    setProductAddOpen(false);
+    setProductEditOpen(false);
+    resetProductForm();
+  };
+
+  const approvedProductCount = vetProducts.filter(p => p.isVerifiedSeller).length;
+  const pendingProductCount = vetProducts.filter(p => !p.isVerifiedSeller).length;
 
   // Compute weekly appointment data from real appointments
   const weeklyChartData = useMemo(() => {
@@ -1627,6 +1808,262 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                   <Plus className="h-4 w-4" /> Start a Discussion
                 </Link>
               </Card>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Products */}
+        {activeTab === 'products' && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-display text-4xl text-neutral-900 font-bold">My Products</h1>
+                <p className="text-neutral-500 mt-2">Products you sell through PetSneha marketplace</p>
+              </div>
+              <Button onClick={() => setProductAddOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Add product
+              </Button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid gap-6 sm:grid-cols-3">
+              <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Total Listed</p>
+                  <h3 className="font-display text-3xl font-bold text-neutral-900 mt-2">{vetProducts.length}</h3>
+                </div>
+                <div className="p-3 bg-[#EFF6FF] text-[#0046CE] rounded-2xl">
+                  <ShoppingBag className="h-6 w-6" />
+                </div>
+              </Card>
+              <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Approved</p>
+                  <h3 className="font-display text-3xl font-bold text-neutral-900 mt-2 flex items-center gap-2">
+                    {approvedProductCount}
+                    <Badge variant="success">Live</Badge>
+                  </h3>
+                </div>
+                <div className="p-3 bg-success-50 text-success-700 rounded-2xl">
+                  <CheckCircle className="h-6 w-6" />
+                </div>
+              </Card>
+              <Card className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Pending Approval</p>
+                  <h3 className="font-display text-3xl font-bold text-neutral-900 mt-2 flex items-center gap-2">
+                    {pendingProductCount}
+                    <Badge variant="warning">Pending</Badge>
+                  </h3>
+                </div>
+                <div className="p-3 bg-warning-50 text-warning-700 rounded-2xl">
+                  <Clock className="h-6 w-6" />
+                </div>
+              </Card>
+            </div>
+
+            {/* Product List */}
+            {productsLoading ? (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-72 rounded-2xl" />)}
+              </div>
+            ) : vetProducts.length === 0 ? (
+              <Card className="p-12 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl text-center">
+                <ShoppingBag className="h-10 w-10 mx-auto text-neutral-300 stroke-1" />
+                <p className="font-semibold text-neutral-900 mt-3">No products listed yet</p>
+                <p className="text-sm text-neutral-500 mt-1">Add your first product and submit it for admin approval</p>
+                <Button className="mt-4" onClick={() => setProductAddOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Add your first product
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {vetProducts.map(product => (
+                  <Card key={product._id} className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl flex flex-col hover:shadow-md transition-shadow">
+                    {/* Product image */}
+                    {product.images && product.images.length > 0 && (
+                      <div className="w-full h-40 rounded-xl overflow-hidden mb-4 bg-neutral-100">
+                        <img
+                          src={product.images[0].startsWith('http') ? product.images[0] : `${(import.meta.env.VITE_API_URL || 'http://localhost:5050/api').replace('/api', '')}${product.images[0]}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-neutral-900 text-[15px] leading-snug">{product.name}</h3>
+                      {product.isVerifiedSeller ? (
+                        <Badge variant="success">✓ Live</Badge>
+                      ) : (
+                        <Badge variant="warning">⏳ Pending</Badge>
+                      )}
+                    </div>
+                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full mb-3 self-start capitalize">{product.category}</span>
+                    <p className="text-[#0046CE] font-bold text-lg mb-2">Rs {product.price}</p>
+                    <div className="flex gap-1.5 flex-wrap mb-3">
+                      {(product.petType || []).map(pt => (
+                        <span key={pt} className="text-[11px] font-medium bg-[#EFF6FF] text-[#0046CE] px-2 py-0.5 rounded-full">{pt}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-neutral-400 mb-3">Stock: {product.stock} units</p>
+                    <p className="text-sm text-neutral-500 line-clamp-2 mb-4 flex-1">{product.description}</p>
+                    <div className="flex gap-2 border-t border-neutral-100 pt-4 mt-auto">
+                      <Button variant="secondary" size="sm" fullWidth onClick={() => openProductEdit(product)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                      </Button>
+                      <button
+                        onClick={() => handleProductDelete(product)}
+                        className="btn btn-sm w-full text-danger-600 border border-danger-200 bg-white hover:bg-danger-50 transition font-semibold rounded-xl flex items-center justify-center gap-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Add / Edit Product Modal */}
+            {(productAddOpen || productEditOpen) && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+                <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-5">
+                    <h3 className="text-xl font-bold text-neutral-900">{productAddOpen ? 'Add Product' : 'Edit Product'}</h3>
+                    <button onClick={handleCloseProductModal} className="p-1 rounded-full hover:bg-neutral-100 text-neutral-500 transition">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {productAddOpen && (
+                    <InfoBox type="info" className="mb-5">
+                      Your product will be reviewed by the PetSneha admin before appearing in the marketplace.
+                    </InfoBox>
+                  )}
+
+                  <form onSubmit={productAddOpen ? handleProductAddSubmit : handleProductEditSubmit} className="space-y-4">
+                    <Input name="name" label="Product Name" required value={productForm.name} onChange={handleProductFormChange} />
+                    <Textarea name="description" label="Description" required value={productForm.description} onChange={handleProductFormChange} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input name="price" label="Price (Rs)" type="number" min="0" required value={productForm.price} onChange={handleProductFormChange} />
+                      <Input name="stock" label="Stock" type="number" min="0" required value={productForm.stock} onChange={handleProductFormChange} />
+                    </div>
+                    <Select name="category" label="Category" required value={productForm.category} onChange={handleProductFormChange}>
+                      <option value="food">Food</option>
+                      <option value="accessories">Accessories</option>
+                      <option value="shelter">Shelter</option>
+                      <option value="bodycare">Bodycare</option>
+                      <option value="wastemanagement">Waste Management</option>
+                    </Select>
+                    <Input name="petType" label="Pet Types (comma separated)" hint="e.g. Dog, Cat" required value={productForm.petType} onChange={handleProductFormChange} />
+                    <div className="form-group">
+                      <label htmlFor="productImages" className="form-label">Product Images</label>
+                      <input
+                        type="file"
+                        id="productImages"
+                        name="images"
+                        multiple
+                        accept="image/*"
+                        onChange={handleProductFormChange}
+                        className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#EFF6FF] file:text-[#0046CE] hover:file:bg-[#DBEAFE] transition cursor-pointer"
+                      />
+                      <p className="text-xs text-neutral-400 mt-1.5">Upload product pictures (JPEG, PNG — optional)</p>
+                    </div>
+                    <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-neutral-100">
+                      <Button type="button" variant="secondary" onClick={handleCloseProductModal}>Cancel</Button>
+                      <Button type="submit" loading={productFormLoading}>{productAddOpen ? 'Submit for Approval' : 'Save Changes'}</Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Orders */}
+        {activeTab === 'orders' && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-display text-4xl text-neutral-900 font-bold">Orders</h1>
+                <p className="text-neutral-500 mt-2">Orders containing your products from the marketplace.</p>
+              </div>
+              <Button variant="secondary" onClick={fetchSellerOrders} disabled={ordersLoading}>
+                {ordersLoading ? <span className="inline-block animate-spin h-4 w-4 rounded-full border-2 border-current border-r-transparent mr-2" /> : null}
+                Refresh
+              </Button>
+            </div>
+
+            {ordersLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+              </div>
+            ) : sellerOrders.length === 0 ? (
+              <Card className="p-12 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl text-center">
+                <Package className="h-10 w-10 mx-auto text-neutral-300 stroke-1" />
+                <p className="font-semibold text-neutral-900 mt-3">No orders yet</p>
+                <p className="text-sm text-neutral-500 mt-1">Orders containing your approved products will appear here.</p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {sellerOrders.map(order => {
+                  const statusFlow = { placed: 'processing', processing: 'shipped', shipped: 'delivered' };
+                  const statusLabel = { placed: 'Confirm', processing: 'Mark Shipped', shipped: 'Mark Delivered' };
+                  const nextStatus = statusFlow[order.status];
+
+                  const handleAdvanceStatus = async () => {
+                    if (!nextStatus) return;
+                    try {
+                      await updateOrderStatus(order._id, nextStatus);
+                      addToast(`Order marked as ${nextStatus}`, 'success');
+                      fetchSellerOrders();
+                    } catch (err) {
+                      addToast(getErrorMessage(err), 'danger');
+                    }
+                  };
+
+                  return (
+                    <Card key={order._id} className="p-5 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-4">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="font-bold text-neutral-900">Order #{order.orderNumber || order._id?.slice(-6)}</p>
+                          <p className="text-xs text-neutral-500 mt-0.5">{formatDate(order.createdAt)} · {order.items?.length ?? 0} item(s)</p>
+                          {order.deliveryAddress && (
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              Ship to: {[order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant={
+                            order.status === 'delivered' ? 'success' :
+                            order.status === 'cancelled' ? 'danger' :
+                            order.status === 'shipped' ? 'primary' :
+                            'warning'
+                          }>{order.status || 'placed'}</Badge>
+                          {nextStatus && (
+                            <Button size="sm" onClick={handleAdvanceStatus}>{statusLabel[order.status]}</Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {order.items && order.items.length > 0 && (
+                        <div className="border-t border-neutral-100 pt-3 space-y-2">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-neutral-800">{item.name || `Product #${idx + 1}`}</span>
+                              <span className="text-neutral-500">x{item.quantity} · Rs {item.price}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-sm font-semibold text-neutral-900 border-t border-neutral-100 pt-2 mt-1">
+                            <span>Total</span>
+                            <span>Rs {order.total ?? order.totalAmount ?? 0}</span>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

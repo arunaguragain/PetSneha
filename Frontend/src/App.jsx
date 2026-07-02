@@ -35,6 +35,7 @@ import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
 import VetLandingPage from './pages/vet/VetLandingPage';
 import VetRegisterPage from './pages/vet/VetRegisterPage';
+import VetProductsPage from './pages/vet/VetProductsPage';
 import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
@@ -103,6 +104,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/vet/login" element={<LoginPage variant="vet" />} />
+      <Route path="/admin/login" element={<LoginPage variant="admin" />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/vets-landing" element={<VetLandingPage />} />
       <Route path="/vet/register" element={<VetRegisterPage />} />
@@ -152,13 +154,12 @@ export default function App() {
           <Route path="/vet/dashboard" element={<VetDashboardPage />} />
           <Route path="/vet/appointments" element={<VetAppointmentsPage />} />
           <Route path="/vet/articles" element={<VetArticlesPage />} />
+          <Route path="/vet/products" element={<VetProductsPage />} />
         </Route>
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-        <Route element={<AuthenticatedLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-        </Route>
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

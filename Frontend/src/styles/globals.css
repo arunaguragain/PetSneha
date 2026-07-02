@@ -27,23 +27,11 @@
   body {
     @apply bg-[rgba(247,249,251,1)] text-black font-body antialiased;
     min-height: 100vh;
-    /* Remove previous gradient backgrounds */
-    /* background-image: radial-gradient(circle at top left, rgba(0, 70, 206, 0.12), transparent 28%),
-       radial-gradient(circle at 85% 10%, rgba(16, 185, 129, 0.1), transparent 24%),
-       linear-gradient(180deg, #f9fbfd 0%, #eef4fa 100%); */
     color: var(--color-text);
   }
 
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 88%);
-    opacity: 0.35;
+    content: none;
   }
 
   * {
