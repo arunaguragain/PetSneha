@@ -16,6 +16,12 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   }
 
   if (!user) {
+    if (location.pathname.startsWith('/vet')) {
+      return <Navigate to="/vet/login" replace state={{ redirect: location.pathname + location.search }} />;
+    }
+    if (location.pathname.startsWith('/admin')) {
+      return <Navigate to="/admin/login" replace state={{ redirect: location.pathname + location.search }} />;
+    }
     return <Navigate to="/login" replace state={{ redirect: location.pathname + location.search }} />;
   }
 
