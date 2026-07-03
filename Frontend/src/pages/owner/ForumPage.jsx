@@ -175,29 +175,6 @@ export default function ForumPage() {
               </button>
             </div>
 
-            {/* Top Experts card */}
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm mt-4">
-              <h2 className="text-sm font-semibold text-[#1E293B]">Top Experts</h2>
-              
-              <div className="mt-3 space-y-3">
-                <div className="flex items-center gap-3">
-                  <img src="/profile.png" alt="Vet" className="w-8 h-8 rounded-full object-cover bg-[#F1F5F9]" />
-                  <div>
-                    <div className="font-medium text-sm text-[#1E293B]">Dr. Anita Rai</div>
-                    <div className="text-xs text-[#64748B]">142 Answers • Verified Vet</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#E2E8F0] flex items-center justify-center text-xs font-medium text-[#64748B]">SJ</div>
-                  <div>
-                    <div className="font-medium text-sm text-[#1E293B]">Dr. Sanjay Joshi</div>
-                    <div className="text-xs text-[#64748B]">89 Answers • Verified Vet</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Need help card */}
             <div className="bg-[#EFF6FF] rounded-xl p-4 mt-4 border border-[#BFDBFE]">
               <div className="font-medium text-[#0046CE] text-sm">Need professional help?</div>

@@ -47,6 +47,7 @@ import {
   getPendingProducts,
   getPendingVets,
   getReportedPosts,
+  getUserById,
   pinPost,
   publishArticle,
   reactivateUser,
@@ -86,6 +87,148 @@ function ReasonModal({ title, open, onClose, onConfirm, loading }) {
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1 rounded-md py-2.5 shadow-none" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button variant="danger" className="flex-1 rounded-md py-2.5 shadow-none" loading={loading} onClick={() => onConfirm(reason)}>Confirm Rejection</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserDetailModal({ user, onClose }) {
+  if (!user) return null;
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">{user.name || 'User profile'}</h2>
+            <p className="text-sm text-slate-500">{user.email || 'No email available'}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div><p className="text-slate-500">Role</p><p className="font-medium">{user.role || 'N/A'}</p></div>
+            <div><p className="text-slate-500">Joined</p><p className="font-medium">{formatDate(user.createdAt)}</p></div>
+            <div><p className="text-slate-500">Phone</p><p className="font-medium">{user.phone || 'N/A'}</p></div>
+            <div><p className="text-slate-500">Status</p><p className="font-medium">{user.isActive === false ? 'Deactivated' : 'Active'}</p></div>
+            {user.language && <div><p className="text-slate-500">Language</p><p className="font-medium">{user.language}</p></div>}
+            {user.savedVetId && <div><p className="text-slate-500">Saved vet</p><p className="font-medium break-all">{user.savedVetId.toString ? user.savedVetId.toString() : user.savedVetId}</p></div>}
+            {user.petCount != null && <div><p className="text-slate-500">Pet count</p><p className="font-medium">{user.petCount}</p></div>}
+            {user.appointmentCount != null && <div><p className="text-slate-500">Appointment count</p><p className="font-medium">{user.appointmentCount}</p></div>}
+          </div>
+          {user.bio && (
+            <div>
+              <p className="text-slate-500">Notes</p>
+              <div className="rounded-2xl bg-slate-50 p-4 text-slate-700">{user.bio}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArticleDetailModal({ article, onClose }) {
+  if (!article) return null;
+  const seasonLabel = article.season === 'all' ? 'All seasons' : article.season?.charAt(0).toUpperCase() + article.season?.slice(1);
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
+      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">{article.title || 'Article details'}</h2>
+            <p className="text-sm text-slate-500">{article.authorId?.name || article.author?.name || 'Unknown author'} • {formatDate(article.createdAt)}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div><p className="text-slate-500">Season</p><p className="font-medium">{seasonLabel || 'N/A'}</p></div>
+            <div><p className="text-slate-500">Status</p><p className="font-medium">{article.isPublished ? 'Published' : 'Draft / pending'}</p></div>
+          </div>
+          {article.summary && (
+            <div>
+              <p className="text-slate-500">Summary</p>
+              <div className="rounded-2xl bg-slate-50 p-4 text-slate-700">{article.summary}</div>
+            </div>
+          )}
+          <div>
+            <p className="text-slate-500">Content</p>
+            <div className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-slate-700">{article.content}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductDetailModal({ product, onClose }) {
+  if (!product) return null;
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
+      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">{product.name || 'Product details'}</h2>
+            <p className="text-sm text-slate-500">{product.category || 'No category'} • {formatCurrency(product.price)}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div><p className="text-slate-500">Seller</p><p className="font-medium">{product.sellerName || product.sellerId || 'Unknown'}</p></div>
+            <div><p className="text-slate-500">Status</p><p className="font-medium">{product.isVerifiedSeller ? 'Approved' : 'Pending'}</p></div>
+          </div>
+          {product.images?.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {product.images.map((img) => (
+                <img key={img} src={imgSrc(img)} alt={product.name} className="h-40 w-full rounded-2xl object-cover border border-slate-200" />
+              ))}
+            </div>
+          )}
+          {product.description && (
+            <div>
+              <p className="text-slate-500">Description</p>
+              <div className="rounded-2xl bg-slate-50 p-4 text-slate-700">{product.description}</div>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 text-sm text-slate-500">
+            <div><p className="font-semibold text-slate-700">Stock</p><p>{product.stock ?? 'N/A'}</p></div>
+            <div><p className="font-semibold text-slate-700">Type</p><p>{safeArray(product.petType).join(', ') || 'Any'}</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PostDetailModal({ post, onClose }) {
+  if (!post) return null;
+  const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name || 'Member';
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
+      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">{post.title || 'Post details'}</h2>
+            <p className="text-sm text-slate-500">{authorName} • {formatDate(post.createdAt)}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
+          <div className="grid gap-4 sm:grid-cols-2 text-slate-500">
+            <div><p className="text-slate-500">Group</p><p className="font-medium">{post.group || 'General'}</p></div>
+            <div><p className="text-slate-500">Pinned</p><p className="font-medium">{post.isPinned ? 'Yes' : 'No'}</p></div>
+          </div>
+          <div>
+            <p className="text-slate-500">Content</p>
+            <div className="whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-slate-700">{post.content || post.body || 'No content available.'}</div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 text-sm text-slate-500">
+            <div><p className="font-semibold text-slate-700">Upvotes</p><p>{post.upvotes ?? 0}</p></div>
+            <div><p className="font-semibold text-slate-700">Answers</p><p>{safeArray(post.answers).length}</p></div>
+            <div><p className="font-semibold text-slate-700">Reports</p><p>{post.reportCount ?? 0}</p></div>
+          </div>
         </div>
       </div>
     </div>
@@ -393,6 +536,8 @@ function UsersTab() {
   const [role, setRole] = useState('');
   const [page, setPage] = useState(1);
   const [actionLoading, setActionLoading] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserLoading, setSelectedUserLoading] = useState(false);
   const debRef = useRef(null);
 
   const fetchUsers = useCallback(async (params) => {
@@ -404,6 +549,21 @@ function UsersTab() {
     } catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setLoading(false); }
   }, [addToast]);
+
+  const fetchUserDetail = useCallback(async (userId) => {
+    setSelectedUserLoading(true);
+    try {
+      const res = await getUserById(userId);
+      const d = res?.data?.data ?? res?.data ?? res;
+      setSelectedUser(d.user || d);
+    } catch (e) { addToast(getErrorMessage(e), 'danger'); }
+    finally { setSelectedUserLoading(false); }
+  }, [addToast]);
+
+  async function handleViewProfile(user) {
+    if (!uid(user)) return;
+    await fetchUserDetail(uid(user));
+  }
 
   useEffect(() => {
     clearTimeout(debRef.current);
@@ -452,7 +612,8 @@ function UsersTab() {
                   <p className="font-semibold text-neutral-900 truncate">{user.name}</p>
                   <p className="text-xs text-neutral-500 truncate">{user.email} / <Badge variant={getStatusTone(user.role)}>{user.role}</Badge>{user.isActive === false && <Badge variant="danger" className="ml-1">Deactivated</Badge>}</p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => handleViewProfile(user)}>View profile</Button>
                   {user.isActive !== false
                     ? <Button size="sm" variant="secondary" loading={actionLoading === uid(user) + '-d'} onClick={() => handleDeactivate(user)}>Deactivate</Button>
                     : <Button size="sm" loading={actionLoading === uid(user) + '-r'} onClick={() => handleReactivate(user)}>Reactivate</Button>}
@@ -463,6 +624,7 @@ function UsersTab() {
           <Pagination page={data.page} pages={data.pages} onPage={setPage} />
         </>
       )}
+      <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
     </Card>
   );
 }
@@ -541,7 +703,8 @@ function VetsTab() {
               <DetailRow key={uid(vet)} detail={<VetDetail vet={vet} />}>
                 <div className="flex flex-1 items-start justify-between gap-3">
                   <div><p className="font-semibold text-neutral-900">{vet.name}</p><p className="text-xs text-neutral-500">{vet.clinicName || vet.location || 'No clinic'} / {vet.specialization || 'General'}</p></div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => navigate(`/vets/${uid(vet)}`)}>View full profile</Button>
                     <Button size="sm" loading={actionLoading === uid(vet) + '-a'} onClick={() => handleApprove(vet)}>Approve</Button>
                     <Button size="sm" variant="danger" onClick={() => setRejectModal({ vet })}>Reject</Button>
                   </div>
@@ -588,6 +751,7 @@ function ArticlesTab() {
   const [articleSearch, setArticleSearch] = useState('');
   const [articlePage, setArticlePage] = useState(1);
   const [articlePages, setArticlePages] = useState(1);
+  const [articleModal, setArticleModal] = useState(null);
   const debRef = useRef(null);
 
   const fetchArticles = useCallback(async () => {
@@ -701,7 +865,10 @@ function ArticlesTab() {
                     <p className="font-semibold text-neutral-900 truncate">{article.title}</p>
                     <p className="text-xs text-neutral-500 truncate">by {article.author?.name || article.authorName || 'Unknown'} / {formatDate(article.createdAt)}</p>
                   </div>
-                  <Badge variant={getArticleTone(status)}>{status}</Badge>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge variant={getArticleTone(status)}>{status}</Badge>
+                    <Button size="sm" variant="ghost" onClick={() => setArticleModal(article)}>View</Button>
+                  </div>
                 </div>
               );
             })}
@@ -711,6 +878,7 @@ function ArticlesTab() {
       </Card>
 
       <ReasonModal title={`Reject "${rejectModal?.article?.title}"?`} open={!!rejectModal} onClose={() => setRejectModal(null)} onConfirm={handleRejectConfirm} loading={rejectLoading} />
+      <ArticleDetailModal article={articleModal} onClose={() => setArticleModal(null)} />
     </div>
   );
 }
@@ -729,6 +897,7 @@ function ProductsTab() {
   const [productSearch, setProductSearch] = useState('');
   const [productPage, setProductPage] = useState(1);
   const [productPages, setProductPages] = useState(1);
+  const [productModal, setProductModal] = useState(null);
   const debRef = useRef(null);
 
   const fetchProducts = useCallback(async () => {
@@ -830,7 +999,10 @@ function ProductsTab() {
                   <p className="font-semibold text-neutral-900 truncate">{product.name}</p>
                   <p className="text-xs text-neutral-500 truncate">{formatCurrency(product.price)} / {product.category}</p>
                 </div>
-                <Badge variant={product.isVerifiedSeller ? 'success' : 'warning'}>{product.isVerifiedSeller ? 'Approved' : 'Pending'}</Badge>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant={product.isVerifiedSeller ? 'success' : 'warning'}>{product.isVerifiedSeller ? 'Approved' : 'Pending'}</Badge>
+                  <Button size="sm" variant="ghost" onClick={() => setProductModal(product)}>View</Button>
+                </div>
               </div>
             ))}
           </div>
@@ -839,6 +1011,7 @@ function ProductsTab() {
       </Card>
 
       <ReasonModal title={`Reject "${rejectModal?.product?.name}"?`} open={!!rejectModal} onClose={() => setRejectModal(null)} onConfirm={handleRejectConfirm} loading={rejectLoading} />
+      <ProductDetailModal product={productModal} onClose={() => setProductModal(null)} />
     </div>
   );
 }
@@ -855,6 +1028,7 @@ function ForumTab() {
   const [search, setSearch] = useState('');
   const [postPage, setPostPage] = useState(1);
   const [postPages, setPostPages] = useState(1);
+  const [postModal, setPostModal] = useState(null);
   const debRef = useRef(null);
 
   const fetchPosts = useCallback(async () => {
@@ -934,6 +1108,7 @@ function ForumTab() {
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" variant="secondary" loading={actionLoading === uid(post) + '-pin'} onClick={() => handlePin(post)}>{post.isPinned ? 'Unpin' : 'Pin'}</Button>
                     <Button size="sm" variant="danger" loading={actionLoading === uid(post) + '-remove'} onClick={() => handleRemove(post)}>Remove</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setPostModal(post)}>View</Button>
                   </div>
                 </div>
               </DetailRow>
@@ -963,13 +1138,14 @@ function ForumTab() {
                 <div className="flex shrink-0 gap-2">
                   <Button size="sm" variant="secondary" loading={actionLoading === uid(post) + '-pin'} onClick={() => handlePin(post)}>{post.isPinned ? 'Unpin' : 'Pin'}</Button>
                   <Button size="sm" variant="danger" loading={actionLoading === uid(post) + '-remove'} onClick={() => handleRemove(post)}>Remove</Button>
-                  <Button size="sm" variant="ghost" onClick={async () => { await reportPost(uid(post)); addToast('Post reported', 'success'); fetchPosts(); fetchAllPosts(search, postPage); }}>Report</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPostModal(post)}>View</Button>
                 </div>
               </div>
             ))}
           </div>
         )}
         <Pagination page={postPage} pages={postPages} onPage={(page) => fetchAllPosts(search, page)} />
+      <PostDetailModal post={postModal} onClose={() => setPostModal(null)} />
       </Card>
     </div>
   );
