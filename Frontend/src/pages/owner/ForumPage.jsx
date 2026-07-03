@@ -1,30 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Skeleton } from '../../components/ui';
-import { getForumPosts } from '../../api/content.api';
+import { getForumPosts, reportPost } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { ThumbsUp, ThumbsDown, MessageSquare, ShieldCheck, CheckCircle2, Send, Check } from 'lucide-react';
+import { MessageSquare, ShieldCheck, CheckCircle2, Check, X, BookOpen } from 'lucide-react';
 
 export default function ForumPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [newPostInput, setNewPostInput] = useState('');
+  const [activeGroup, setActiveGroup] = useState('all');
+  const [showRules, setShowRules] = useState(false);
 
-  const filters = ['All', 'Dogs', 'Cats', 'Birds', 'Rabbit', 'Fish'];
+  const groups = [
+    { label: 'All', value: 'all' },
+    { label: 'Dogs', value: 'dogs' },
+    { label: 'Cats', value: 'cats' },
+    { label: 'New Owners', value: 'newOwners' },
+    { label: 'Emergency', value: 'emergency' },
+  ];
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const response = await getForumPosts();
+        const response = await getForumPosts(activeGroup === 'all' ? {} : { group: activeGroup });
         const postsList = response.data?.posts
           || response.data?.items
-          || (Array.isArray(response.data) ? response.data : response || []);
-        setPosts(postsList);
+          || (Array.isArray(response.data) ? response.data : response.data || []);
+        setPosts(Array.isArray(postsList) ? postsList : []);
       } catch (apiError) {
         addToast(getErrorMessage(apiError), 'danger');
       } finally {
@@ -33,13 +39,10 @@ export default function ForumPage() {
     };
 
     load();
-  }, [addToast]);
+  }, [addToast, activeGroup]);
 
   const handleCreatePost = () => {
-    if (newPostInput.trim()) {
-      // In a real app we'd call the API here or pass this initial text to the /forum/new page
-      navigate('/forum/new');
-    }
+    navigate('/forum/new');
   };
 
   return (
@@ -58,38 +61,30 @@ export default function ForumPage() {
             
             {/* Filter tabs */}
             <div className="flex gap-2 mb-4 flex-wrap">
-              {filters.map((filter) => (
-                <div 
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-3 py-1.5 rounded-full text-sm cursor-pointer border transition ${
-                    activeFilter === filter 
-                      ? 'bg-[#0046CE] text-white border-[#0046CE]' 
-                      : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-neutral-50'
+              {groups.map((group) => (
+                <button
+                  key={group.value}
+                  type="button"
+                  onClick={() => setActiveGroup(group.value)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition ${
+                    activeGroup === group.value
+                      ? 'bg-[#0046CE] text-white border-[#0046CE]'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-neutral-50'
                   }`}
                 >
-                  {filter}
-                </div>
+                  {group.label}
+                </button>
               ))}
             </div>
 
-            {/* Post input row */}
-            <div className="flex items-center gap-3 bg-white border border-[#E2E8F0] rounded-xl p-3 shadow-sm">
-              <img src="/profile.png" alt="You" className="w-8 h-8 rounded-full object-cover bg-[#F1F5F9] flex-shrink-0" />
-              <input 
-                type="text" 
-                placeholder="Ask the community or a vet a question..." 
-                className="flex-1 bg-transparent text-sm outline-none text-[#1E293B] placeholder:text-[#64748B]"
-                value={newPostInput}
-                onChange={(e) => setNewPostInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreatePost()}
-              />
-              <button 
-                onClick={handleCreatePost}
-                className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-4 py-1.5 text-sm flex items-center gap-1 transition flex-shrink-0 font-medium"
-              >
-                <Send className="w-3.5 h-3.5" /> Post
-              </button>
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm mb-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#1E293B]">Start a discussion</h2>
+                  <p className="text-sm text-[#64748B]">Ask the community or create a question for vets to answer.</p>
+                </div>
+                <Button variant="primary" onClick={handleCreatePost}>Create new post</Button>
+              </div>
             </div>
 
             {/* Forum posts */}
@@ -98,54 +93,46 @@ export default function ForumPage() {
                 Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 bg-[#F8FAFC] rounded-xl animate-pulse border border-[#E2E8F0]" />)
               ) : posts.length > 0 ? (
                 posts.map((post) => {
-                  const isVetAnswered = post.answersCount > 0 || (post.isVetAnswered !== false); // Mock logic for UI
-                  
+                  const answersCount = Array.isArray(post.answers) ? post.answers.length : 0;
+                  const hasVetAnswer = Array.isArray(post.answers) && post.answers.some((answer) => answer.isVet === true);
+                  const upvotes = Number(post.upvotes || 0);
+                  const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name || 'Member';
+                  const groupLabel = post.group === 'newOwners' ? 'New Owners' : post.group === 'emergency' ? 'Emergency' : post.group === 'all' ? 'All' : post.group;
+
                   return (
                     <div 
                       key={post._id} 
                       className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
                       onClick={() => navigate(`/forum/${post._id}`)}
                     >
-                      {/* Top row */}
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-[#E2E8F0] flex items-center justify-center text-xs font-medium text-[#64748B]">
-                          {(post.author?.name || 'M')[0]}
+                          {authorName[0] || 'M'}
                         </div>
-                        <span className="font-medium text-sm text-[#1E293B]">{post.author?.name || 'Member'}</span>
+                        <span className="font-medium text-sm text-[#1E293B]">{authorName}</span>
                         <span className="text-xs text-[#64748B]">• {formatDate(post.createdAt)}</span>
-                        
-                        <span className="ml-auto bg-[#EFF6FF] text-[#0046CE] text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">
-                          {post.species || 'General'}
+
+                        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#0046CE]">
+                          {post.isPinned ? 'Pinned' : groupLabel}
                         </span>
                       </div>
                       
-                      {/* Conditional Vet Answered badge */}
-                      {isVetAnswered && (
-                        <div className="mt-3 bg-[#F0FDF4] text-[#166534] text-xs px-2 py-0.5 rounded-full w-fit flex items-center gap-1 font-medium">
+                      <h3 className="font-semibold text-[#1E293B] mt-3 text-base">{post.title}</h3>
+                      <p className="text-sm text-[#64748B] mt-2 line-clamp-2">{post.content}</p>
+
+                      {hasVetAnswer && (
+                        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] px-2 py-1 text-xs font-semibold text-[#166534]">
                           <Check className="w-3 h-3" /> Vet Answered
                         </div>
                       )}
-                      
-                      <h3 className="font-semibold text-[#1E293B] mt-2 text-base">{post.title}</h3>
-                      <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{post.content}</p>
-                      
-                      {/* Bottom row */}
-                      <div className="flex items-center gap-4 mt-4 text-xs text-[#64748B]">
-                        <div className="flex items-center gap-1 hover:text-[#0046CE] transition">
-                          <ThumbsUp className="w-4 h-4" /> {post.likesCount || Math.floor(Math.random() * 20)}
+
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[#64748B]">
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-4 h-4" /> {answersCount} Answer{answersCount !== 1 ? 's' : ''}
                         </div>
-                        <div className="flex items-center gap-1 hover:text-red-500 transition">
-                          <ThumbsDown className="w-4 h-4" />
+                        <div className="flex items-center gap-1">
+                          <ShieldCheck className="w-4 h-4" /> {upvotes} Upvotes
                         </div>
-                        <div className="flex items-center gap-1 hover:text-[#0046CE] transition">
-                          <MessageSquare className="w-4 h-4" /> {post.answersCount || post.answerCount || 0} Answers
-                        </div>
-                        
-                        {isVetAnswered && (
-                          <div className="ml-auto bg-[#F0FDF4] border border-[#DCFCE7] text-[#166534] text-[10px] px-2 py-0.5 rounded-full">
-                            Verified Response
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -228,6 +215,40 @@ export default function ForumPage() {
           
         </div>
       </div>
+      {showRules && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">Community Guidelines</h2>
+                <p className="text-sm text-slate-500 mt-1">A friendly, helpful forum keeps the community safe and useful.</p>
+              </div>
+              <button type="button" onClick={() => setShowRules(false)} className="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">Close</button>
+            </div>
+            <div className="mt-5 space-y-4 text-sm text-slate-600">
+              <div>
+                <p className="font-semibold text-slate-900">1. Be respectful.</p>
+                <p>Share your questions and advice kindly. Do not harass other members.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">2. Keep medical advice general.</p>
+                <p>Use the forum for guidance, but always consult a vet for diagnoses or emergencies.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">3. Post in the right group.</p>
+                <p>Choose the correct category so vets and owners can find your question fast.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">4. Respect privacy.</p>
+                <p>Do not share private details or personal health information on the forum.</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={() => setShowRules(false)} className="rounded-full bg-[#0046CE] px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
