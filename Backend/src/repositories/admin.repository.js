@@ -129,7 +129,86 @@ async function getAllVets(filters = {}) {
     query.$or = [{ name: searchRegex }, { clinicName: searchRegex }, { location: searchRegex }, { licenseNumber: searchRegex }];
   }
 
-  return Vet.find(query).sort('-createdAt');
+  const page = Math.max(Number(filters.page) || 1, 1);
+  const limit = Math.max(Number(filters.limit) || 10, 1);
+
+  const [total, vets] = await Promise.all([
+    Vet.countDocuments(query),
+    Vet.find(query)
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(limit),
+  ]);
+
+  return { items: vets, total, page, pages: Math.max(Math.ceil(total / limit), 1) };
+}
+
+/**
+ * Get all articles.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllArticles(filters = {}) {
+  const query = {};
+  if (filters.search) {
+    query.title = { $regex: filters.search, $options: 'i' };
+  }
+  const page = Number(filters.page) || 1;
+  const limit = Number(filters.limit) || 20;
+  const [items, total] = await Promise.all([
+    Article.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('authorId', 'name'),
+    Article.countDocuments(query),
+  ]);
+  return { items, total, page, pages: Math.ceil(total / limit) || 1 };
+}
+
+/**
+ * Get all products.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllProducts(filters = {}) {
+  const query = {};
+  if (filters.search) {
+    query.name = { $regex: filters.search, $options: 'i' };
+  }
+  const page = Number(filters.page) || 1;
+  const limit = Number(filters.limit) || 20;
+  const [items, total] = await Promise.all([
+    Product.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    Product.countDocuments(query),
+  ]);
+  return { items, total, page, pages: Math.ceil(total / limit) || 1 };
+}
+
+/**
+ * Get all forum posts.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllForumPosts(filters = {}) {
+  const query = {};
+  if (filters.search) {
+    query.title = { $regex: filters.search, $options: 'i' };
+  }
+  const page = Number(filters.page) || 1;
+  const limit = Number(filters.limit) || 20;
+  const [items, total] = await Promise.all([
+    ForumPost.find(query)
+      .sort({ isPinned: -1, createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('authorId', 'name'),
+    ForumPost.countDocuments(query),
+  ]);
+  return { items, total, page, pages: Math.ceil(total / limit) || 1 };
 }
 
 /**
@@ -250,6 +329,9 @@ module.exports = {
   getAllVets,
   setVetVerifiedStatus,
   getPendingArticles,
+  getAllArticles,
+  getAllProducts,
+  getAllForumPosts,
   setArticlePublishedStatus,
   getReportedPosts,
   deleteForumPost,

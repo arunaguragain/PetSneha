@@ -21,14 +21,17 @@ router.patch('/vets/:id/approve', [param('id').isMongoId().withMessage('Valid ve
 router.patch('/vets/:id/reject', [param('id').isMongoId().withMessage('Valid vet ID is required.'), body('reason').optional().trim()], validateRequest, adminController.rejectVet);
 
 router.get('/articles/pending', adminController.getPendingArticles);
+router.get('/articles', adminController.getAllArticles);
 router.patch('/articles/:id/publish', [param('id').isMongoId().withMessage('Valid article ID is required.')], validateRequest, adminController.publishArticle);
 router.patch('/articles/:id/reject', [param('id').isMongoId().withMessage('Valid article ID is required.'), body('reason').optional().trim()], validateRequest, adminController.rejectArticle);
 
 router.get('/forum/reported', adminController.getReportedPosts);
+router.get('/forum', adminController.getAllForumPosts);
 router.delete('/forum/:id', [param('id').isMongoId().withMessage('Valid post ID is required.')], validateRequest, adminController.removePost);
 router.patch('/forum/:id/pin', [param('id').isMongoId().withMessage('Valid post ID is required.')], validateRequest, adminController.pinPost);
 
 router.get('/products/pending', adminController.getPendingProducts);
+router.get('/products', adminController.getAllProducts);
 router.patch('/products/:id/approve', [param('id').isMongoId().withMessage('Valid product ID is required.')], validateRequest, adminController.approveProduct);
 router.patch('/products/:id/reject', [param('id').isMongoId().withMessage('Valid product ID is required.')], validateRequest, adminController.rejectProduct);
 

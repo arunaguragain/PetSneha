@@ -86,6 +86,14 @@ const getPendingArticles = catchAsync(async (req, res) => {
 });
 
 /**
+ * Get all articles.
+ */
+const getAllArticles = catchAsync(async (req, res) => {
+  const data = await adminService.getAllArticles(req.query);
+  sendItem(res, data);
+});
+
+/**
  * Publish article.
  */
 const publishArticle = catchAsync(async (req, res) => {
@@ -110,6 +118,14 @@ const getReportedPosts = catchAsync(async (req, res) => {
 });
 
 /**
+ * Get all forum posts.
+ */
+const getAllForumPosts = catchAsync(async (req, res) => {
+  const data = await adminService.getAllForumPosts(req.query);
+  sendItem(res, data);
+});
+
+/**
  * Remove post.
  */
 const removePost = catchAsync(async (req, res) => {
@@ -130,6 +146,14 @@ const pinPost = catchAsync(async (req, res) => {
  */
 const getPendingProducts = catchAsync(async (req, res) => {
   const data = await adminService.getPendingProducts();
+  sendItem(res, data);
+});
+
+/**
+ * Get all products.
+ */
+const getAllProducts = catchAsync(async (req, res) => {
+  const data = await adminService.getAllProducts(req.query);
   sendItem(res, data);
 });
 
@@ -168,12 +192,15 @@ module.exports = {
   approveVet,
   rejectVet,
   getPendingArticles,
+  getAllArticles,
   publishArticle,
   rejectArticle,
   getReportedPosts,
+  getAllForumPosts,
   removePost,
   pinPost,
   getPendingProducts,
+  getAllProducts,
   approveProduct,
   rejectProduct,
   getAllOrders,
