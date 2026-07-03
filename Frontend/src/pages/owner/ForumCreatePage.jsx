@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, Input, Textarea } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea } from '../../components/ui';
 import { createForumPost } from '../../api/content.api';
 import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
@@ -9,7 +9,7 @@ export default function ForumCreatePage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '' });
+  const [form, setForm] = useState({ title: '', content: '', group: 'all', isAnonymous: false });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -34,6 +34,27 @@ export default function ForumCreatePage() {
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <Input label="Title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
             <Textarea label="Content" value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} rows={8} />
+            <Select
+              label="Group"
+              value={form.group}
+              onChange={(event) => setForm((current) => ({ ...current, group: event.target.value }))}
+            >
+              <option value="all">All</option>
+              <option value="dogs">Dogs</option>
+              <option value="cats">Cats</option>
+              <option value="newOwners">New Owners</option>
+              <option value="emergency">Emergency</option>
+            </Select>
+            <div className="form-group flex items-center gap-3">
+              <input
+                id="anonymous"
+                type="checkbox"
+                checked={form.isAnonymous}
+                onChange={(event) => setForm((current) => ({ ...current, isAnonymous: event.target.checked }))}
+                className="h-4 w-4 rounded border border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <label htmlFor="anonymous" className="text-sm font-medium text-slate-700">Post anonymously</label>
+            </div>
             <div className="flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={() => navigate('/forum')}>Cancel</Button>
               <Button type="submit" loading={loading}>Post</Button>

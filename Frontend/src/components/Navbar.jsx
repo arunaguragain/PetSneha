@@ -21,6 +21,7 @@ const navItemsByRole = {
     { label: 'Dashboard', href: '/vet/dashboard' },
     { label: 'Appointments', href: '/vet/appointments' },
     { label: 'Articles', href: '/vet/articles' },
+    { label: 'Forum', href: '/forum' },
     { label: 'Products', href: '/vet/products' },
   ],
   admin: [{ label: 'Admin', href: '/admin/dashboard' }],

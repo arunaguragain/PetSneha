@@ -9,12 +9,15 @@ export const getAllAdminVets = (params) => axiosInstance.get('/admin/vets', { pa
 export const approveVet = (id) => axiosInstance.patch(`/admin/vets/${id}/approve`);
 export const rejectVet = (id, reason) => axiosInstance.patch(`/admin/vets/${id}/reject`, { reason });
 export const getPendingArticles = () => axiosInstance.get('/admin/articles/pending');
+export const getAllArticles = (params) => axiosInstance.get('/admin/articles', { params });
 export const publishArticle = (id) => axiosInstance.patch(`/admin/articles/${id}/publish`);
 export const rejectArticle = (id, reason) => axiosInstance.patch(`/admin/articles/${id}/reject`, { reason });
 export const getReportedPosts = () => axiosInstance.get('/admin/forum/reported');
+export const getAllForumPosts = (params) => axiosInstance.get('/admin/forum', { params });
 export const removePost = (id) => axiosInstance.delete(`/admin/forum/${id}`);
 export const pinPost = (id) => axiosInstance.patch(`/admin/forum/${id}/pin`);
 export const getPendingProducts = () => axiosInstance.get('/admin/products/pending');
+export const getAllProducts = (params) => axiosInstance.get('/admin/products', { params });
 export const approveProduct = (id) => axiosInstance.patch(`/admin/products/${id}/approve`);
 export const rejectProduct = (id, reason) => axiosInstance.patch(`/admin/products/${id}/reject`, { reason });
 export const getAllOrders = (params) => axiosInstance.get('/admin/orders', { params });

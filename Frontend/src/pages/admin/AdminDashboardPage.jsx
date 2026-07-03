@@ -37,7 +37,10 @@ import {
   approveVet,
   deactivateUser,
   getAllAdminVets,
+  getAllArticles,
+  getAllForumPosts,
   getAllOrders,
+  getAllProducts,
   getAllUsers,
   getAdminDashboard,
   getPendingArticles,
@@ -576,10 +579,16 @@ function ArticlesTab() {
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const [articles, setArticles] = useState([]);
+  const [allArticles, setAllArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [allLoading, setAllLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [articleSearch, setArticleSearch] = useState('');
+  const [articlePage, setArticlePage] = useState(1);
+  const [articlePages, setArticlePages] = useState(1);
+  const debRef = useRef(null);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -588,12 +597,36 @@ function ArticlesTab() {
     finally { setLoading(false); }
   }, [addToast]);
 
-  useEffect(() => { fetchArticles(); }, [fetchArticles]);
+  const fetchAllArticles = useCallback(async (search, page = 1) => {
+    setAllLoading(true);
+    try {
+      const res = await getAllArticles({ ...(search ? { search } : {}), page });
+      const d = res?.data ?? res;
+      setAllArticles(safeArray(d?.items ?? d));
+      setArticlePage(d?.page ?? page);
+      setArticlePages(d?.pages ?? 1);
+    } catch (e) {
+      addToast(getErrorMessage(e), 'danger');
+    } finally {
+      setAllLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => { fetchArticles(); fetchAllArticles('', 1); }, [fetchArticles, fetchAllArticles]);
+
+  useEffect(() => {
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => {
+      setArticlePage(1);
+      fetchAllArticles(articleSearch, 1);
+    }, 350);
+    return () => clearTimeout(debRef.current);
+  }, [articleSearch, fetchAllArticles]);
 
   async function handlePublish(article) {
     if (!await confirm({ title: 'Publish article?', message: `"${article.title}" will be visible to all users.`, confirmText: 'Publish', variant: 'primary' })) return;
     setActionLoading(uid(article) + '-p');
-    try { await publishArticle(uid(article)); addToast('Article published!', 'success'); fetchArticles(); }
+    try { await publishArticle(uid(article)); addToast('Article published!', 'success'); fetchArticles(); fetchAllArticles(articleSearch); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -601,7 +634,7 @@ function ArticlesTab() {
   async function handleRejectConfirm(reason) {
     if (!rejectModal) return;
     setRejectLoading(true);
-    try { await rejectArticle(uid(rejectModal.article), reason); addToast('Article rejected', 'success'); setRejectModal(null); fetchArticles(); }
+    try { await rejectArticle(uid(rejectModal.article), reason); addToast('Article rejected', 'success'); setRejectModal(null); fetchArticles(); fetchAllArticles(articleSearch); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setRejectLoading(false); }
   }
@@ -614,8 +647,22 @@ function ArticlesTab() {
     </div>
   );
 
+  const getArticleStatus = (article) => {
+    if (article.isPublished) return 'Published';
+    if (article.summary?.includes('Rejection reason:')) return 'Rejected';
+    if (article.isVerified === false) return 'Pending';
+    return 'Draft';
+  };
+
+  const getArticleTone = (status) => {
+    if (status === 'Published') return 'success';
+    if (status === 'Pending') return 'warning';
+    if (status === 'Rejected') return 'danger';
+    return 'neutral';
+  };
+
   return (
-    <>
+    <div className="space-y-6">
       <Card className="p-5">
         <div className="mb-4 flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Pending Articles</h2><Badge variant="warning">{articles.length}</Badge></div>
         {loading ? <SectionSkeleton rows={3} /> : articles.length === 0 ? (
@@ -636,8 +683,35 @@ function ArticlesTab() {
           </div>
         )}
       </Card>
+
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-neutral-900">All Articles</h2>
+          <div className="w-64"><Input placeholder="Search articles..." value={articleSearch} onChange={(e) => setArticleSearch(e.target.value)} leftIcon={<Search className="h-4 w-4" />} /></div>
+        </div>
+        {allLoading ? <SectionSkeleton rows={4} /> : allArticles.length === 0 ? (
+          <EmptyState icon={FileText} message="No articles found." />
+        ) : (
+          <div className="space-y-2">
+            {allArticles.map((article) => {
+              const status = getArticleStatus(article);
+              return (
+                <div key={uid(article)} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-neutral-900 truncate">{article.title}</p>
+                    <p className="text-xs text-neutral-500 truncate">by {article.author?.name || article.authorName || 'Unknown'} / {formatDate(article.createdAt)}</p>
+                  </div>
+                  <Badge variant={getArticleTone(status)}>{status}</Badge>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <Pagination page={articlePage} pages={articlePages} onPage={(page) => fetchAllArticles(articleSearch, page)} />
+      </Card>
+
       <ReasonModal title={`Reject "${rejectModal?.article?.title}"?`} open={!!rejectModal} onClose={() => setRejectModal(null)} onConfirm={handleRejectConfirm} loading={rejectLoading} />
-    </>
+    </div>
   );
 }
 
@@ -646,10 +720,16 @@ function ProductsTab() {
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [allLoading, setAllLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productPage, setProductPage] = useState(1);
+  const [productPages, setProductPages] = useState(1);
+  const debRef = useRef(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -658,12 +738,36 @@ function ProductsTab() {
     finally { setLoading(false); }
   }, [addToast]);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  const fetchAllProducts = useCallback(async (search, page = 1) => {
+    setAllLoading(true);
+    try {
+      const res = await getAllProducts({ ...(search ? { search } : {}), page });
+      const d = res?.data ?? res;
+      setAllProducts(safeArray(d?.items ?? d));
+      setProductPage(d?.page ?? page);
+      setProductPages(d?.pages ?? 1);
+    } catch (e) {
+      addToast(getErrorMessage(e), 'danger');
+    } finally {
+      setAllLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => { fetchProducts(); fetchAllProducts('', 1); }, [fetchProducts, fetchAllProducts]);
+
+  useEffect(() => {
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => {
+      setProductPage(1);
+      fetchAllProducts(productSearch, 1);
+    }, 350);
+    return () => clearTimeout(debRef.current);
+  }, [productSearch, fetchAllProducts]);
 
   async function handleApprove(product) {
     if (!await confirm({ title: 'Approve product?', message: `"${product.name}" will appear in the marketplace.`, confirmText: 'Approve', variant: 'primary' })) return;
     setActionLoading(uid(product) + '-a');
-    try { await approveProduct(uid(product)); addToast('Product approved!', 'success'); fetchProducts(); }
+    try { await approveProduct(uid(product)); addToast('Product approved!', 'success'); fetchProducts(); fetchAllProducts(productSearch); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -671,7 +775,7 @@ function ProductsTab() {
   async function handleRejectConfirm(reason) {
     if (!rejectModal) return;
     setRejectLoading(true);
-    try { await rejectProduct(uid(rejectModal.product), reason); addToast('Product rejected', 'success'); setRejectModal(null); fetchProducts(); }
+    try { await rejectProduct(uid(rejectModal.product), reason); addToast('Product rejected', 'success'); setRejectModal(null); fetchProducts(); fetchAllProducts(productSearch); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setRejectLoading(false); }
   }
@@ -689,7 +793,7 @@ function ProductsTab() {
   );
 
   return (
-    <>
+    <div className="space-y-6">
       <Card className="p-5">
         <div className="mb-4 flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Pending Products</h2><Badge variant="warning">{products.length}</Badge></div>
         {loading ? <SectionSkeleton rows={3} /> : products.length === 0 ? (
@@ -710,8 +814,32 @@ function ProductsTab() {
           </div>
         )}
       </Card>
+
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-neutral-900">All Products</h2>
+          <div className="w-64"><Input placeholder="Search products..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} leftIcon={<Search className="h-4 w-4" />} /></div>
+        </div>
+        {allLoading ? <SectionSkeleton rows={4} /> : allProducts.length === 0 ? (
+          <EmptyState icon={Package} message="No products found." />
+        ) : (
+          <div className="space-y-2">
+            {allProducts.map((product) => (
+              <div key={uid(product)} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
+                <div className="min-w-0">
+                  <p className="font-semibold text-neutral-900 truncate">{product.name}</p>
+                  <p className="text-xs text-neutral-500 truncate">{formatCurrency(product.price)} / {product.category}</p>
+                </div>
+                <Badge variant={product.isVerifiedSeller ? 'success' : 'warning'}>{product.isVerifiedSeller ? 'Approved' : 'Pending'}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+        <Pagination page={productPage} pages={productPages} onPage={(page) => fetchAllProducts(productSearch, page)} />
+      </Card>
+
       <ReasonModal title={`Reject "${rejectModal?.product?.name}"?`} open={!!rejectModal} onClose={() => setRejectModal(null)} onConfirm={handleRejectConfirm} loading={rejectLoading} />
-    </>
+    </div>
   );
 }
 
@@ -720,8 +848,14 @@ function ForumTab() {
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const [posts, setPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [allLoading, setAllLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [search, setSearch] = useState('');
+  const [postPage, setPostPage] = useState(1);
+  const [postPages, setPostPages] = useState(1);
+  const debRef = useRef(null);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -730,11 +864,35 @@ function ForumTab() {
     finally { setLoading(false); }
   }, [addToast]);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  const fetchAllPosts = useCallback(async (searchTerm, page = 1) => {
+    setAllLoading(true);
+    try {
+      const res = await getAllForumPosts({ ...(searchTerm ? { search: searchTerm } : {}), page });
+      const d = res?.data ?? res;
+      setAllPosts(safeArray(d?.items ?? d));
+      setPostPage(d?.page ?? page);
+      setPostPages(d?.pages ?? 1);
+    } catch (e) {
+      addToast(getErrorMessage(e), 'danger');
+    } finally {
+      setAllLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => { fetchPosts(); fetchAllPosts('', 1); }, [fetchPosts, fetchAllPosts]);
+
+  useEffect(() => {
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => {
+      setPostPage(1);
+      fetchAllPosts(search, 1);
+    }, 350);
+    return () => clearTimeout(debRef.current);
+  }, [search, fetchAllPosts]);
 
   async function handlePin(post) {
     setActionLoading(uid(post) + '-pin');
-    try { await pinPost(uid(post)); addToast('Post pinned', 'success'); fetchPosts(); }
+    try { await pinPost(uid(post)); addToast('Post pinned', 'success'); fetchPosts(); fetchAllPosts(search); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -742,7 +900,7 @@ function ForumTab() {
   async function handleRemove(post) {
     if (!await confirm({ title: 'Remove post?', message: `"${post.title || 'This post'}" will be permanently deleted.`, confirmText: 'Remove', variant: 'danger' })) return;
     setActionLoading(uid(post) + '-remove');
-    try { await removePost(uid(post)); addToast('Post removed', 'success'); fetchPosts(); }
+    try { await removePost(uid(post)); addToast('Post removed', 'success'); fetchPosts(); fetchAllPosts(search); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -759,29 +917,61 @@ function ForumTab() {
   );
 
   return (
-    <Card className="p-5">
-      <div className="mb-4 flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Reported Forum Posts</h2><Badge variant="danger">{posts.length}</Badge></div>
-      {loading ? <SectionSkeleton rows={3} /> : posts.length === 0 ? (
-        <EmptyState icon={MessageSquare} message="No reported posts." />
-      ) : (
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <DetailRow key={uid(post)} detail={<PostDetail post={post} />}>
-              <div className="flex flex-1 items-start justify-between gap-3">
+    <div className="space-y-6">
+      <Card className="p-5">
+        <div className="mb-4 flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Reported Forum Posts</h2><Badge variant="danger">{posts.length}</Badge></div>
+        {loading ? <SectionSkeleton rows={3} /> : posts.length === 0 ? (
+          <EmptyState icon={MessageSquare} message="No reported posts." />
+        ) : (
+          <div className="space-y-3">
+            {posts.map((post) => (
+              <DetailRow key={uid(post)} detail={<PostDetail post={post} />}>
+                <div className="flex flex-1 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-neutral-900 truncate">{post.title || 'Untitled post'}</p>
+                    <p className="text-xs text-neutral-500">by {post.author?.name || 'Member'}{post.reportCount != null && <span className="ml-2 text-red-500">🚩 {post.reportCount}</span>}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button size="sm" variant="secondary" loading={actionLoading === uid(post) + '-pin'} onClick={() => handlePin(post)}>{post.isPinned ? 'Unpin' : 'Pin'}</Button>
+                    <Button size="sm" variant="danger" loading={actionLoading === uid(post) + '-remove'} onClick={() => handleRemove(post)}>Remove</Button>
+                  </div>
+                </div>
+              </DetailRow>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-neutral-900">All Posts</h2>
+          <div className="w-64"><Input placeholder="Search posts..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="h-4 w-4" />} /></div>
+        </div>
+        {allLoading ? <SectionSkeleton rows={4} /> : allPosts.length === 0 ? (
+          <EmptyState icon={MessageSquare} message="No forum posts found." />
+        ) : (
+          <div className="space-y-2">
+            {allPosts.map((post) => (
+              <div key={uid(post)} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
                 <div className="min-w-0">
-                  <p className="font-semibold text-neutral-900 truncate">{post.title || 'Untitled post'}</p>
-                  <p className="text-xs text-neutral-500">by {post.author?.name || 'Member'}{post.reportCount != null && <span className="ml-2 text-red-500">🚩 {post.reportCount}</span>}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-neutral-900 truncate">{post.title || 'Untitled post'}</p>
+                    {post.isPinned && <Badge variant="primary">Pinned</Badge>}
+                  </div>
+                  <p className="text-xs text-neutral-500 truncate">by {post.author?.name || 'Member'} / {post.upvotes ?? 0} upvotes</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <Button size="sm" variant="secondary" loading={actionLoading === uid(post) + '-pin'} onClick={() => handlePin(post)}>{post.isPinned ? 'Unpin' : 'Pin'}</Button>
                   <Button size="sm" variant="danger" loading={actionLoading === uid(post) + '-remove'} onClick={() => handleRemove(post)}>Remove</Button>
+                  <Button size="sm" variant="ghost" onClick={async () => { await reportPost(uid(post)); addToast('Post reported', 'success'); fetchPosts(); fetchAllPosts(search, postPage); }}>Report</Button>
                 </div>
               </div>
-            </DetailRow>
-          ))}
-        </div>
-      )}
-    </Card>
+            ))}
+          </div>
+        )}
+        <Pagination page={postPage} pages={postPages} onPage={(page) => fetchAllPosts(search, page)} />
+      </Card>
+    </div>
   );
 }
 
@@ -818,7 +1008,7 @@ function OrdersTab() {
       </div>
       <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
         <AlertTriangle className="h-4 w-4 shrink-0" />
-        Orders are view-only. Refund/dispute management requires new backend endpoints.
+        Orders are view-only. 
       </div>
       {loading ? <SectionSkeleton rows={5} /> : data.orders.length === 0 ? (
         <EmptyState icon={ShoppingBag} message="No orders found." />
