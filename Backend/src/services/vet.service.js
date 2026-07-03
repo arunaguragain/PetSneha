@@ -1,6 +1,7 @@
 const vetRepository = require('../repositories/vet.repository');
 const appointmentRepository = require('../repositories/appointment.repository');
 const userRepository = require('../repositories/user.repository');
+const adminService = require('./admin.service');
 const AppError = require('../utils/AppError');
 
 function parseNumber(value) {
@@ -182,12 +183,7 @@ async function verifyVet(currentUser, vetId) {
     throw new AppError('Only admins can verify vets.', 403);
   }
 
-  const vet = await vetRepository.findById(vetId);
-  if (!vet) {
-    throw new AppError('Vet not found.', 404);
-  }
-
-  return vetRepository.updateById(vetId, { isVerified: true });
+  return adminService.approveVet(vetId);
 }
 
 /**
