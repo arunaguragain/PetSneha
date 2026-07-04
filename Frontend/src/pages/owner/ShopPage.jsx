@@ -129,10 +129,18 @@ export default function ShopPage() {
                 onClick={() => navigate(`/products/${product._id}`)}
               >
                 {/* Image */}
-                <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center">
-                  <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
+                <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center overflow-hidden">
+                  {product.images && product.images.length > 0 ? (
+                    <img
+                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${product.images[0]}`}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
+                  )}
                   
-                  {/* Optional badge mock - applying to every 3rd item just for design demo */}
+                  {/* Badge on every 3rd item */}
                   {index % 3 === 0 && (
                     <div className="absolute top-2 left-2 bg-[#0046CE] text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">
                       BUDDY'S CHOICE

@@ -114,7 +114,15 @@ export default function CheckoutPage() {
             <div className="space-y-3 mt-4">
               {cartItems.map((item) => (
                 <div key={item.productId} className="flex items-center gap-3 bg-white border border-[#E2E8F0] rounded-xl p-3">
-                  <img src="/happy-puppy.png" alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-[#F1F5F9]" />
+                  {item.image ? (
+                    <img
+                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${item.image}`}
+                      alt={item.name}
+                      className="w-10 h-10 rounded-lg object-cover bg-[#F1F5F9]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-lg">🛍️</div>
+                  )}
 
                   <div>
                     <div className="font-medium text-sm text-[#1E293B] truncate max-w-[150px]">{item.name}</div>
