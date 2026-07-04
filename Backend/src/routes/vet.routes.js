@@ -30,8 +30,6 @@ router.post('/:id/reviews', [param('id').isMongoId().withMessage('Valid vet ID i
 
 router.patch('/:id/status', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, restrictTo('vet', 'admin'), validateRequest, vetController.toggleOpenStatus);
 
-router.patch('/:id/verify', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, restrictTo('admin'), validateRequest, vetController.verifyVet);
-
 router.patch('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], protect, vetUpload.single('profilePicture'), parseFormFields, validateRequest, vetController.updateVetProfile);
 
 router.get('/:id', [param('id').isMongoId().withMessage('Valid vet ID is required.')], validateRequest, vetController.getVet);

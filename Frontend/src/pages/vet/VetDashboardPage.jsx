@@ -84,7 +84,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const [submittingAnswer, setSubmittingAnswer] = useState(null);
   
   // Form states
-  const [articleForm, setArticleForm] = useState({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+  const [articleForm, setArticleForm] = useState({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5, season: 'all' });
   const [articleImageFile, setArticleImageFile] = useState(null);
   const [submittingArticle, setSubmittingArticle] = useState(false);
   const [replyTexts, setReplyTexts] = useState({});
@@ -273,6 +273,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
         payload.append('content', articleForm.content);
         payload.append('summary', articleForm.summary || '');
         payload.append('readTime', articleForm.readTime || 5);
+        payload.append('season', articleForm.season || 'all');
         payload.append('image', articleImageFile);
         if (articleForm.tags && articleForm.tags.length > 0) {
           payload.append('tags', articleForm.tags[0]);
@@ -284,7 +285,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
       await submitVetArticle(payload, headers);
       addToast('Practitioner knowledge article published draft successfully', 'success');
-      setArticleForm({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+      setArticleForm({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5, season: 'all' });
       setArticleImageFile(null);
       
       const fileInput = document.querySelector('input[type="file"]');
@@ -1380,6 +1381,16 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                     <option value="Pet Behavior">Pet Behavior</option>
                   </Select>
                 </div>
+                <Select
+                  label="Season"
+                  value={articleForm.season}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, season: e.target.value }))}
+                >
+                  <option value="all">All</option>
+                  <option value="monsoon">Monsoon</option>
+                  <option value="winter">Winter</option>
+                  <option value="summer">Summer</option>
+                </Select>
 
                 <div className="form-group">
                   <label className="form-label">Featured Image / Picture (Optional)</label>
@@ -1898,7 +1909,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                         <Badge variant="warning">⏳ Pending</Badge>
                       )}
                     </div>
-                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full mb-3 self-start capitalize">{product.category}</span>
+                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full mb-3 self-start">{product.category}</span>
                     <p className="text-[#0046CE] font-bold text-lg mb-2">Rs {product.price}</p>
                     <div className="flex gap-1.5 flex-wrap mb-3">
                       {(product.petType || []).map(pt => (

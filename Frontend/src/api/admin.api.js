@@ -2,6 +2,7 @@ import axiosInstance from './axios';
 
 export const getAdminDashboard = () => axiosInstance.get('/admin/dashboard');
 export const getAllUsers = (params) => axiosInstance.get('/admin/users', { params });
+export const getUserById = (id) => axiosInstance.get(`/admin/users/${id}`);
 export const deactivateUser = (id) => axiosInstance.patch(`/admin/users/${id}/deactivate`);
 export const reactivateUser = (id) => axiosInstance.patch(`/admin/users/${id}/reactivate`);
 export const getPendingVets = () => axiosInstance.get('/admin/vets/pending');
