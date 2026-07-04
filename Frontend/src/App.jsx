@@ -30,6 +30,7 @@ import ForumCreatePage from './pages/owner/ForumCreatePage';
 import ShopPage from './pages/owner/ShopPage';
 import ProductPage from './pages/owner/ProductPage';
 import CheckoutPage from './pages/owner/CheckoutPage';
+import OrdersPage from './pages/owner/OrdersPage';
 import VetDashboardPage from './pages/vet/VetDashboardPage';
 import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
@@ -146,6 +147,7 @@ export default function App() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/products/:productId" element={<ProductPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Route>
       </Route>
 

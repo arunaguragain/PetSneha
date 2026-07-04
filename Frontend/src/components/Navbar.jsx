@@ -15,6 +15,7 @@ const navItemsByRole = {
     { label: 'Vets', href: '/vets' },
     { label: 'Records', href: '/records' },
     { label: 'Shop', href: '/shop' },
+    { label: 'Orders', href: '/orders' },
     { label: 'Articles', href: '/articles' },
   ],
   vet: [

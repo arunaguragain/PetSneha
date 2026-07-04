@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Badge, Button, Card, Input, Skeleton } from '../../components/ui';
 import { getProducts } from '../../api/shop.api';
 import { formatCurrency, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { useCart } from '../../context/CartContext';
 import { ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
 
 export default function ShopPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { addToast } = useToast();
+  const { addItem, itemCount } = useCart();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
@@ -63,7 +67,7 @@ export default function ShopPage() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative">
               <select className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]">
-                <option value="">All Categories</option>
+                <option value="">{t('shop.allCategories')}</option>
                 <option value="food">Food & Treats</option>
                 <option value="toys">Toys</option>
                 <option value="health">Health & Wellness</option>
@@ -73,9 +77,9 @@ export default function ShopPage() {
             
             <div className="relative">
               <select className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]">
-                <option value="popular">Popular</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
+                <option value="popular">{t('shop.popular')}</option>
+                <option value="price_asc">{t('shop.priceAscending')}</option>
+                <option value="price_desc">{t('shop.priceDescending')}</option>
               </select>
               <ChevronDown className="w-4 h-4 text-[#64748B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -86,7 +90,7 @@ export default function ShopPage() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search supplies..."
+              placeholder={t('shop.searchSupplies')}
               className="w-full bg-white border border-[#E2E8F0] rounded-lg px-4 py-2 text-sm outline-none focus:border-[#0046CE]"
             />
           </div>
@@ -95,14 +99,21 @@ export default function ShopPage() {
         {/* Browse All Supplies Header */}
         <div className="flex justify-between items-end mt-6 border-t border-[#E2E8F0] pt-6">
           <div>
-            <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Browse All Supplies</h2>
+            <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
+              {t('shop.browseAllSupplies')}
+            </h2>
             <p className="text-sm text-[#64748B] mt-0.5">Premium quality products sourced for Nepalese pet owners.</p>
           </div>
           <button 
             onClick={() => navigate('/checkout')}
-            className="hidden sm:flex items-center gap-2 border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] rounded-lg px-4 py-2 text-sm transition"
+            className="hidden sm:flex items-center gap-2 border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] rounded-lg px-4 py-2 text-sm transition relative"
           >
-            <ShoppingCart className="w-4 h-4" /> Go to Checkout
+            <ShoppingCart className="w-4 h-4" /> {t('buttons.goToCheckout')}
+            {itemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#0046CE] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {itemCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -142,8 +153,8 @@ export default function ShopPage() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        // mock add to cart handler
-                        navigate('/checkout');
+                        addItem(product, 1);
+                        addToast(`${product.name} ${t('shop.savedToCart')}`, 'success');
                       }}
                       className="w-7 h-7 bg-[#EFF6FF] hover:bg-blue-100 rounded-full flex items-center justify-center text-[#0046CE] transition"
                     >
@@ -155,7 +166,7 @@ export default function ShopPage() {
             ))
           ) : (
             <div className="col-span-1 sm:col-span-2 md:col-span-3 xl:col-span-4 border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-sm text-[#64748B]">
-              No products found matching your criteria.
+              {t('shop.noProductsFound')}
             </div>
           )}
         </div>
@@ -163,9 +174,14 @@ export default function ShopPage() {
         {/* Mobile checkout button */}
         <button 
           onClick={() => navigate('/checkout')}
-          className="sm:hidden w-full mt-6 flex items-center justify-center gap-2 border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] rounded-lg px-4 py-3 text-sm transition"
+          className="sm:hidden w-full mt-6 flex items-center justify-center gap-2 border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] rounded-lg px-4 py-3 text-sm transition relative"
         >
-          <ShoppingCart className="w-4 h-4" /> Go to Checkout
+          <ShoppingCart className="w-4 h-4" /> {t('buttons.goToCheckout')}
+          {itemCount > 0 && (
+            <span className="absolute right-4 bg-[#0046CE] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {itemCount}
+            </span>
+          )}
         </button>
       </div>
     </div>

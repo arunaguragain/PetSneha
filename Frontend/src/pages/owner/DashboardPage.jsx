@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Skeleton } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getAppointments, getPets } from '../../api/pet.api';
@@ -10,6 +11,7 @@ import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight,
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -95,10 +97,10 @@ export default function DashboardPage() {
               className="text-3xl font-semibold text-white"
               style={{ fontFamily: 'Literata, serif' }}
             >
-              Welcome back, {user?.name || 'Pet parent'}
+              {t('dashboard.welcomeBack')}, {user?.name || 'Pet parent'}
             </h2>
             <p className="text-sm text-white/70 mt-1.5">
-              Your furry friends {petNames} are doing great today.
+              {t('dashboard.overview')} {petNames} {t('common.loading')}.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -114,7 +116,7 @@ export default function DashboardPage() {
               className="flex items-center gap-2 bg-transparent text-white border border-white/80 hover:bg-white/10 rounded-xl px-5 py-2.5 text-sm font-semibold transition"
             >
               <Calendar size={15} />
-              Book Vet
+              {t('buttons.bookAppointment')}
             </button>
           </div>
         </div>
@@ -125,7 +127,7 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                NEXT VACCINATION
+                {t('pets.vaccinations')}
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
@@ -144,13 +146,13 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div className="flex-1 pr-4">
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                Upcoming Events
+                {t('appointments.upcomingAppointments')}
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                3 events due
+                3 {t('appointments.title')}
               </p>
               <div className="mt-3.5 w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
                 <div className="h-full bg-[#0046CE] rounded-full w-2/3" />
@@ -171,7 +173,7 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                2 Actions
+                2 {t('common.loading')}
               </p>
               <p className="text-sm text-[#64748B] mt-1">Verify Mimi's diet log</p>
             </div>
@@ -210,14 +212,14 @@ export default function DashboardPage() {
                   className="text-xl font-semibold text-[#1E293B]"
                   style={{ fontFamily: 'Literata, serif' }}
                 >
-                  My Pets
+                  {t('dashboard.myPets')}
                 </h3>
                 <button
                   onClick={() => navigate('/pets/new')}
                   className="flex items-center gap-1.5 text-sm text-[#0046CE] font-medium hover:bg-[#EFF6FF] px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <Plus size={16} />
-                  Add pet
+                  {t('pets.addPet')}
                 </button>
               </div>
 
@@ -227,12 +229,12 @@ export default function DashboardPage() {
                   <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center text-[#0046CE]">
                     <PawPrint size={28} />
                   </div>
-                  <p className="text-sm font-medium text-[#64748B]">No pets added yet.</p>
+                  <p className="text-sm font-medium text-[#64748B]">{t('pets.noPets')}</p>
                   <button
                     onClick={() => navigate('/pets/new')}
                     className="mt-1 bg-[#0046CE] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#003DA8] transition"
                   >
-                    + Add your first pet
+                    + {t('pets.addPet')}
                   </button>
                 </div>
               ) : (
@@ -279,12 +281,12 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mb-4"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                Upcoming Events
+                {t('appointments.upcomingAppointments')}
               </h3>
               <div className="space-y-3">
                 {upcomingEvents?.length === 0 || !upcomingEvents ? (
                   <div className="bg-white border border-dashed border-[#E2E8F0] rounded-2xl py-10 text-center">
-                    <p className="text-sm text-[#64748B]">No upcoming events.</p>
+                    <p className="text-sm text-[#64748B]">{t('appointments.noAppointments')}</p>
                   </div>
                 ) : (
                   upcomingEvents.map((event, i) => (
