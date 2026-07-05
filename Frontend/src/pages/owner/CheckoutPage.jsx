@@ -5,7 +5,8 @@ import { placeOrder } from '../../api/shop.api';
 import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
-import { Banknote, Minus, Plus, Trash2 } from 'lucide-react';
+import { Banknote, Minus, Plus, Trash2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { ConfirmationOverlay, Button } from '../../components/ui';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -54,11 +55,8 @@ export default function CheckoutPage() {
       await placeOrder({ items, ...form });
       setOrderPlaced(true);
       clearCart();
-      addToast(t('checkout.orderPlaced'), 'success');
-      navigate('/orders');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
-    } finally {
       submittingRef.current = false;
       setLoading(false);
     }
@@ -67,16 +65,24 @@ export default function CheckoutPage() {
   const deliveryFee = 150;
   const total = subtotal + deliveryFee;
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !orderPlaced) {
     return null;
   }
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
-          {t('checkout.title')}
-        </h1>
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px]">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
+            {t('checkout.title')}
+          </h1>
+          <button
+            onClick={() => navigate('/shop')} 
+            className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to shop
+          </button>
+        </div>
 
         <div className="flex items-center gap-2 mt-6 mb-8">
           <div className="flex items-center gap-2 text-sm">
@@ -114,7 +120,15 @@ export default function CheckoutPage() {
             <div className="space-y-3 mt-4">
               {cartItems.map((item) => (
                 <div key={item.productId} className="flex items-center gap-3 bg-white border border-[#E2E8F0] rounded-xl p-3">
-                  <img src="/happy-puppy.png" alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-[#F1F5F9]" />
+                  {item.image ? (
+                    <img
+                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${item.image}`}
+                      alt={item.name}
+                      className="w-10 h-10 rounded-lg object-cover bg-[#F1F5F9]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-lg">🛍️</div>
+                  )}
 
                   <div>
                     <div className="font-medium text-sm text-[#1E293B] truncate max-w-[150px]">{item.name}</div>
@@ -262,6 +276,23 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      
+      <ConfirmationOverlay
+        open={orderPlaced}
+        icon={<CheckCircle2 size={32} />}
+        title="Order Confirmed!"
+        description="Your order has been placed successfully and will be delivered soon."
+        actions={(
+          <>
+            <Button type="button" onClick={() => navigate('/orders')} fullWidth>
+              View My Orders
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => navigate('/shop')} fullWidth>
+              Continue Shopping
+            </Button>
+          </>
+        )}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { forwardRef, useId } from 'react';
+import React, { forwardRef, useEffect, useId, useState } from 'react';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -54,6 +54,14 @@ function IconButtonChevron({ className = '' }) {
   );
 }
 
+function XIcon({ className = '' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export const Spinner = ({ size = 'md', className = '' }) => {
   const sizeClasses = {
     sm: 'h-4 w-4 border-2',
@@ -80,6 +88,56 @@ export const Button = forwardRef(function Button(
     </Component>
   );
 });
+
+export const Modal = ({ open = false, onClose, size = 'md', title, children, className = '' }) => {
+  if (!open) return null;
+
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-2xl',
+    lg: 'max-w-5xl',
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1E293B]/60 px-4 backdrop-blur-sm transition-all duration-200">
+      <div className={cn('relative w-full rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto', sizeClasses[size] || sizeClasses.md, className)}>
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-full p-1 text-[#94A3B8] transition hover:text-[#475569]" aria-label="Close dialog">
+          <XIcon className="h-5 w-5" />
+        </button>
+        {title ? (
+          <div className="px-6 pt-6 pb-2">
+            <h3 className="pr-10 text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{title}</h3>
+          </div>
+        ) : null}
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export const ConfirmationOverlay = ({
+  open = false,
+  icon,
+  title,
+  description,
+  children,
+  actions,
+  className = '',
+}) => {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+      <div className={cn('w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200', className)}>
+        {icon ? <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#EFF6FF] text-[#0046CE]">{icon}</div> : null}
+        {title ? <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Literata, serif' }}>{title}</h2> : null}
+        {description ? <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p> : null}
+        {children}
+        {actions ? <div className="mt-6 flex flex-col gap-3">{actions}</div> : null}
+      </div>
+    </div>
+  );
+};
 
 export const Input = forwardRef(function Input({ label, hint, error, id, className = '', required = false, leftIcon, rightIcon, ...props }, ref) {
   const autoId = useId();
@@ -153,8 +211,14 @@ export const Card = ({ hover = false, interactive = false, className = '', child
 );
 
 export const Avatar = ({ src, alt = '', name = '', size = 'md', className = '' }) => {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
+  const cleanName = name.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.)\s+/i, '');
   const initials =
-    name
+    cleanName
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
@@ -163,7 +227,11 @@ export const Avatar = ({ src, alt = '', name = '', size = 'md', className = '' }
 
   return (
     <span className={cn('avatar', `avatar-${size}`, className)}>
-      {src ? <img src={src} alt={alt || name} className="h-full w-full object-cover" /> : initials}
+      {src && !imgError ? (
+        <img src={src} alt={alt || name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
+      ) : (
+        initials
+      )}
     </span>
   );
 };
@@ -307,4 +375,5 @@ export {
   CheckIcon,
   PawIcon,
   StarIcon,
+  XIcon,
 };

@@ -15,6 +15,8 @@ router.get('/users/:id', [param('id').isMongoId().withMessage('Valid user ID is 
 router.patch('/users/:id/deactivate', [param('id').isMongoId().withMessage('Valid user ID is required.')], validateRequest, adminController.deactivateUser);
 router.patch('/users/:id/reactivate', [param('id').isMongoId().withMessage('Valid user ID is required.')], validateRequest, adminController.reactivateUser);
 
+router.get('/pets', adminController.getAllPets);
+
 router.get('/vets/pending', adminController.getPendingVets);
 router.get('/vets', adminController.getAllVets);
 router.patch('/vets/:id/approve', [param('id').isMongoId().withMessage('Valid vet ID is required.')], validateRequest, adminController.approveVet);

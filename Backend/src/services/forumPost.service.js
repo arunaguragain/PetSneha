@@ -12,7 +12,14 @@ async function listPosts(query) {
     filter.group = query.group;
   }
 
-  return forumPostRepository.findAll(filter);
+  const posts = await forumPostRepository.findAll(filter);
+  const limit = Number(query.limit);
+
+  if (Number.isInteger(limit) && limit > 0) {
+    return posts.slice(0, limit);
+  }
+
+  return posts;
 }
 
 /**

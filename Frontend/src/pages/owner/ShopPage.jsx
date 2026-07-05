@@ -16,11 +16,13 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [sort, setSort] = useState('popular');
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await getProducts({ search });
+        const response = await getProducts({ search, category, sort });
         const productsList = response.data?.products
           || response.data?.items
           || (Array.isArray(response.data) ? response.data : response || []);
@@ -33,31 +35,25 @@ export default function ShopPage() {
     };
 
     load();
-  }, [addToast, search]);
+  }, [addToast, search, category, sort]);
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
         
         {/* Hero banner */}
-        <div className="bg-[#EFF6FF] rounded-xl p-6 flex flex-col md:flex-row items-center justify-between mb-6 gap-6">
-          <div>
+        <div 
+          className="bg-[#EFF6FF] rounded-xl p-8 flex flex-col items-start justify-center mb-6 min-h-[200px] relative overflow-hidden"
+        >
+          <img src="/Golden.png" alt="Golden Retriever" className="absolute right-0 top-0 h-full object-cover opacity-80 mix-blend-multiply" />
+          <div className="relative z-10 max-w-xl">
             <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">BUDDY'S CHOICE</span>
-            <h1 className="text-xl font-semibold text-[#1E293B] mt-2" style={{ fontFamily: 'Literata, serif' }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
               Perfectly curated for your Golden Retriever
             </h1>
-            <p className="text-sm text-[#64748B] mt-1">Based on Buddy's age, breed, and weight...</p>
-            <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm mt-3 transition">
+            <p className="text-sm text-[#475569] mt-2">Based on Buddy's age, breed, and weight...</p>
+            <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
               Explore Buddy's Picks
-            </button>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center w-44 flex-shrink-0">
-            <h3 className="text-sm font-semibold text-[#1E293B]">Exclusive Deals</h3>
-            <p className="text-xs text-[#64748B] mt-0.5">Save up to 30%...</p>
-            <div className="text-4xl font-bold text-[#0046CE] mt-1">30%</div>
-            <button className="w-8 h-8 rounded-full bg-[#0046CE] hover:bg-blue-700 text-white flex items-center justify-center mx-auto mt-2 transition">
-              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -66,17 +62,27 @@ export default function ShopPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative">
-              <select className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]">
+              <select 
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]"
+              >
                 <option value="">{t('shop.allCategories')}</option>
                 <option value="food">Food & Treats</option>
-                <option value="toys">Toys</option>
-                <option value="health">Health & Wellness</option>
+                <option value="accessories">Accessories</option>
+                <option value="shelter">Shelter</option>
+                <option value="bodycare">Body Care</option>
+                <option value="wastemanagement">Waste Management</option>
               </select>
               <ChevronDown className="w-4 h-4 text-[#64748B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
             
             <div className="relative">
-              <select className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]">
+              <select 
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="appearance-none bg-white border border-[#E2E8F0] rounded-lg pl-4 pr-10 py-2 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]"
+              >
                 <option value="popular">{t('shop.popular')}</option>
                 <option value="price_asc">{t('shop.priceAscending')}</option>
                 <option value="price_desc">{t('shop.priceDescending')}</option>
@@ -129,10 +135,18 @@ export default function ShopPage() {
                 onClick={() => navigate(`/products/${product._id}`)}
               >
                 {/* Image */}
-                <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center">
-                  <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
+                <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center overflow-hidden">
+                  {product.images && product.images.length > 0 ? (
+                    <img
+                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${product.images[0]}`}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
+                  )}
                   
-                  {/* Optional badge mock - applying to every 3rd item just for design demo */}
+                  {/* Badge on every 3rd item */}
                   {index % 3 === 0 && (
                     <div className="absolute top-2 left-2 bg-[#0046CE] text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">
                       BUDDY'S CHOICE

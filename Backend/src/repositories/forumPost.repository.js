@@ -15,7 +15,25 @@ async function create(payload) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findAll(filter = {}) {
-  return ForumPost.find(filter).sort('-isPinned -createdAt');
+  const list = await ForumPost.find(filter)
+    .populate('authorId')
+    .populate('answers.authorId')
+    .sort('-isPinned -createdAt');
+
+  return list.map((doc) => {
+    if (!doc) return doc;
+
+    const obj = doc.toObject();
+    obj.author = obj.authorId;
+    obj.answers = Array.isArray(obj.answers)
+      ? obj.answers.map((answer) => ({
+          ...answer,
+          author: answer.authorId,
+        }))
+      : [];
+
+    return obj;
+  });
 }
 
 /**
@@ -24,7 +42,22 @@ async function findAll(filter = {}) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findById(id) {
-  return ForumPost.findById(id);
+  const doc = await ForumPost.findById(id)
+    .populate('authorId')
+    .populate('answers.authorId');
+
+  if (!doc) return null;
+
+  const obj = doc.toObject();
+  obj.author = obj.authorId;
+  obj.answers = Array.isArray(obj.answers)
+    ? obj.answers.map((answer) => ({
+        ...answer,
+        author: answer.authorId,
+      }))
+    : [];
+
+  return obj;
 }
 
 /**

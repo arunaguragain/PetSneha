@@ -23,7 +23,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { Button, Input, InfoBox } from '../../components/ui';
+import { Button, Input, InfoBox, ConfirmationOverlay } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { isValidEmail, validatePassword } from '../../utils/helpers';
@@ -226,51 +226,45 @@ export default function VetRegisterPage() {
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-50 font-body">
-      {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center animate-[fadeInUp_0.3s_ease]">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600" strokeWidth={2.4} />
-            </div>
-
-            <h2 className="text-2xl font-bold text-neutral-900 font-display">Registration Submitted!</h2>
-            <p className="text-neutral-500 text-sm mt-2 leading-relaxed">
-              Thank you for joining PetSneha's veterinary network.
-            </p>
-
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-left space-y-2">
-              <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Account Pending Verification
-              </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
-                Your professional credentials and clinic details are being reviewed by our administrators.
-                You will receive an email once your profile is verified and live, usually within <strong>24 hours</strong>.
-              </p>
-            </div>
-
-            <div className="mt-4 text-left space-y-2">
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">What happens next</p>
-              {[
-                'Our team reviews your NMC license & credentials',
-                'You receive a verification email once approved',
-                'Your profile goes live and pet owners can book you',
-              ].map((step, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-neutral-700">
-                  <span className="w-5 h-5 rounded-full bg-[#EFF6FF] text-[#0046CE] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
-                  {step}
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => navigate('/vet/login', { state: { email: registeredEmail } })}
-              className="mt-6 w-full bg-[#0046CE] hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm inline-flex items-center justify-center gap-2"
-            >
-              Go to Login <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+      <ConfirmationOverlay
+        open={showSuccess}
+        icon={<CheckCircle2 className="h-8 w-8" strokeWidth={2.4} />}
+        title="Registration Submitted!"
+        description="Thank you for joining PetSneha's veterinary network."
+        actions={(
+          <Button
+            type="button"
+            onClick={() => navigate('/vet/login', { state: { email: registeredEmail } })}
+            fullWidth
+          >
+            Go to Login <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
+      >
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-left space-y-2">
+          <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Account Pending Verification
+          </p>
+          <p className="text-xs text-amber-700 leading-relaxed">
+            Your professional credentials and clinic details are being reviewed by our administrators.
+            You will receive an email once your profile is verified and live, usually within <strong>24 hours</strong>.
+          </p>
         </div>
-      )}
+
+        <div className="mt-4 text-left space-y-2">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">What happens next</p>
+          {[
+            'Our team reviews your NMC license & credentials',
+            'You receive a verification email once approved',
+            'Your profile goes live and pet owners can book you',
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm text-neutral-700">
+              <span className="w-5 h-5 rounded-full bg-[#EFF6FF] text-[#0046CE] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+              {step}
+            </div>
+          ))}
+        </div>
+      </ConfirmationOverlay>
 
       <div className="h-screen grid grid-cols-1 xl:grid-cols-[0.58fr_1.22fr] overflow-hidden">
         <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#065F46] via-[#059669] to-[#0046CE] text-white p-8 xl:p-9 2xl:p-12 xl:flex flex-col justify-between">

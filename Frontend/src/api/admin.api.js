@@ -5,6 +5,7 @@ export const getAllUsers = (params) => axiosInstance.get('/admin/users', { param
 export const getUserById = (id) => axiosInstance.get(`/admin/users/${id}`);
 export const deactivateUser = (id) => axiosInstance.patch(`/admin/users/${id}/deactivate`);
 export const reactivateUser = (id) => axiosInstance.patch(`/admin/users/${id}/reactivate`);
+export const getAllPets = (params) => axiosInstance.get('/admin/pets', { params });
 export const getPendingVets = () => axiosInstance.get('/admin/vets/pending');
 export const getAllAdminVets = (params) => axiosInstance.get('/admin/vets', { params });
 export const approveVet = (id) => axiosInstance.patch(`/admin/vets/${id}/approve`);

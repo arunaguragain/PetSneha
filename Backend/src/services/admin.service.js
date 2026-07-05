@@ -80,6 +80,15 @@ async function reactivateUser(targetUserId) {
 }
 
 /**
+ * Get all pets with pagination and search.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllPets(filters) {
+  return adminRepository.getAllPets(filters);
+}
+
+/**
  * Get all pending vet verifications.
  * @returns {Promise}
  */
@@ -291,6 +300,7 @@ module.exports = {
   getUserById,
   deactivateUser,
   reactivateUser,
+  getAllPets,
   getPendingVets,
   getAllVets,
   getAllArticles,

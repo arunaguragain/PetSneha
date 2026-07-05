@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
+import { Modal, Button } from '../components/ui';
 
 const ConfirmContext = createContext(null);
 
@@ -7,7 +8,10 @@ export function ConfirmProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
   const [config, setConfig] = useState({});
 
-  const confirm = useCallback(({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', variant = 'danger' }) => {
+  const confirm = useCallback((options) => {
+    const normalized = typeof options === 'string' ? { message: options } : (options || {});
+    const { title = 'Confirm', message, confirmText = 'Confirm', cancelText = 'Cancel', variant = 'danger' } = normalized;
+
     return new Promise((resolve) => {
       setConfig({
         title,
@@ -31,31 +35,35 @@ export function ConfirmProvider({ children }) {
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1E293B]/60 px-4 backdrop-blur-sm transition-all duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-            <button onClick={config.onCancel} className="absolute right-4 top-4 text-[#94A3B8] hover:text-[#475569] transition p-1">
-              <X size={20} />
-            </button>
-            <h3 className="text-xl font-bold text-[#1E293B] mb-2" style={{ fontFamily: 'Literata, serif' }}>{config.title}</h3>
-            <p className="text-sm text-[#475569] mb-8 leading-relaxed">{config.message}</p>
-            <div className="flex gap-3 w-full">
-              <button 
-                onClick={config.onCancel} 
-                className="flex-1 px-4 py-3 text-sm font-semibold text-[#475569] bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-xl transition"
-              >
-                {config.cancelText}
-              </button>
-              <button 
-                onClick={config.onConfirm} 
-                className={`flex-1 px-4 py-3 text-sm font-semibold text-white rounded-xl transition shadow-sm ${config.variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0046CE] hover:bg-[#003DA8]'}`}
-              >
-                {config.confirmText}
-              </button>
+      <Modal open={isOpen} onClose={config.onCancel} size="sm" title={config.title}>
+        <div className="px-6 pb-6">
+          {config.message ? (
+            <div className={`mb-8 rounded-xl p-4 text-sm leading-relaxed ${config.variant === 'danger' ? 'flex items-start gap-3 bg-red-50 text-red-900' : 'bg-[#F8FAFC] text-[#475569]'}`}>
+              {config.variant === 'danger' ? (
+                <>
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                  <p>{config.message}</p>
+                </>
+              ) : (
+                <p>{config.message}</p>
+              )}
             </div>
+          ) : null}
+          <div className="mt-8 flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={config.onCancel}>
+              {config.cancelText}
+            </Button>
+            <Button
+              type="button"
+              onClick={config.onConfirm}
+              variant={config.variant === 'danger' ? 'danger' : 'primary'}
+              className={config.variant === 'danger' ? 'bg-danger text-white' : 'bg-[#0046CE] text-white hover:bg-blue-700 shadow-sm'}
+            >
+              {config.confirmText}
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
     </ConfirmContext.Provider>
   );
 }

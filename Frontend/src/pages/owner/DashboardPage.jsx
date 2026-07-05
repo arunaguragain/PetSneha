@@ -133,9 +133,9 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                Buddy: June 15
+                {pets.length > 0 ? `${pets[0].name}: Upcoming` : 'No upcoming'}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">Rabies Booster</p>
+              <p className="text-sm text-[#64748B] mt-1">{pets.length > 0 ? 'Routine Check' : 'Add a pet first'}</p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
               <Syringe size={22} />
@@ -152,18 +152,18 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                3 {t('appointments.title')}
+                {appointments.length} Appointments
               </p>
-              <div className="mt-3.5 w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#0046CE] rounded-full w-2/3" />
+              <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full mt-4 overflow-hidden">
+                <div className="h-full bg-[#0046CE] rounded-full" style={{ width: appointments.length > 0 ? '100%' : '0%' }}></div>
               </div>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
-              <Dumbbell size={22} className="-rotate-45" />
+              <ClipboardList size={22} />
             </div>
           </div>
 
-          {/* Card 3 — Pending Alerts */}
+          {/* Card 3 — Alerts */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
@@ -173,9 +173,11 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                2 {t('common.loading')}
+                {pets.length > 0 ? '1 Alert' : '0 Alerts'}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">Verify Mimi's diet log</p>
+              <p className="text-sm text-[#64748B] mt-1">
+                {pets.length > 0 ? `Update ${pets[0].name}'s details` : 'All caught up!'}
+              </p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
               <Bell size={22} />
@@ -327,26 +329,32 @@ export default function DashboardPage() {
               </p>
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#F1F5F9] overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#0046CE] font-bold text-lg relative">
                     <img
-                      src={savedVet?.photo || savedVet?.imageUrl ? getPhotoUrl(savedVet.photo || savedVet.imageUrl) : '/vet-anita.png'}
-                      className="w-full h-full object-cover"
-                      alt={savedVet?.name || 'Dr. Anita Rai'}
+                      src={savedVet?.photo || savedVet?.imageUrl ? getPhotoUrl(savedVet.photo || savedVet.imageUrl) : `/${savedVet?.name}.png`}
+                      className="w-full h-full object-cover absolute inset-0"
+                      alt={savedVet?.name}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
                     />
+                    <span>{(savedVet?.name ? savedVet.name.replace('Dr. ', '') : 'V')[0].toUpperCase()}</span>
                   </div>
                   <div>
                     <p className="font-semibold text-[#1E293B] text-sm">
-                      {savedVet?.name || 'Dr. Anita Rai'}
+                      {savedVet?.name || 'No saved vet'}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {savedVet?.clinicName || savedVet?.clinic || 'Happy paws Clinic , Lalitpur'}
+                      {savedVet?.clinicName || savedVet?.clinic || 'Save a vet from directory'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-4 text-xs text-[#64748B]">
-                  <Clock size={13} />
-                  <span>Next Available: Today, 4:00 PM</span>
-                </div>
+                {savedVet?.nextAvailable && (
+                  <div className="flex items-center gap-2 mt-4 text-xs text-[#64748B]">
+                    <Clock size={13} />
+                    <span>Next Available: {savedVet.nextAvailable}</span>
+                  </div>
+                )}
                 <button className="w-full mt-4 bg-[#0046CE] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#003DA8] transition">
                   Call Now
                 </button>

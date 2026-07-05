@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Spinner } from '../../components/ui';
+import { Badge, Spinner } from '../../components/ui';
 import { getAppointment, cancelAppointment } from '../../api/pet.api';
 import { getErrorMessage, formatCurrency, formatDate } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { Calendar, Clock, MapPin, User, XCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, XCircle, Stethoscope, Phone, Mail, FileText, ArrowLeft } from 'lucide-react';
+
+const statusVariant = (status) => {
+  if (status === 'confirmed') return 'success';
+  if (status === 'cancelled') return 'danger';
+  return 'warning';
+};
 
 export default function AppointmentDetailPage() {
   const { id } = useParams();
@@ -59,93 +65,212 @@ export default function AppointmentDetailPage() {
     return <div className="p-8 text-center text-[#64748B]">Appointment not found.</div>;
   }
 
+  const vetName = appointment.vetId?.name
+    ? `Dr. ${appointment.vetId.name}`
+    : appointment.vet?.name
+    ? `Dr. ${appointment.vet.name}`
+    : appointment.vetName || null;
+
+  const clinicName = appointment.vetId?.clinicName
+    || appointment.vet?.clinicName
+    || appointment.clinic || null;
+
+  const clinicAddress = appointment.vetId?.clinicAddress
+    || appointment.vet?.clinicAddress || null;
+
+  const ownerName = appointment.petOwnerId?.name
+    || appointment.owner?.name
+    || appointment.user?.name
+    || appointment.petOwnerName || null;
+
+  const ownerEmail = appointment.petOwnerId?.email
+    || appointment.owner?.email
+    || appointment.user?.email || null;
+
+  const ownerPhone = appointment.petOwnerId?.phone
+    || appointment.owner?.phone
+    || appointment.user?.phone || null;
+
+  const petName = appointment.petId?.name
+    || appointment.pet?.name
+    || appointment.petName || 'Your pet';
+
+  const petSpecies = appointment.petId?.species || appointment.pet?.species || null;
+  const petBreed = appointment.petId?.breed || appointment.pet?.breed || null;
+
+  const canCancel = appointment.status === 'pending' || appointment.status === 'confirmed';
+
   return (
-    <div className="container-app px-10 py-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-sm text-[#64748B]">Appointment details</p>
-          <h1 className="font-display text-3xl text-neutral-900">{appointment.petName || appointment.pet?.name || 'Appointment'}</h1>
+    <div className="bg-white min-h-screen">
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px]">
+
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
+              Appointment details
+            </h1>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
         </div>
-        <Button variant="secondary" onClick={() => navigate(-1)}>
-          Back
-        </Button>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px] mt-6">
-        <div className="space-y-5">
-          <Card className="p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-[#0F172A]">{appointment.petName || appointment.pet?.name || 'Your pet'}</h2>
-                <p className="text-sm text-[#64748B] mt-1">{appointment.status || 'Pending'}</p>
-              </div>
-              <Badge variant={appointment.status === 'confirmed' ? 'success' : appointment.status === 'cancelled' ? 'danger' : 'warning'}>
-                {appointment.status || 'pending'}
-              </Badge>
-            </div>
+        {/* Two-column layout */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <div className="flex items-center gap-2 text-sm text-[#334155]"><Calendar className="w-4 h-4" />Date</div>
-                <p className="mt-2 text-base font-semibold text-[#0F172A]">{formatDate(appointment.date)}</p>
-              </div>
-              <div className="rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <div className="flex items-center gap-2 text-sm text-[#334155]"><Clock className="w-4 h-4" />Time</div>
-                <p className="mt-2 text-base font-semibold text-[#0F172A]">{appointment.timeSlot || 'TBD'}</p>
-              </div>
-              <div className="rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <div className="flex items-center gap-2 text-sm text-[#334155]"><User className="w-4 h-4" />Pet owner</div>
-                <p className="mt-2 text-base font-semibold text-[#0F172A]">{appointment.owner?.name || appointment.user?.name || appointment.petOwnerName || 'Owner'}</p>
-              </div>
-              <div className="rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <div className="flex items-center gap-2 text-sm text-[#334155]"><MapPin className="w-4 h-4" />Clinic</div>
-                <p className="mt-2 text-base font-semibold text-[#0F172A]">{appointment.vet?.clinicName || appointment.vetName || 'Clinic details unavailable'}</p>
-              </div>
-            </div>
+          {/* LEFT — main details */}
+          <div className="space-y-5">
 
-            <div className="mt-6 rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
+            {/* Status + basics card */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="text-sm text-[#64748B]">Consultation fee</p>
-                  <p className="text-xl font-semibold text-[#0F172A]">{formatCurrency(appointment.fee)}</p>
+                  <h2 className="text-lg font-semibold text-[#0F172A]">{petName}</h2>
+                  {(petSpecies || petBreed) && (
+                    <p className="text-sm text-[#64748B] mt-0.5">
+                      {[petSpecies, petBreed].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                 </div>
-                <span className="text-sm text-[#475569]">{appointment.vet?.name ? `Dr. ${appointment.vet.name}` : appointment.vetName || 'Veterinarian'}</span>
+                <Badge variant={statusVariant(appointment.status)}>
+                  {appointment.status || 'pending'}
+                </Badge>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    <Calendar className="w-4 h-4" /> Date
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{formatDate(appointment.date || appointment.appointmentDate) || '—'}</p>
+                </div>
+
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    <Clock className="w-4 h-4" /> Time
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{appointment.timeSlot || appointment.time || 'TBD'}</p>
+                </div>
+
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    <Stethoscope className="w-4 h-4" /> Veterinarian
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{vetName || 'Not assigned yet'}</p>
+                </div>
+
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    <MapPin className="w-4 h-4" /> Clinic
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{clinicName || 'Will be confirmed'}</p>
+                  {clinicAddress && <p className="text-xs text-[#64748B] mt-0.5">{clinicAddress}</p>}
+                </div>
+
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    <User className="w-4 h-4" /> Pet owner
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{ownerName || 'You'}</p>
+                  {ownerEmail && <p className="text-xs text-[#64748B] mt-0.5">{ownerEmail}</p>}
+                </div>
+
+                <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-[#64748B] uppercase tracking-wide mb-2">
+                    Consultation fee
+                  </div>
+                  <p className="text-base font-semibold text-[#0F172A]">{formatCurrency(appointment.fee || appointment.consultationFee) || '—'}</p>
+                  {appointment.serviceCharge ? (
+                    <p className="text-xs text-[#64748B] mt-0.5">+ {formatCurrency(appointment.serviceCharge)} service charge</p>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </Card>
 
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold text-[#0F172A]">Notes</h2>
-            <p className="mt-3 text-sm leading-6 text-[#475569]">{appointment.notes || 'No additional notes submitted.'}</p>
-          </Card>
-        </div>
+            {/* Notes card */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-4 h-4 text-[#64748B]" />
+                <h2 className="text-base font-semibold text-[#0F172A]">Notes</h2>
+              </div>
+              <p className="text-sm leading-6 text-[#475569]">
+                {appointment.notes || 'No additional notes submitted.'}
+              </p>
+            </div>
+          </div>
 
-        <div className="space-y-4">
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Avatar name={appointment.owner?.name || appointment.petOwnerName || 'Owner'} size="lg" />
-              <div>
-                <p className="text-sm text-[#64748B]">Contact</p>
-                <p className="font-semibold text-[#0F172A]">{appointment.owner?.name || appointment.petOwnerName || 'Pet owner'}</p>
+          {/* RIGHT — sidebar */}
+          <div className="space-y-4">
+
+            {/* Contact card */}
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4">
+              <h2 className="text-base font-semibold text-[#0F172A]">Contact info</h2>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <User className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Owner</p>
+                    <p className="text-[#0F172A] font-medium">{ownerName || 'You'}</p>
+                  </div>
+                </div>
+
+                {ownerEmail && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Email</p>
+                      <p className="text-[#0F172A]">{ownerEmail}</p>
+                    </div>
+                  </div>
+                )}
+
+                {ownerPhone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Phone</p>
+                      <p className="text-[#0F172A]">{ownerPhone}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-[#E2E8F0] pt-3">
+                  <div className="flex items-start gap-3">
+                    <Stethoscope className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Vet</p>
+                      <p className="text-[#0F172A] font-medium">{vetName || 'Not assigned yet'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-[#64748B] mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-[#64748B] uppercase tracking-wide font-medium">Location</p>
+                    <p className="text-[#0F172A]">{clinicName || 'Will be confirmed'}</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="mt-6 space-y-3">
-              <div className="rounded-3xl bg-[#F8FAFC] p-4 text-sm text-[#475569]">
-                <p className="font-semibold text-[#0F172A]">Vet</p>
-                <p>{appointment.vet?.name ? `Dr. ${appointment.vet.name}` : appointment.vetName || 'Not available'}</p>
-              </div>
-              <div className="rounded-3xl bg-[#F8FAFC] p-4 text-sm text-[#475569]">
-                <p className="font-semibold text-[#0F172A]">Location</p>
-                <p>{appointment.vet?.clinicName || 'Clinic not provided'}</p>
-              </div>
-            </div>
-          </Card>
 
-          {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-            <Button variant="danger" loading={cancelling} onClick={handleCancel}>
-              <XCircle className="w-4 h-4 mr-2" /> Cancel appointment
-            </Button>
-          )}
+            {/* Cancel button */}
+            {canCancel && (
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl px-5 py-3 text-sm font-semibold transition disabled:opacity-60"
+              >
+                <XCircle className="w-4 h-4" />
+                {cancelling ? 'Cancelling…' : 'Cancel appointment'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

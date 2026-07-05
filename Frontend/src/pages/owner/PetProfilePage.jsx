@@ -52,7 +52,10 @@ export default function PetProfilePage() {
       const appointmentsList = appointmentsRes.data?.appointments
         || appointmentsRes.data?.items
         || (Array.isArray(appointmentsRes.data) ? appointmentsRes.data : appointmentsRes || []);
-      setAppointments(appointmentsList.filter((appointment) => String(appointment.petId || appointment.pet?._id || appointment.pet?.id) === String(petId)));
+      setAppointments(appointmentsList.filter((appointment) => {
+        const apptPetId = appointment.petId?._id || appointment.petId || appointment.pet?._id || appointment.pet?.id;
+        return String(apptPetId) === String(petId);
+      }));
     } catch (error) {
       addToast(getErrorMessage(error) || 'Unable to refresh appointments', 'danger');
     }
@@ -108,7 +111,10 @@ export default function PetProfilePage() {
         const appointmentsList = appointmentsRes.data?.appointments
           || appointmentsRes.data?.items
           || (Array.isArray(appointmentsRes.data) ? appointmentsRes.data : appointmentsRes || []);
-        setAppointments(appointmentsList.filter((appointment) => String(appointment.petId || appointment.pet?._id || appointment.pet?.id) === String(petId)));
+        setAppointments(appointmentsList.filter((appointment) => {
+          const apptPetId = appointment.petId?._id || appointment.petId || appointment.pet?._id || appointment.pet?.id;
+          return String(apptPetId) === String(petId);
+        }));
       } catch (error) {
         addToast(getErrorMessage(error) || 'Failed to load pet profile', 'danger');
         navigate('/dashboard');
@@ -393,40 +399,35 @@ export default function PetProfilePage() {
             
             <h2 className="text-xl font-bold text-[#1E293B] mt-4" style={{ fontFamily: 'Literata, serif' }}>Active Reminders</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+            <div className="space-y-3 mt-3">
               {activeReminders.length > 0 ? activeReminders.map((reminder) => (
-                <div key={reminder._id || reminder.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition">
-                  <div className="flex justify-between items-start">
-                    <Bell className="w-5 h-5 text-[#0046CE]" />
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => navigate(`/reminders/new?petId=${petId}`)} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
-                      <button className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                <div key={reminder._id || reminder.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <Bell className="w-5 h-5 text-[#0046CE] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-[#1E293B] truncate">{reminder.title}</h3>
+                      <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
+                        <CalendarIcon className="w-3.5 h-3.5" /> {formatDate(reminder.dueDate)}
+                      </div>
+                      {(reminder.notifyVia || []).filter(v => v !== 'push').length > 0 && (
+                        <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
+                          <Mail className="w-3.5 h-3.5" /> Notify via email
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <h3 className="font-semibold text-[#1E293B] mt-3 truncate">{reminder.title}</h3>
-                  <div className="text-sm text-[#64748B] flex items-center gap-1 mt-1 truncate">
-                    <CalendarIcon className="w-4 h-4" /> {formatDate(reminder.dueDate)}
-                  </div>
-                  <div className="text-sm text-[#64748B] flex items-center gap-1 mt-1 truncate">
-                    <Mail className="w-4 h-4" /> Notify via {(reminder.notifyVia || ['Email']).join(', ')}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => navigate(`/reminders/new?petId=${petId}`)} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
+                    <button className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               )) : (
-                <div className="col-span-3 border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
+                <div className="border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
                   No active reminders. Add one to keep track of medications or events.
                 </div>
               )}
             </div>
 
-            <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mt-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-[#0046CE] font-semibold">Never miss a health milestone</h3>
-                <p className="text-sm text-[#64748B] mt-0.5">Enable push notifications to get alerts directly on your device.</p>
-              </div>
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-[#E2E8F0]">
-                <Bell className="w-6 h-6 text-[#0046CE]" />
-              </div>
-            </div>
           </div>
         )}
 
@@ -439,8 +440,16 @@ export default function PetProfilePage() {
                 <Card key={appointment._id || appointment.id} className="p-4 shadow-sm hover:shadow-md transition">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="space-y-2">
-                      <p className="text-sm text-[#64748B]">{appointment.vet?.clinicName || appointment.vet?.name || appointment.vetName || 'Vet clinic'}</p>
-                      <h3 className="font-semibold text-[#1E293B]">{appointment.vet?.name ? `Dr. ${appointment.vet.name}` : appointment.vetName || 'Vet visit'}</h3>
+                      <p className="text-sm text-[#64748B]">
+                        {appointment.vetId?.clinicName || appointment.vet?.clinicName || appointment.vetName || '—'}
+                      </p>
+                      <h3 className="font-semibold text-[#1E293B]">
+                        {appointment.vetId?.name
+                          ? `Dr. ${appointment.vetId.name}`
+                          : appointment.vet?.name
+                          ? `Dr. ${appointment.vet.name}`
+                          : appointment.vetName || 'Vet visit'}
+                      </h3>
                       <div className="text-sm text-[#475569] flex flex-wrap gap-2 items-center">
                         <span>{formatDate(appointment.date || appointment.appointmentDate)}</span>
                         <span>•</span>

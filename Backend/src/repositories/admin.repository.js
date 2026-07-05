@@ -5,6 +5,7 @@ const Order = require('../models/order.model');
 const Article = require('../models/article.model');
 const ForumPost = require('../models/forumPost.model');
 const Product = require('../models/product.model');
+const Pet = require('../models/pet.model');
 
 const vetSchemaPath = Vet.schema.path('rejectionReason');
 if (!vetSchemaPath) {
@@ -21,7 +22,7 @@ if (!productSchemaPath) {
  * @returns {Promise}
  */
 async function getPlatformStats() {
-  const [petOwners, vets, admins, totalVets, verifiedVets, pendingVets, totalProducts, verifiedProducts, pendingProducts, appointments, orders, articles, forumPosts] = await Promise.all([
+  const [petOwners, vets, admins, totalVets, verifiedVets, pendingVets, totalProducts, verifiedProducts, pendingProducts, appointments, orders, articles, forumPosts, totalPets] = await Promise.all([
     User.countDocuments({ role: 'petOwner' }),
     User.countDocuments({ role: 'vet' }),
     User.countDocuments({ role: 'admin' }),
@@ -35,6 +36,7 @@ async function getPlatformStats() {
     Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Article.aggregate([{ $group: { _id: '$isPublished', count: { $sum: 1 } } }]),
     ForumPost.countDocuments({ isReported: true }),
+    Pet.countDocuments(),
   ]);
 
   return {
@@ -51,6 +53,7 @@ async function getPlatformStats() {
       {}
     ),
     forumPosts: { reported: forumPosts },
+    pets: { total: totalPets },
   };
 }
 
@@ -144,6 +147,29 @@ async function getAllVets(filters = {}) {
 }
 
 /**
+ * Get all pets.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllPets(filters = {}) {
+  const query = {};
+  if (filters.search) {
+    query.name = { $regex: filters.search, $options: 'i' };
+  }
+  const page = Number(filters.page) || 1;
+  const limit = Number(filters.limit) || 20;
+  const [items, total] = await Promise.all([
+    Pet.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('ownerId', 'name email'),
+    Pet.countDocuments(query),
+  ]);
+  return { items, total, page, pages: Math.ceil(total / limit) || 1 };
+}
+
+/**
  * Get all articles.
  * @param {object} filters
  * @returns {Promise}
@@ -180,6 +206,7 @@ async function getAllProducts(filters = {}) {
   const limit = Number(filters.limit) || 20;
   const [items, total] = await Promise.all([
     Product.find(query)
+      .populate('sellerId', 'name')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
@@ -231,7 +258,9 @@ async function setVetVerifiedStatus(vetId, isVerified, rejectionReason) {
  * @returns {Promise}
  */
 async function getPendingArticles() {
-  return Article.find({ isPublished: false }).sort('-createdAt');
+  return Article.find({ isPublished: false })
+    .sort('-createdAt')
+    .populate('authorId', 'name');
 }
 
 /**
@@ -282,7 +311,7 @@ async function setPinnedStatus(postId, isPinned) {
  * @returns {Promise}
  */
 async function getPendingProducts() {
-  return Product.find({ isVerifiedSeller: false }).sort('-createdAt');
+  return Product.find({ isVerifiedSeller: false }).populate('sellerId', 'name').sort('-createdAt');
 }
 
 /**
@@ -328,6 +357,7 @@ module.exports = {
   getPendingVets,
   getAllVets,
   setVetVerifiedStatus,
+  getAllPets,
   getPendingArticles,
   getAllArticles,
   getAllProducts,

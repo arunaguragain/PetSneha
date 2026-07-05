@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Avatar, Badge, Button, Card, Input, Select, Spinner } from '../../components/ui';
+import { Avatar, Badge, Button, Card, ConfirmationOverlay, Input, Select, Spinner } from '../../components/ui';
 import { bookAppointment, getVet, getVetSlots } from '../../api/vet.api';
 import { getPets } from '../../api/pet.api';
 import { formatCurrency, formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
@@ -164,42 +164,32 @@ export default function BookingPage() {
 
   return (
     <div className="bg-white min-h-screen relative">
-      {showInfoOverlay && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-[fadeInUp_0.3s_ease]">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-[#EFF6FF] flex items-center justify-center">
-                <Mail className="w-8 h-8 text-[#0046CE]" />
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-neutral-900" style={{ fontFamily: 'Literata, serif' }}>
-              {t('booking.requestSent')}
-            </h2>
-            <p className="text-neutral-500 text-sm mt-3 leading-relaxed">
-              {t('booking.requestSentBody', { vetName: vet?.name, email: user?.email })}
-            </p>
-            <button
-              onClick={handleOverlayContinue}
-              className="mt-6 w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-semibold transition"
-            >
-              {t('booking.gotIt')}
-            </button>
+      <ConfirmationOverlay
+        open={showInfoOverlay}
+        icon={<Mail className="h-8 w-8" />}
+        title={t('booking.requestSent')}
+        description={t('booking.requestSentBody', { vetName: vet?.name, email: user?.email })}
+        actions={(
+          <Button type="button" onClick={handleOverlayContinue} fullWidth>
+            {t('booking.gotIt')}
+          </Button>
+        )}
+      />
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px]">
+        
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#1E293B] mb-1" style={{ fontFamily: 'Literata, serif' }}>{t('booking.title')}</h1>
+            <p className="text-sm text-[#64748B]">{t('booking.subtitle')}</p>
           </div>
+          <button
+            onClick={() => navigate(`/vets/${vetId}`)} 
+            className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('booking.backToProfile')}
+          </button>
         </div>
-      )}
-      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto">
-        
-        {/* Back link */}
-        <div 
-          onClick={() => navigate(`/vets/${vetId}`)} 
-          className="text-sm text-[#0046CE] cursor-pointer mb-6 flex items-center gap-1 hover:underline w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> {t('booking.backToProfile')}
-        </div>
-        
-        {/* Header */}
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('booking.title')}</h1>
-        <p className="text-sm text-[#64748B] mt-1">{t('booking.subtitle')}</p>
 
         {/* Stepper */}
         <div className="flex items-center gap-2 my-8">

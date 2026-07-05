@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import VetLayout from './components/VetLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth } from './hooks/useAuth';
 import { Card, PageHeader } from './components/ui';
 import { getPets } from './api/pet.api';
 import HomePage from './pages/HomePage';
@@ -37,10 +38,24 @@ import VetArticlesPage from './pages/vet/VetArticlesPage';
 import VetLandingPage from './pages/vet/VetLandingPage';
 import VetRegisterPage from './pages/vet/VetRegisterPage';
 import VetProductsPage from './pages/vet/VetProductsPage';
+import VetForumPage from './pages/vet/VetForumPage';
 import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import OnboardingPage from './pages/owner/OnboardingPage';
 
 function AuthenticatedLayout() {
+  const { user } = useAuth();
+  
+  if (user?.role === 'admin') {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
+        <main className="flex-1">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -115,7 +130,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['petOwner', 'vet', 'admin']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
       </Route>
 
@@ -124,6 +139,13 @@ export default function App() {
           <Route path="/forum" element={<ForumPage />} />
           <Route path="/forum/new" element={<ForumCreatePage />} />
           <Route path="/forum/:postId" element={<ForumPostPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['petOwner', 'admin']} />}>
+        <Route element={<AuthenticatedLayout />}>
+          <Route path="/vets" element={<VetDirectoryPage />} />
+          <Route path="/vets/:vetId" element={<VetProfilePage />} />
         </Route>
       </Route>
 
@@ -137,8 +159,6 @@ export default function App() {
           <Route path="/pets/:petId/edit" element={<EditPetPage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
           <Route path="/reminders/success" element={<ReminderSuccessPage />} />
-          <Route path="/vets" element={<VetDirectoryPage />} />
-          <Route path="/vets/:vetId" element={<VetProfilePage />} />
           <Route path="/vets/:vetId/book" element={<BookingPage />} />
           <Route path="/emergency" element={<EmergencyPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
@@ -156,6 +176,7 @@ export default function App() {
           <Route path="/vet/dashboard" element={<VetDashboardPage />} />
           <Route path="/vet/appointments" element={<VetAppointmentsPage />} />
           <Route path="/vet/articles" element={<VetArticlesPage />} />
+          <Route path="/vet/forum" element={<VetForumPage />} />
           <Route path="/vet/products" element={<VetProductsPage />} />
         </Route>
       </Route>
