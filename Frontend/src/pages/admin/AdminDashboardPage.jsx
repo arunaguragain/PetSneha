@@ -31,6 +31,7 @@ import {
   ShoppingBag,
   Users,
   X,
+  PawPrint,
 } from 'lucide-react';
 import {
   approveProduct,
@@ -46,6 +47,7 @@ import {
   getPendingArticles,
   getPendingProducts,
   getPendingVets,
+  getAllPets,
   getReportedPosts,
   getUserById,
   pinPost,
@@ -61,6 +63,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
 import { formatCurrency, formatDate, getErrorMessage, getStatusTone, safeArray } from '../../utils/api';
+import { getImageUrl } from '../../utils/imageUrl';
 
 // helpers
 const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL?.replace('/api', '')) || 'http://localhost:5050';
@@ -501,6 +504,7 @@ function OverviewTab({ dashboard, loading }) {
         <div className="grid gap-4 sm:grid-cols-2">
             <MetricCard icon={Users} label="Total users" value={totalUsers} sub={`${s?.users?.petOwners ?? 0} owners / ${s?.users?.vets ?? 0} vets`} color="admin" />
             <MetricCard icon={Shield} label="Verified vets" value={s?.vets?.verified ?? 0} sub={`${s?.vets?.total ?? 0} total`} color="success" />
+            <MetricCard icon={PawPrint} label="Total pets" value={s?.pets?.total ?? 0} sub="Registered on platform" color="primary" />
             <MetricCard icon={FileText} label="Published articles" value={s?.articles?.published ?? 0} sub="All time" color="success" />
             <MetricCard icon={ShoppingBag} label="Approved products" value={s?.products?.verified ?? 0} sub={`${totalProducts} total products`} color="admin" />
           </div>
@@ -631,6 +635,7 @@ function UsersTab() {
 
 // Vets Tab
 function VetsTab() {
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const [pending, setPending] = useState([]);
@@ -702,7 +707,13 @@ function VetsTab() {
             {pending.map((vet) => (
               <DetailRow key={uid(vet)} detail={<VetDetail vet={vet} />}>
                 <div className="flex flex-1 items-start justify-between gap-3">
-                  <div><p className="font-semibold text-neutral-900">{vet.name}</p><p className="text-xs text-neutral-500">{vet.clinicName || vet.location || 'No clinic'} / {vet.specialization || 'General'}</p></div>
+                  <div className="flex items-center gap-3">
+                    <img src={vet.profilePhoto || vet.imageUrl ? getImageUrl(vet.profilePhoto || vet.imageUrl) : '/profile.png'} alt={vet.name} className="w-10 h-10 rounded-full object-cover border border-neutral-200" onError={(e) => { e.currentTarget.src = '/profile.png'; }} />
+                    <div>
+                      <p className="font-semibold text-neutral-900">{vet.name}</p>
+                      <p className="text-xs text-neutral-500">{vet.clinicName || vet.location || 'No clinic'} / {vet.specialization || 'General'}</p>
+                    </div>
+                  </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Button size="sm" variant="ghost" onClick={() => navigate(`/vets/${uid(vet)}`)}>View full profile</Button>
                     <Button size="sm" loading={actionLoading === uid(vet) + '-a'} onClick={() => handleApprove(vet)}>Approve</Button>
@@ -723,9 +734,18 @@ function VetsTab() {
         {aLoading ? <SectionSkeleton rows={4} /> : all.length === 0 ? <EmptyState icon={Shield} message="No vets found." /> : (
           <div className="space-y-2">
             {all.map((vet) => (
-              <div key={uid(vet)} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
-                <div><p className="font-semibold text-neutral-900">{vet.name}</p><p className="text-xs text-neutral-500">{vet.clinicName || vet.location} / {vet.licenseNumber || 'No license'}</p></div>
-                <Badge variant={vet.isVerified ? 'success' : 'warning'}>{vet.isVerified ? 'Verified' : 'Pending'}</Badge>
+              <div key={uid(vet)} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
+                <div className="flex items-center gap-3">
+                  <img src={vet.profilePhoto || vet.imageUrl ? getImageUrl(vet.profilePhoto || vet.imageUrl) : '/profile.png'} alt={vet.name} className="w-10 h-10 rounded-full object-cover border border-neutral-200" onError={(e) => { e.currentTarget.src = '/profile.png'; }} />
+                  <div>
+                    <p className="font-semibold text-neutral-900">{vet.name}</p>
+                    <p className="text-xs text-neutral-500">{vet.clinicName || vet.location} / {vet.licenseNumber || 'No license'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant={vet.isVerified ? 'success' : 'warning'}>{vet.isVerified ? 'Verified' : 'Pending'}</Badge>
+                  <Button size="sm" variant="ghost" onClick={() => navigate(`/vets/${uid(vet)}`)}>View profile</Button>
+                </div>
               </div>
             ))}
           </div>
@@ -836,8 +856,9 @@ function ArticlesTab() {
             {articles.map((article) => (
               <DetailRow key={uid(article)} detail={<ArticleDetail article={article} />}>
                 <div className="flex flex-1 items-start justify-between gap-3">
-                  <div className="min-w-0"><p className="font-semibold text-neutral-900 truncate">{article.title}</p><p className="text-xs text-neutral-500">by {article.author?.name || article.authorName || 'Unknown'}</p></div>
+                  <div className="min-w-0"><p className="font-semibold text-neutral-900 truncate">{article.title}</p><p className="text-xs text-neutral-500">by {article.authorId?.name || article.author?.name || article.authorName || 'Unknown'}</p></div>
                   <div className="flex shrink-0 gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setArticleModal(article)}>View</Button>
                     <Button size="sm" loading={actionLoading === uid(article) + '-p'} onClick={() => handlePublish(article)}>Publish</Button>
                     <Button size="sm" variant="danger" onClick={() => setRejectModal({ article })}>Reject</Button>
                   </div>
@@ -863,7 +884,7 @@ function ArticlesTab() {
                 <div key={uid(article)} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
                   <div className="min-w-0">
                     <p className="font-semibold text-neutral-900 truncate">{article.title}</p>
-                    <p className="text-xs text-neutral-500 truncate">by {article.author?.name || article.authorName || 'Unknown'} / {formatDate(article.createdAt)}</p>
+                    <p className="text-xs text-neutral-500 truncate">by {article.authorId?.name || article.author?.name || article.authorName || 'Unknown'} / {formatDate(article.createdAt)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge variant={getArticleTone(status)}>{status}</Badge>
@@ -955,7 +976,7 @@ function ProductsTab() {
       <div className="space-y-1.5 min-w-0">
         {product.description && <p className="text-neutral-600 leading-relaxed line-clamp-3">{product.description}</p>}
         <div className="flex flex-wrap gap-1.5">{product.category && <Badge variant="neutral">{product.category}</Badge>}{safeArray(product.petType).map((pt) => <Badge key={pt} variant="primary">{pt}</Badge>)}</div>
-        <p className="text-neutral-400 text-xs">Seller: <span className="font-mono">{product.sellerId?.toString?.() || product.sellerId}</span></p>
+        <p className="text-neutral-500 text-xs">Seller: <span className="font-medium text-neutral-700">{product.sellerId?.name || product.sellerId?.toString?.() || product.sellerId || 'Unknown'}</span></p>
         <p className="text-neutral-400">Stock: {product.stock} / {formatCurrency(product.price)}</p>
       </div>
     </div>
@@ -1208,17 +1229,130 @@ function OrdersTab() {
   );
 }
 
+// Pets Tab
+function PetsTab() {
+  const { addToast } = useToast();
+  const [data, setData] = useState({ pets: [], total: 0, page: 1, pages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const debRef = useRef(null);
+
+  const fetchPets = useCallback(async (searchQuery, targetPage = 1) => {
+    setLoading(true);
+    try {
+      const res = await getAllPets({ search: searchQuery, page: targetPage });
+      const d = res?.data ?? res;
+      setData({ pets: safeArray(d?.items ?? d), total: d?.total ?? 0, page: d?.page ?? targetPage, pages: d?.pages ?? 1 });
+    } catch (e) {
+      addToast(getErrorMessage(e), 'danger');
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchPets('', 1);
+  }, [fetchPets]);
+
+  useEffect(() => {
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => {
+      setPage(1);
+      fetchPets(search, 1);
+    }, 350);
+    return () => clearTimeout(debRef.current);
+  }, [search, fetchPets]);
+
+  const PetDetail = ({ pet }) => (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+      {[
+        ['Species', pet.species],
+        ['Breed', pet.breed],
+        ['Age', pet.age != null ? `${pet.age} yr${pet.age !== 1 ? 's' : ''}` : null],
+        ['Weight', pet.weight != null ? `${pet.weight} kg` : null],
+        ['Colour', pet.colour],
+        ['Gender', pet.gender ? pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1) : null],
+        ['Owned Since', pet.ownedSince ? `${pet.ownedSince}` : null],
+        ['Owner', pet.ownerId?.name],
+        ['Owner Email', pet.ownerId?.email],
+        ['Registered', formatDate(pet.createdAt)],
+      ].filter(([, v]) => v).map(([label, val]) => (
+        <div key={label}><dt className="font-semibold text-neutral-500">{label}</dt><dd className="text-neutral-800">{val}</dd></div>
+      ))}
+    </dl>
+  );
+
+  const getGenderBadge = (gender) => {
+    if (!gender || gender === 'unknown') return <Badge variant="neutral">Unknown</Badge>;
+    if (gender === 'male') return <Badge variant="primary">♂ Male</Badge>;
+    return <Badge variant="admin">♀ Female</Badge>;
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-xl font-bold text-neutral-900">All Pets</h2>
+          <Badge variant="neutral">{data.total} total</Badge>
+        </div>
+        <div className="w-64">
+          <Input placeholder="Search pets..." value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="h-4 w-4" />} />
+        </div>
+      </div>
+      {loading ? <SectionSkeleton rows={5} /> : data.pets.length === 0 ? (
+        <EmptyState icon={PawPrint} message="No pets found." />
+      ) : (
+        <>
+          <div className="space-y-3">
+            {data.pets.map((pet) => (
+              <DetailRow key={uid(pet)} detail={<PetDetail pet={pet} />}>
+                <div className="flex flex-1 items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={pet.photo ? getImageUrl(pet.photo) : '/profile.png'}
+                      alt={pet.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-neutral-200"
+                      onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                    />
+                    <div>
+                      <p className="font-semibold text-neutral-900">{pet.name}</p>
+                      <p className="text-xs text-neutral-500">
+                        {pet.species} • {pet.breed || 'Unknown breed'}
+                        {pet.age != null ? ` • ${pet.age} yr${pet.age !== 1 ? 's' : ''}` : ''}
+                        {pet.weight != null ? ` • ${pet.weight} kg` : ''}
+                      </p>
+                      <p className="text-xs text-neutral-400 mt-0.5">Owner: {pet.ownerId?.name || 'Unknown'} {pet.ownerId?.email ? `(${pet.ownerId.email})` : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {getGenderBadge(pet.gender)}
+                    {pet.colour && <Badge variant="neutral">{pet.colour}</Badge>}
+                  </div>
+                </div>
+              </DetailRow>
+            ))}
+          </div>
+          <Pagination page={data.page} pages={data.pages} onPage={(p) => { setPage(p); fetchPets(search, p); }} />
+        </>
+      )}
+    </Card>
+  );
+}
+
+
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'vets', label: 'Vets', icon: Stethoscope },
+  { id: 'pets', label: 'Pets', icon: PawPrint },
   { id: 'articles', label: 'Articles', icon: FileText },
   { id: 'products', label: 'Products', icon: Package },
   { id: 'forum', label: 'Forum', icon: MessageSquare },
   { id: 'orders', label: 'Orders', icon: ClipboardList },
 ];
 
-function AdminTopBar({ user, onLogout }) {
+export function AdminTopBar({ user, onLogout }) {
   const initial = (user?.name || user?.email || 'Admin').trim().charAt(0).toUpperCase() || 'A';
 
   return (
@@ -1245,7 +1379,7 @@ function AdminTopBar({ user, onLogout }) {
   );
 }
 
-function AdminSidebar({ activeTab, onChange }) {
+export function AdminSidebar({ activeTab, onChange }) {
   return (
     <aside className="fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-slate-100 bg-white">
       <nav className="flex h-full flex-col gap-1 px-4 py-6" aria-label="Admin navigation">
@@ -1318,6 +1452,7 @@ export default function AdminDashboardPage() {
             {activeTab === 'overview'  && <OverviewTab  dashboard={dashboard} loading={dashLoading} />}
             {activeTab === 'users'     && visited.has('users')     && <UsersTab />}
             {activeTab === 'vets'      && visited.has('vets')      && <VetsTab />}
+            {activeTab === 'pets'      && visited.has('pets')      && <PetsTab />}
             {activeTab === 'articles'  && visited.has('articles')  && <ArticlesTab />}
             {activeTab === 'products'  && visited.has('products')  && <ProductsTab />}
             {activeTab === 'forum'     && visited.has('forum')     && <ForumTab />}
