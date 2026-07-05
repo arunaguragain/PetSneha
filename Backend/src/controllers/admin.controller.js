@@ -46,6 +46,14 @@ const reactivateUser = catchAsync(async (req, res) => {
 });
 
 /**
+ * Get all pets.
+ */
+const getAllPets = catchAsync(async (req, res) => {
+  const data = await adminService.getAllPets(req.query);
+  sendItem(res, data);
+});
+
+/**
  * Get pending vets.
  */
 const getPendingVets = catchAsync(async (req, res) => {
@@ -187,6 +195,7 @@ module.exports = {
   getUserById,
   deactivateUser,
   reactivateUser,
+  getAllPets,
   getPendingVets,
   getAllVets,
   approveVet,
