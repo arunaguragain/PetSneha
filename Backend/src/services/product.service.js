@@ -8,6 +8,10 @@ function buildFilter(query) {
     filter.category = query.category;
   }
 
+  if (query.search) {
+    filter.name = { $regex: query.search, $options: 'i' };
+  }
+
   if (query.petType) {
     filter.petType = query.petType;
   }
@@ -40,7 +44,13 @@ function buildFilter(query) {
  * @returns {Promise<Array<object>>}
  */
 async function listProducts(query) {
-  return productRepository.findAll(buildFilter(query));
+  let sortOption = '-createdAt';
+  if (query.sort === 'price_asc') {
+    sortOption = 'price';
+  } else if (query.sort === 'price_desc') {
+    sortOption = '-price';
+  }
+  return productRepository.findAll(buildFilter(query), sortOption);
 }
 
 /**

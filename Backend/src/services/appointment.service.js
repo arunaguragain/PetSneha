@@ -125,25 +125,6 @@ async function bookAppointment(currentUser, payload) {
   return appointment;
 }
 
-async function getAppointmentById(currentUser, appointmentId) {
-  const appointment = await appointmentRepository.findById(appointmentId);
-  if (!appointment) {
-    throw new AppError('Appointment not found.', 404);
-  }
-
-  if (currentUser.role !== 'admin') {
-    if (currentUser.role === 'vet') {
-      const vet = await vetRepository.findByUserId(currentUser.id);
-      if (!vet || appointment.vetId.toString() !== vet._id.toString()) {
-        throw new AppError('You do not have access to this appointment.', 403);
-      }
-    } else if (appointment.petOwnerId.toString() !== currentUser.id) {
-      throw new AppError('You can only view your own appointments.', 403);
-    }
-  }
-
-  return appointment;
-}
 
 /**
  * Cancels an appointment.
@@ -183,23 +164,24 @@ async function cancelAppointment(currentUser, appointmentId) {
 }
 
 async function getAppointmentById(currentUser, appointmentId) {
-  const appointment = await appointmentRepository.findById(appointmentId);
-  if (!appointment) {
+  const raw = await appointmentRepository.findById(appointmentId);
+  if (!raw) {
     throw new AppError('Appointment not found.', 404);
   }
 
   if (currentUser.role !== 'admin') {
     if (currentUser.role === 'vet') {
       const vet = await vetRepository.findByUserId(currentUser.id);
-      if (!vet || appointment.vetId.toString() !== vet._id.toString()) {
+      if (!vet || raw.vetId.toString() !== vet._id.toString()) {
         throw new AppError('You do not have access to this appointment.', 403);
       }
-    } else if (appointment.petOwnerId.toString() !== currentUser.id) {
+    } else if (raw.petOwnerId.toString() !== currentUser.id) {
       throw new AppError('You can only view your own appointments.', 403);
     }
   }
 
-  return appointment;
+  // Return fully populated so frontend gets actual pet/vet/owner data
+  return appointmentRepository.findByIdPopulated(appointmentId);
 }
 
 /**
