@@ -1,18 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Skeleton } from '../../components/ui';
-import { getForumPosts, reportPost } from '../../api/content.api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Avatar, Badge, Button, Card, Input, Modal, Select, Skeleton, Textarea } from '../../components/ui';
+import { createForumPost, getForumPosts, reportPost } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { MessageSquare, ShieldCheck, CheckCircle2, Check, X, BookOpen } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function ForumPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { role } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
   const [activeGroup, setActiveGroup] = useState('all');
+  const [activeQuickFilter, setActiveQuickFilter] = useState('all');
   const [showRules, setShowRules] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingPost, setCreatingPost] = useState(false);
+  const [createForm, setCreateForm] = useState({ title: '', content: '', group: 'all', isAnonymous: false });
 
   const groups = [
     { label: 'All', value: 'all' },
@@ -22,32 +29,72 @@ export default function ForumPage() {
     { label: 'Emergency', value: 'emergency' },
   ];
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const response = await getForumPosts(activeGroup === 'all' ? {} : { group: activeGroup });
-        const postsList = response.data?.posts
-          || response.data?.items
-          || (Array.isArray(response.data) ? response.data : response.data || []);
-        setPosts(Array.isArray(postsList) ? postsList : []);
-      } catch (apiError) {
-        addToast(getErrorMessage(apiError), 'danger');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const isVet = role === 'vet';
 
-    load();
-  }, [addToast, activeGroup]);
+  useEffect(() => {
+    if (location.state?.showCreateModal) {
+      setShowCreateModal(true);
+    }
+  }, [location.state]);
+
+  const loadPosts = async (group = activeGroup) => {
+    try {
+      setLoading(true);
+      const response = await getForumPosts(group === 'all' ? {} : { group });
+      const postsList = response.data?.posts
+        || response.data?.items
+        || (Array.isArray(response.data) ? response.data : response.data || []);
+      setPosts(Array.isArray(postsList) ? postsList : []);
+    } catch (apiError) {
+      addToast(getErrorMessage(apiError), 'danger');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPosts();
+  }, [activeGroup]);
+
+  useEffect(() => {
+    if (!isVet && activeQuickFilter !== 'all') {
+      setActiveQuickFilter('all');
+    }
+  }, [activeQuickFilter, isVet]);
+
+  const visiblePosts = useMemo(() => {
+    if (activeQuickFilter === 'unanswered') {
+      return posts.filter((post) => !Array.isArray(post.answers) || post.answers.length === 0);
+    }
+
+    return posts;
+  }, [activeQuickFilter, posts]);
 
   const handleCreatePost = () => {
-    navigate('/forum/new');
+    setShowCreateModal(true);
   };
+
+  const handleCreateSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      setCreatingPost(true);
+      await createForumPost(createForm);
+      addToast('Forum post created', 'success');
+      setShowCreateModal(false);
+      setCreateForm({ title: '', content: '', group: 'all', isAnonymous: false });
+      loadPosts();
+    } catch (apiError) {
+      addToast(getErrorMessage(apiError), 'danger');
+    } finally {
+      setCreatingPost(false);
+    }
+  };
+
+  const ctaLabel = isVet ? 'Answer a Question' : 'Create new post';
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
         
         {/* Header */}
         <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>PetSneha Community</h1>
@@ -75,15 +122,28 @@ export default function ForumPage() {
                   {group.label}
                 </button>
               ))}
+              {isVet ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveQuickFilter((current) => (current === 'unanswered' ? 'all' : 'unanswered'))}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition ${
+                    activeQuickFilter === 'unanswered'
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-neutral-50'
+                  }`}
+                >
+                  Unanswered
+                </button>
+              ) : null}
             </div>
 
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm mb-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-[#1E293B]">Start a discussion</h2>
-                  <p className="text-sm text-[#64748B]">Ask the community or create a question for vets to answer.</p>
+                  <p className="text-sm text-[#64748B]">{isVet ? 'Answer questions from the community or create your own discussion.' : 'Ask the community or create a question for vets to answer.'}</p>
                 </div>
-                <Button variant="primary" onClick={handleCreatePost}>Create new post</Button>
+                <Button variant="primary" onClick={handleCreatePost}>{ctaLabel}</Button>
               </div>
             </div>
 
@@ -91,8 +151,8 @@ export default function ForumPage() {
             <div className="mt-4 space-y-4">
               {loading ? (
                 Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 bg-[#F8FAFC] rounded-xl animate-pulse border border-[#E2E8F0]" />)
-              ) : posts.length > 0 ? (
-                posts.map((post) => {
+              ) : visiblePosts.length > 0 ? (
+                visiblePosts.map((post) => {
                   const answersCount = Array.isArray(post.answers) ? post.answers.length : 0;
                   const hasVetAnswer = Array.isArray(post.answers) && post.answers.some((answer) => answer.isVet === true);
                   const upvotes = Number(post.upvotes || 0);
@@ -139,7 +199,7 @@ export default function ForumPage() {
                 })
               ) : (
                 <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-sm text-[#64748B]">
-                  No posts found. Be the first to start a discussion!
+                  {activeQuickFilter === 'unanswered' ? 'No unanswered posts found.' : 'No posts found. Be the first to start a discussion!'}
                 </div>
               )}
             </div>
@@ -192,40 +252,69 @@ export default function ForumPage() {
           
         </div>
       </div>
-      {showRules && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-950">Community Guidelines</h2>
-                <p className="text-sm text-slate-500 mt-1">A friendly, helpful forum keeps the community safe and useful.</p>
-              </div>
-              <button type="button" onClick={() => setShowRules(false)} className="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">Close</button>
-            </div>
-            <div className="mt-5 space-y-4 text-sm text-slate-600">
-              <div>
-                <p className="font-semibold text-slate-900">1. Be respectful.</p>
-                <p>Share your questions and advice kindly. Do not harass other members.</p>
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900">2. Keep medical advice general.</p>
-                <p>Use the forum for guidance, but always consult a vet for diagnoses or emergencies.</p>
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900">3. Post in the right group.</p>
-                <p>Choose the correct category so vets and owners can find your question fast.</p>
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900">4. Respect privacy.</p>
-                <p>Do not share private details or personal health information on the forum.</p>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button type="button" onClick={() => setShowRules(false)} className="rounded-full bg-[#0046CE] px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Got it</button>
-            </div>
+      <Modal open={showRules} onClose={() => setShowRules(false)} size="lg" title="Community Guidelines">
+        <div className="px-6 pb-6 space-y-4 text-sm text-[#475569]">
+          <p>A friendly, helpful forum keeps the community safe and useful.</p>
+          <div>
+            <p className="font-semibold text-[#1E293B]">1. Be respectful.</p>
+            <p>Share your questions and advice kindly. Do not harass other members.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-[#1E293B]">2. Keep medical advice general.</p>
+            <p>Use the forum for guidance, but always consult a vet for diagnoses or emergencies.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-[#1E293B]">3. Post in the right group.</p>
+            <p>Choose the correct category so vets and owners can find your question fast.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-[#1E293B]">4. Respect privacy.</p>
+            <p>Do not share private details or personal health information on the forum.</p>
           </div>
         </div>
-      )}
+      </Modal>
+
+      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} size="lg" title="Create forum post">
+        <form className="px-6 pb-6 space-y-5" onSubmit={handleCreateSubmit}>
+          <Input
+            label="Title"
+            value={createForm.title}
+            onChange={(event) => setCreateForm((current) => ({ ...current, title: event.target.value }))}
+            required
+          />
+          <Textarea
+            label="Content"
+            value={createForm.content}
+            onChange={(event) => setCreateForm((current) => ({ ...current, content: event.target.value }))}
+            rows={8}
+            required
+          />
+          <Select
+            label="Group"
+            value={createForm.group}
+            onChange={(event) => setCreateForm((current) => ({ ...current, group: event.target.value }))}
+          >
+            <option value="all">All</option>
+            <option value="dogs">Dogs</option>
+            <option value="cats">Cats</option>
+            <option value="newOwners">New Owners</option>
+            <option value="emergency">Emergency</option>
+          </Select>
+          <label className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-sm text-[#475569]">
+            <input
+              type="checkbox"
+              checked={createForm.isAnonymous}
+              onChange={(event) => setCreateForm((current) => ({ ...current, isAnonymous: event.target.checked }))}
+              className="h-4 w-4 rounded border border-slate-300 text-primary-600 focus:ring-primary-500"
+            />
+            Post anonymously
+          </label>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+            <Button type="submit" loading={creatingPost}>Post</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

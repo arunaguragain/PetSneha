@@ -1,26 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Skeleton, VerifiedBadge } from '../../components/ui';
-import { getArticles } from '../../api/content.api';
+import { useNavigate } from 'react-router-dom';
+import { getArticles, getForumPosts } from '../../api/content.api';
 import { getErrorMessage, formatDate, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { CheckCircle2, Circle, AlertTriangle, ArrowRight, MessageSquare } from 'lucide-react';
+import { AlertTriangle, MessageSquare, Check, ArrowRight, Search } from 'lucide-react';
+import OwnerChecklistPanel from '../../components/onboarding/OwnerChecklistPanel';
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [articles, setArticles] = useState([]);
+  const [showAllArticles, setShowAllArticles] = useState(false);
+  const [articleQuery, setArticleQuery] = useState('');
+  const [forumPosts, setForumPosts] = useState([]);
+  const [seasonalArticle, setSeasonalArticle] = useState(null);
+  const [forumLoading, setForumLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         const response = await getArticles();
-        const articlesList = response.data?.articles
-          || response.data?.items
-          || (Array.isArray(response.data) ? response.data : response || []);
+        const articlesList = unwrapItems(response);
         setArticles(articlesList);
+
+        const month = new Date().getMonth();
+        const currentSeason = month >= 2 && month <= 4 ? 'summer' : month >= 5 && month <= 8 ? 'monsoon' : 'winter';
+        const seasonalMatch = articlesList.find((article) => String(article?.season || '').toLowerCase() === currentSeason);
+        setSeasonalArticle(seasonalMatch || null);
       } catch (apiError) {
         addToast(getErrorMessage(apiError), 'danger');
       } finally {
@@ -31,33 +39,64 @@ export default function ArticlesPage() {
     load();
   }, [addToast]);
 
+  const filteredArticles = articles.filter((article) => {
+    const searchText = articleQuery.trim().toLowerCase();
+    if (!searchText) {
+      return true;
+    }
+
+    return [article.title, article.summary, article.excerpt, article.content, article.category, article.season]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(searchText));
+  });
+
+  const visibleArticles = showAllArticles ? filteredArticles : filteredArticles.slice(0, 3);
+
+  useEffect(() => {
+    const loadForumPosts = async () => {
+      try {
+        setForumLoading(true);
+        const response = await getForumPosts({ limit: 3 });
+        setForumPosts(unwrapItems(response).slice(0, 3));
+      } catch (apiError) {
+        addToast(getErrorMessage(apiError), 'danger');
+      } finally {
+        setForumLoading(false);
+      }
+    };
+
+    loadForumPosts();
+  }, [addToast]);
+
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
         
         {/* Hero banner */}
-        <div className="bg-gradient-to-r from-[#0046CE] to-[#1D4ED8] rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-          <div>
+        <div className="bg-[#0046ce] rounded-xl flex flex-col md:flex-row items-stretch justify-between shadow-sm overflow-hidden relative min-h-[220px]">
+          <div className="p-8 relative z-10 md:w-3/5 lg:w-1/2">
             <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'Literata, serif' }}>
               Expertise meets Empathy
             </h1>
-            <p className="text-sm text-white opacity-80 mt-2 max-w-lg">
-              Trusted pet care knowledge from verified professionals. Explore our extensive library of vet-approved articles.
+            <p className="text-sm text-white opacity-90 mt-2 max-w-lg">
+              Your comprehensive guide to pet health, seasonal care, and community-driven support in Nepal.
             </p>
-            <div className="flex flex-wrap gap-3 mt-4">
-              <button className="bg-white hover:bg-neutral-50 text-[#0046CE] rounded-lg px-4 py-2 text-sm font-medium transition">
+            <div className="flex flex-wrap gap-3 mt-5">
+              <button onClick={() => navigate('/onboarding')} className="bg-white hover:bg-neutral-50 text-[#0046CE] rounded px-4 py-2 text-sm font-medium transition">
                 Browse Checklist
               </button>
               <button 
-                onClick={() => navigate('/community')}
-                className="border border-white hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm font-medium transition"
+                onClick={() => navigate('/forum', { state: { showCreateModal: true } })}
+                className="border border-white hover:bg-white/10 text-white rounded px-4 py-2 text-sm font-medium transition"
               >
                 Ask a Vet
               </button>
             </div>
           </div>
           
-          <img src="/profile.png" alt="Vet Expert" className="w-48 h-32 rounded-xl object-cover bg-[#F1F5F9] shadow-md hidden md:block" />
+          <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden md:block">
+            <img src="/expert.png" alt="Vet Expert" className="w-full h-full object-cover object-left" />
+          </div>
         </div>
 
         {/* Three column layout */}
@@ -65,32 +104,7 @@ export default function ArticlesPage() {
           
           {/* Left (col-span-1) - Checklist */}
           <div>
-            <div className="text-xs text-[#64748B] uppercase tracking-wide">ESSENTIALS</div>
-            <h2 className="text-base font-semibold text-[#1E293B] mt-1" style={{ fontFamily: 'Literata, serif' }}>New Owner Checklist</h2>
-            <p className="text-sm text-[#64748B] mt-1">Make sure you have the basics covered for your new furry friend.</p>
-            
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-[#1E293B]">Set up a safe sleeping area</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-[#1E293B]">Buy age-appropriate food</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Circle className="w-4 h-4 text-[#E2E8F0]" />
-                <span className="text-[#64748B]">Schedule first vet visit</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Circle className="w-4 h-4 text-[#E2E8F0]" />
-                <span className="text-[#64748B]">Purchase basic grooming tools</span>
-              </div>
-            </div>
-            
-            <button className="text-sm text-[#0046CE] mt-4 flex items-center gap-1 hover:underline font-medium">
-              View Full Checklist <ArrowRight className="w-4 h-4" />
-            </button>
+            <OwnerChecklistPanel variant="compact" />
           </div>
 
           {/* Centre (col-span-1) - Seasonal */}
@@ -98,17 +112,25 @@ export default function ArticlesPage() {
             <div className="text-xs text-amber-600 uppercase tracking-wide flex items-center gap-1 mb-2">
               <AlertTriangle className="w-3.5 h-3.5" /> SEASONAL ALERT
             </div>
-            
-            <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer">
-              <div className="w-full h-32 bg-[#F1F5F9] relative">
-                <div className="absolute inset-0 bg-blue-100 flex items-center justify-center text-4xl">☀️</div>
+            {seasonalArticle ? (
+              <div
+                className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
+                onClick={() => navigate(`/articles/${seasonalArticle._id}`)}
+              >
+                <div className="w-full h-32 bg-[#F1F5F9] relative">
+                  <div className="absolute inset-0 bg-blue-100 flex items-center justify-center text-4xl">📰</div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-[#1E293B] line-clamp-1">{seasonalArticle.title}</h3>
+                  <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{seasonalArticle.summary || seasonalArticle.excerpt || seasonalArticle.content}</p>
+                  <div className="text-sm text-[#0046CE] mt-3 font-medium">Read Article</div>
+                </div>
               </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-[#1E293B] line-clamp-1">Summer Heat Safety Tips</h3>
-                <p className="text-sm text-[#64748B] mt-1 line-clamp-2">Learn how to protect your pet's paws from hot pavement and prevent heatstroke.</p>
-                <div className="text-sm text-[#0046CE] mt-3 font-medium">Read Article</div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#E2E8F0] p-5 text-sm text-[#64748B]">
+                No seasonal article available for this time of year yet.
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right (col-span-1) - Forum */}
@@ -116,7 +138,7 @@ export default function ArticlesPage() {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-semibold text-[#1E293B]">Community Forum</h2>
               <button 
-                onClick={() => navigate('/community')}
+                onClick={() => navigate('/forum', { state: { showCreateModal: true } })}
                 className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-3 py-1.5 text-sm transition"
               >
                 Ask a Question
@@ -124,46 +146,86 @@ export default function ArticlesPage() {
             </div>
             
             <div className="space-y-3">
-              <div className="bg-[#F8FAFC] rounded-xl p-3 cursor-pointer hover:bg-[#F1F5F9] transition">
-                <div className="bg-[#F0FDF4] text-[#166534] text-[10px] px-2 py-0.5 rounded-full w-fit font-medium mb-2 uppercase tracking-wide">
-                  VET VERIFIED
+              {forumLoading ? (
+                <div className="space-y-3">
+                  <div className="h-20 rounded-xl bg-[#F8FAFC] animate-pulse border border-[#E2E8F0]" />
+                  <div className="h-20 rounded-xl bg-[#F8FAFC] animate-pulse border border-[#E2E8F0]" />
                 </div>
-                <h3 className="text-sm font-medium text-[#1E293B] line-clamp-2">What is the best way to transition my puppy to adult food?</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex -space-x-1">
-                    <div className="w-5 h-5 rounded-full bg-blue-200 border border-white"></div>
-                    <div className="w-5 h-5 rounded-full bg-green-200 border border-white"></div>
-                  </div>
-                  <span className="text-xs text-[#64748B]">4 answers</span>
+              ) : forumPosts.length > 0 ? forumPosts.map(post => {
+                  const answersCount = Array.isArray(post.answers) ? post.answers.length : 0;
+                  const hasVetAnswer = Array.isArray(post.answers) && post.answers.some((answer) => answer.isVet === true);
+                  const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name || 'Member';
+                  
+                  return (
+                    <div key={post._id} onClick={() => navigate(`/forum/${post._id}`)} className="bg-[#F8FAFC] rounded-xl p-3 cursor-pointer hover:bg-[#F1F5F9] transition">
+                      <div className="flex items-center gap-2 text-xs text-[#64748B] mb-1">
+                        <span className="font-medium text-[#1E293B]">{authorName}</span>
+                        <span>•</span>
+                        <span>{formatDate(post.createdAt)}</span>
+                      </div>
+                      {hasVetAnswer && (
+                        <div className="bg-[#F0FDF4] text-[#166534] text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-full w-fit font-medium mb-2 uppercase tracking-wide">
+                          <Check className="w-3 h-3" /> VET VERIFIED
+                        </div>
+                      )}
+                      <h3 className="text-sm font-medium text-[#1E293B] line-clamp-2">{post.title}</h3>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-[#64748B]">
+                        <MessageSquare className="w-3 h-3" /> {answersCount} answers
+                      </div>
+                    </div>
+                  );
+              }) : (
+                <div className="bg-[#F8FAFC] rounded-xl p-3 text-xs text-[#64748B]">
+                  No recent forum posts.
                 </div>
-              </div>
-              
-              <div className="bg-[#F8FAFC] rounded-xl p-3 cursor-pointer hover:bg-[#F1F5F9] transition">
-                <h3 className="text-sm font-medium text-[#1E293B] line-clamp-2">My cat keeps scratching the sofa, any recommendations for scratching posts?</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex -space-x-1">
-                    <div className="w-5 h-5 rounded-full bg-amber-200 border border-white"></div>
-                  </div>
-                  <span className="text-xs text-[#64748B]">12 answers</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
           
         </div>
 
         {/* Latest Insights Header */}
-        <div className="flex justify-between items-end mt-10 mb-4 border-t border-[#E2E8F0] pt-8">
-          <h2 className="text-xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Latest Health Insights</h2>
-          <span className="text-sm text-[#0046CE] cursor-pointer hover:underline">See all articles</span>
+        <div className="flex flex-col gap-4 mt-10 mb-4 border-t border-[#E2E8F0] pt-8 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Latest Health Insights</h2>
+            <p className="text-sm text-[#64748B] mt-1">
+              Browse featured reads or search by topic, category, or season.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end w-full lg:w-auto">
+            <label className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="search"
+                value={articleQuery}
+                onChange={(event) => {
+                  setArticleQuery(event.target.value);
+                  setShowAllArticles(false);
+                }}
+                placeholder="Search articles"
+                className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#1E293B] outline-none transition focus:border-[#0046CE] focus:ring-2 focus:ring-[#0046CE]/10"
+              />
+            </label>
+
+            {articles.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllArticles((current) => !current)}
+                className="text-sm font-medium text-[#0046CE] cursor-pointer hover:underline sm:whitespace-nowrap"
+              >
+                {showAllArticles ? 'Show fewer articles' : 'See all articles'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Article list */}
         <div className="space-y-4">
           {loading ? (
             Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 bg-[#F8FAFC] rounded-xl animate-pulse border border-[#E2E8F0]" />)
-          ) : articles.length > 0 ? (
-            articles.map((article) => {
+          ) : visibleArticles.length > 0 ? (
+            visibleArticles.map((article) => {
               const categoryLower = (article.category || '').toLowerCase();
               let badgeClass = "bg-blue-50 text-blue-700";
               if (categoryLower.includes('nutrition') || categoryLower.includes('food')) {
@@ -200,7 +262,9 @@ export default function ArticlesPage() {
             })
           ) : (
             <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-sm text-[#64748B]">
-              No articles found. Check back later for new insights!
+              {articleQuery.trim()
+                ? `No articles match "${articleQuery.trim()}". Try a different keyword or clear the search.`
+                : 'No articles found. Check back later for new insights!'}
             </div>
           )}
         </div>

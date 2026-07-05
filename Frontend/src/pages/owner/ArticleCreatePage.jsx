@@ -4,6 +4,7 @@ import { Button, Card, Input, Textarea } from '../../components/ui';
 import { submitArticle } from '../../api/content.api';
 import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ArticleCreatePage() {
   const navigate = useNavigate();
@@ -27,8 +28,15 @@ export default function ArticleCreatePage() {
 
   return (
     <div className="container-app max-w-3xl px-10 py-8">
-      <Link to="/articles" className="font-semibold text-neutral-600 hover:text-primary-600">← Back to articles</Link>
-      <Card className="mt-4 p-6">
+      <div className="flex items-center justify-end mb-4">
+        <Link 
+          to="/articles" 
+          className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to articles
+        </Link>
+      </div>
+      <Card className="p-6">
         <h1 className="font-display text-4xl text-neutral-900">Submit article</h1>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <Input label="Title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />

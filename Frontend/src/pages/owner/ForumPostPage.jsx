@@ -4,6 +4,7 @@ import { Avatar, Badge, Button, Card, Textarea } from '../../components/ui';
 import { addForumAnswer, getForumPost, upvotePost, reportPost } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ForumPostPage() {
   const { postId } = useParams();
@@ -46,8 +47,15 @@ export default function ForumPostPage() {
 
   return (
     <div className="container-app max-w-4xl px-10 py-8">
-      <Link to="/forum" className="font-semibold text-neutral-600 hover:text-primary-600">← Back to forum</Link>
-      <Card className="mt-4 p-6">
+      <div className="flex items-center justify-end mb-4">
+        <Link 
+          to="/forum" 
+          className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to forum
+        </Link>
+      </div>
+      <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl text-neutral-900">{post?.title}</h1>

@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Badge, Card, Skeleton } from '../../components/ui';
+import { Badge, Card, Modal, Skeleton } from '../../components/ui';
 import { cancelOrder, getOrders } from '../../api/shop.api';
 import { formatCurrency, formatDate, getErrorMessage, getStatusTone, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { ChevronDown, ChevronUp, Package, ShoppingBag } from 'lucide-react';
+import { Package, ShoppingBag } from 'lucide-react';
 
 const cancellableStatuses = new Set(['placed', 'processing', 'shipped']);
 
@@ -44,7 +44,7 @@ export default function OrdersPage() {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -80,7 +80,7 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
@@ -118,17 +118,16 @@ export default function OrdersPage() {
             {orders.map((order) => {
               const status = String(order.status || '').toLowerCase();
               const canCancel = cancellableStatuses.has(status);
-              const isExpanded = expandedOrderId === order._id;
               const statusTone = getStatusTone(status);
 
               return (
-                <Card key={order._id} className="overflow-hidden border border-[#E2E8F0] bg-white shadow-sm">
+                <Card
+                  key={order._id}
+                  className="overflow-hidden border border-[#E2E8F0] bg-white shadow-sm cursor-pointer hover:shadow-md transition"
+                  onClick={() => setSelectedOrder(order)}
+                >
                   <div className="flex flex-col gap-4 p-5 hover:bg-[#FAFBFD] sm:flex-row sm:items-start sm:justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedOrderId(isExpanded ? null : order._id)}
-                      className="min-w-0 flex-1 text-left"
-                    >
+                    <div className="min-w-0 flex-1 text-left">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="text-base font-semibold text-[#1E293B]">Order {order.orderNumber || order._id}</h2>
@@ -145,53 +144,94 @@ export default function OrdersPage() {
                           Delivery fee {formatCurrency(order.deliveryFee ?? 0)} • Payment {String(order.paymentMethod || 'cod').toUpperCase()}
                         </p>
                       </div>
-                    </button>
+                    </div>
 
                     <div className="flex items-center gap-3 self-start">
                       {canCancel ? (
                         <button
                           type="button"
-                          onClick={() => handleCancel(order._id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleCancel(order._id);
+                          }}
                           className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
                         >
                           Cancel order
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() => setExpandedOrderId(isExpanded ? null : order._id)}
-                        className="rounded-full p-2 text-[#64748B] hover:bg-[#EEF2F7]"
-                        aria-label={isExpanded ? 'Collapse order details' : 'Expand order details'}
-                      >
-                        {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                      </button>
                     </div>
                   </div>
-
-                  {isExpanded ? (
-                    <div className="border-t border-[#E2E8F0] bg-[#FAFBFD] p-5">
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {order.items?.map((item, index) => (
-                          <div key={`${order._id}-${index}`} className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-medium text-[#1E293B]">{item.name || 'Product'}</p>
-                                <p className="mt-1 text-sm text-[#64748B]">Qty {item.quantity}</p>
-                              </div>
-                              <div className="text-right text-sm font-semibold text-[#0046CE]">{formatCurrency(item.price)}</div>
-                            </div>
-                            <div className="mt-3 text-sm text-[#64748B]">Line total {formatCurrency((item.price || 0) * (item.quantity || 0))}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
                 </Card>
               );
             })}
           </div>
         )}
       </div>
+
+      <Modal
+        open={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        size="lg"
+        title={selectedOrder ? `Order ${selectedOrder.orderNumber || selectedOrder._id}` : 'Order details'}
+      >
+        {selectedOrder ? (
+          <div className="px-6 pb-6 space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 space-y-2 text-sm text-[#475569]">
+                <p><span className="font-semibold text-[#1E293B]">Status:</span> {selectedOrder.status || 'placed'}</p>
+                <p><span className="font-semibold text-[#1E293B]">Payment:</span> {String(selectedOrder.paymentMethod || 'cod').toUpperCase()}</p>
+                <p><span className="font-semibold text-[#1E293B]">Created:</span> {formatDate(selectedOrder.createdAt)}</p>
+                <p><span className="font-semibold text-[#1E293B]">Updated:</span> {formatDate(selectedOrder.updatedAt)}</p>
+                <p><span className="font-semibold text-[#1E293B]">Total:</span> {formatCurrency(selectedOrder.total ?? selectedOrder.totalAmount ?? 0)}</p>
+              </div>
+              {selectedOrder.deliveryAddress ? (
+                <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 text-sm text-[#475569] space-y-1">
+                  <p className="font-semibold text-[#1E293B]">Delivery address</p>
+                  <p>{selectedOrder.deliveryAddress.fullName}</p>
+                  <p>{selectedOrder.deliveryAddress.phone}</p>
+                  <p>{selectedOrder.deliveryAddress.email}</p>
+                  <p>{selectedOrder.deliveryAddress.address}</p>
+                  <p>{selectedOrder.deliveryAddress.area}</p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-[#64748B]">Items</h4>
+              <div className="space-y-3">
+                {selectedOrder.items?.map((item, index) => {
+                  const product = item.productId || {};
+                  const imageSrc = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+                  const seller = product.sellerId || {};
+
+                  return (
+                    <div key={`${selectedOrder._id}-${index}`} className="flex gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#F1F5F9]">
+                        {imageSrc ? (
+                          <img src={imageSrc} alt={product.name || item.name || 'Product'} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-2xl">📰</div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[#1E293B]">{product.name || item.name || `Product #${index + 1}`}</p>
+                            <p className="text-sm text-[#64748B]">Qty {item.quantity}</p>
+                            {seller.name ? <p className="text-xs text-[#64748B] mt-1">Seller: {seller.name}{seller.phone ? ` · ${seller.phone}` : ''}</p> : null}
+                          </div>
+                          <p className="text-sm font-semibold text-[#0046CE]">{formatCurrency(item.price)}</p>
+                        </div>
+                        <p className="mt-2 text-sm text-[#64748B]">Line total {formatCurrency((item.price || 0) * (item.quantity || 0))}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }
