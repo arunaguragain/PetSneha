@@ -1,5 +1,15 @@
 const mongoose = require('mongoose');
 
+const onboardingChecklistSchema = new mongoose.Schema(
+  {
+    sleepingArea: { type: Boolean, default: false },
+    food: { type: Boolean, default: false },
+    vetVisit: { type: Boolean, default: false },
+    groomingTools: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -11,6 +21,7 @@ const userSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     savedVetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vet' },
     language: { type: String, enum: ['en', 'ne'], default: 'en' },
+    checklist: { type: onboardingChecklistSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
