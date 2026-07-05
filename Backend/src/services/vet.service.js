@@ -135,7 +135,7 @@ async function updateVetProfile(currentUser, vetId, payload) {
     // Sync profile photo to user model if uploaded
     if (payload.profilePhoto && vet.userId) {
       try {
-        await userRepository.updateById(vet.userId, { photo: payload.profilePhoto });
+        await userRepository.updateById(vet.userId, { profilePhoto: payload.profilePhoto });
       } catch (err) {
         console.error('Failed to sync photo to user model:', err);
         // Don't throw error - profile was updated successfully
