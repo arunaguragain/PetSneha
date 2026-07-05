@@ -1,6 +1,17 @@
 const Order = require('../models/order.model');
 const Product = require('../models/product.model');
 
+function populateOrderItems(query) {
+  return query.populate({
+    path: 'items.productId',
+    select: 'name images sellerId price',
+    populate: {
+      path: 'sellerId',
+      select: 'name phone profilePhoto',
+    },
+  });
+}
+
 /**
  * Creates an order.
  * @param {object} payload
@@ -16,7 +27,7 @@ async function create(payload) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findByUserId(userId) {
-  return Order.find({ userId }).sort('-createdAt');
+  return populateOrderItems(Order.find({ userId }).sort('-createdAt'));
 }
 
 /**
@@ -27,7 +38,7 @@ async function findByUserId(userId) {
 async function findBySellerId(sellerId) {
   const products = await Product.find({ sellerId }).select('_id');
   const productIds = products.map(p => p._id);
-  return Order.find({ 'items.productId': { $in: productIds } }).sort('-createdAt');
+  return populateOrderItems(Order.find({ 'items.productId': { $in: productIds } }).sort('-createdAt'));
 }
 
 /**
@@ -35,7 +46,7 @@ async function findBySellerId(sellerId) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findAll() {
-  return Order.find().sort('-createdAt');
+  return populateOrderItems(Order.find().sort('-createdAt'));
 }
 
 /**
@@ -44,7 +55,7 @@ async function findAll() {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findById(id) {
-  return Order.findById(id);
+  return populateOrderItems(Order.findById(id));
 }
 
 /**
@@ -54,7 +65,7 @@ async function findById(id) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function updateById(id, payload) {
-  return Order.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+  return populateOrderItems(Order.findByIdAndUpdate(id, payload, { new: true, runValidators: true }));
 }
 
 /**

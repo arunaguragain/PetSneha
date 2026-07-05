@@ -12,10 +12,11 @@ async function create(payload) {
 /**
  * Finds products with optional filters.
  * @param {object} filter
+ * @param {string|object} sortOption
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
-async function findAll(filter = {}) {
-  return Product.find(filter).sort('-createdAt');
+async function findAll(filter = {}, sortOption = '-createdAt') {
+  return Product.find(filter).sort(sortOption);
 }
 
 /**
