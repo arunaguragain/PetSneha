@@ -179,7 +179,7 @@ function ProductDetailModal({ product, onClose }) {
         </div>
         <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div><p className="text-slate-500">Seller</p><p className="font-medium">{product.sellerName || product.sellerId || 'Unknown'}</p></div>
+            <div><p className="text-slate-500">Seller</p><p className="font-medium">{product.sellerName || product.sellerId?.name || 'Unknown'}</p></div>
             <div><p className="text-slate-500">Status</p><p className="font-medium">{product.isVerifiedSeller ? 'Approved' : 'Pending'}</p></div>
           </div>
           {product.images?.length > 0 && (
