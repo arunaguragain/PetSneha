@@ -341,6 +341,12 @@ async function getAllOrders(filters = {}) {
   const [total, orders] = await Promise.all([
     Order.countDocuments(query),
     Order.find(query)
+      .populate('userId', 'name email phone')
+      .populate({
+        path: 'items.productId',
+        select: 'name price sellerId',
+        populate: { path: 'sellerId', select: 'name' },
+      })
       .sort('-createdAt')
       .skip((page - 1) * limit)
       .limit(limit),
