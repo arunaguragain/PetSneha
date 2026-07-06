@@ -95,14 +95,15 @@ export default function VetLandingPage() {
 
             <div className="flex flex-wrap gap-4 pt-2">
               <Button
-                className="bg-white text-emerald-800 font-bold hover:bg-neutral-50 rounded-xl px-6 py-3 shadow-md border-none text-sm transition"
+                variant="white"
+                className="!rounded-full !text-emerald-800 font-bold px-6 py-3 shadow-md border-none text-sm"
                 onClick={() => navigate('/vet/register')}
               >
                 Get started free →
               </Button>
               <Button
                 variant="ghost"
-                className="text-white border border-white/30 hover:bg-white/10 rounded-xl px-6 py-3 text-sm font-semibold transition"
+                className="!rounded-full text-white border border-white/30 hover:bg-white/10 px-6 py-3 text-sm font-semibold transition"
                 onClick={() => handleScroll('how-it-works')}
               >
                 See how it works
@@ -378,7 +379,8 @@ export default function VetLandingPage() {
           </div>
           <div className="relative z-10 flex-shrink-0">
             <Button
-              className="bg-white text-emerald-900 font-bold hover:bg-neutral-50 rounded-xl px-6 py-3.5 shadow-md border-none text-sm transition"
+              variant="white"
+              className="!rounded-full !text-emerald-900 font-bold px-6 py-3.5 shadow-md border-none text-sm"
               onClick={() => navigate('/vet/register')}
             >
               Get started free →

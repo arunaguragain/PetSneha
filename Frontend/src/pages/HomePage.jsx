@@ -75,10 +75,10 @@ export default function HomePage() {
                 </div>
 
                 <div className="flex flex-wrap gap-4">
-                  <Button as={Link} to="/register" className="border border-transparent bg-white px-6 py-3 text-base font-semibold text-primary-600 hover:bg-neutral-50" size="lg">
+                  <Button as={Link} to="/register" variant="white" size="lg" className="!rounded-full px-6 py-3 text-base font-semibold">
                     Get started →
                   </Button>
-                  <Button as={Link} to="/login" variant="secondary" size="lg" className="border border-white/30 bg-transparent px-6 py-3 text-base font-semibold text-white hover:bg-white/10">
+                  <Button as={Link} to="/login" size="lg" className="!rounded-full border border-white/30 bg-transparent px-6 py-3 text-base font-semibold text-white hover:bg-white/10 !shadow-none">
                     Learn more
                   </Button>
                 </div>

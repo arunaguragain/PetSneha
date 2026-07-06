@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Avatar, Badge, Card, VerifiedBadge } from '../../components/ui';
 import { getArticle } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItem } from '../../utils/api';
+import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft } from 'lucide-react';
 
 export default function ArticleDetailPage() {
   const { articleId } = useParams();
@@ -37,35 +37,29 @@ export default function ArticleDetailPage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-8 py-10">
-      <div className="flex items-center justify-end mb-4">
-        <Link 
-          to="/articles" 
-          className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to articles
-        </Link>
-      </div>
       <Card className="p-8">
-        <div className="flex items-center gap-3">
-          <Avatar name={article.author?.name || article.authorName || 'Vet'} size="lg" />
+        <div className="flex items-center gap-4">
+          <Avatar src={getImageUrl(article.author?.profilePhoto || article.author?.imageUrl)} alt={article.author?.name || article.authorName || 'Vet'} name={article.author?.name || article.authorName || 'Vet'} size="md" />
           <div>
-            <div className="flex items-center gap-2"><p className="font-semibold text-neutral-900">{article.author?.name || article.authorName || 'Vet author'}</p><VerifiedBadge /></div>
+            <div className="flex items-center gap-2"><p className="font-semibold text-neutral-900 text-lg">{article.author?.name || article.authorName || 'Vet author'}</p><VerifiedBadge /></div>
             <p className="text-body-md text-neutral-500">{formatDate(article.publishedAt || article.createdAt)}</p>
           </div>
         </div>
         <Badge className="mt-4" variant="primary">{article.category || 'General'}</Badge>
         
-        {article.imageUrl && (
-          <img 
-            src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${article.imageUrl}`} 
-            alt={article.title} 
-            className="w-full max-h-96 object-cover rounded-xl mt-6 shadow-sm"
-          />
-        )}
+        <h1 className="mt-8 font-display text-4xl text-neutral-900 leading-tight">{article.title}</h1>
         
-        <h1 className="mt-4 font-display text-4xl text-neutral-900">{article.title}</h1>
-        <article className="prose prose-neutral mt-6 max-w-none">
-          <p className="text-body-md text-neutral-600">{article.content}</p>
+        <article className="prose prose-neutral mt-8 max-w-none flow-root">
+          {article.imageUrl && (
+            <img
+              src={getImageUrl(article.imageUrl)}
+              alt={article.title}
+              className="w-full md:w-1/4 md:float-left md:mr-8 md:mb-6 mb-6 md:mt-1 object-cover aspect-[4/3] rounded-2xl shadow-sm"
+            />
+          )}
+          <div className="text-body-md text-neutral-700 leading-relaxed whitespace-pre-wrap">
+            {article.content}
+          </div>
         </article>
       </Card>
     </div>

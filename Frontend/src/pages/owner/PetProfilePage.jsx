@@ -29,7 +29,7 @@ export default function PetProfilePage() {
   const [activeTab, setActiveTab] = useState('health');
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [recordForm, setRecordForm] = useState({ title: '', type: '', date: '', nextDueDate: '', status: 'done', description: '' });
+  const [recordForm, setRecordForm] = useState({ title: '', type: 'other', customType: '', date: '', nextDueDate: '', status: 'done', description: '' });
 
   // Guard first — BEFORE any fetch
   useEffect(() => {
@@ -166,6 +166,11 @@ export default function PetProfilePage() {
 
   const handleAddRecord = async (event) => {
     event.preventDefault();
+    if (recordForm.type === 'other' && !recordForm.customType.trim()) {
+      addToast('Please specify the custom record type.', 'danger');
+      return;
+    }
+
     try {
       setSubmitting(true);
       await createHealthRecord(petId, recordForm);
@@ -173,6 +178,7 @@ export default function PetProfilePage() {
       setRecords(unwrapItems(response));
       addToast('Health record added', 'success');
       setRecordModalOpen(false);
+      setRecordForm({ title: '', type: 'other', customType: '', date: '', nextDueDate: '', status: 'done', description: '' });
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     } finally {
@@ -503,8 +509,27 @@ export default function PetProfilePage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Type</label>
-                  <input type="text" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.type} onChange={(event) => setRecordForm((current) => ({ ...current, type: event.target.value }))} />
+                  <select className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.type} onChange={(event) => setRecordForm((current) => ({ ...current, type: event.target.value }))}>
+                    <option value="other">Other</option>
+                    <option value="vaccination">Vaccination</option>
+                    <option value="checkup">Checkup</option>
+                    <option value="treatment">Treatment</option>
+                    <option value="deworming">Deworming</option>
+                  </select>
                 </div>
+                {recordForm.type === 'other' ? (
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Specify type</label>
+                    <input
+                      type="text"
+                      className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]"
+                      value={recordForm.customType}
+                      onChange={(event) => setRecordForm((current) => ({ ...current, customType: event.target.value }))}
+                      placeholder="e.g. flea treatment, surgery follow-up"
+                      required
+                    />
+                  </div>
+                ) : null}
                 <div>
                   <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Date</label>
                   <input type="date" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.date} onChange={(event) => setRecordForm((current) => ({ ...current, date: event.target.value }))} required />
