@@ -12,7 +12,7 @@ export default function LandingCTA() {
         </p>
         <div className="mt-8 flex justify-center">
           <Link to="/register">
-            <Button className="min-w-52 bg-white text-primary-600 hover:bg-neutral-50">Create account</Button>
+            <Button variant="white" className="!rounded-full min-w-52">Create account</Button>
           </Link>
         </div>
       </Card>

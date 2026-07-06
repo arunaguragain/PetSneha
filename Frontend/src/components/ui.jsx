@@ -76,10 +76,33 @@ export const Button = forwardRef(function Button(
   { variant = 'primary', size = 'md', fullWidth = false, loading = false, className = '', as: Component = 'button', children, ...props },
   ref,
 ) {
+  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/15 disabled:cursor-not-allowed disabled:opacity-60';
+  
+  const variants = {
+    primary: 'bg-primary-600 text-white shadow-card hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-lift',
+    secondary: 'border border-neutral-200 bg-white text-neutral-800 shadow-surface hover:-translate-y-0.5 hover:border-primary-200 hover:text-primary-700',
+    ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900',
+    danger: 'bg-danger text-white shadow-card hover:-translate-y-0.5 hover:bg-danger-600',
+    white: 'bg-white text-primary-600 hover:bg-neutral-50 hover:-translate-y-0.5 shadow-card hover:shadow-lift'
+  };
+
+  const sizes = {
+    sm: 'px-3 py-2 text-xs uppercase tracking-wider',
+    md: 'px-4 py-3 text-sm',
+    lg: 'px-5 py-4 text-base'
+  };
+
   return (
     <Component
       ref={ref}
-      className={cn('btn', `btn-${variant}`, `btn-${size}`, fullWidth && 'w-full', loading && 'cursor-wait opacity-80', className)}
+      className={cn(
+        baseStyles,
+        variants[variant],
+        sizes[size],
+        fullWidth && 'w-full',
+        loading && 'cursor-wait opacity-80',
+        className
+      )}
       disabled={loading || props.disabled}
       {...props}
     >
@@ -122,9 +145,33 @@ export const ConfirmationOverlay = ({
   description,
   children,
   actions,
+  primaryAction, // { label, onClick, loading }
+  secondaryAction, // { label, onClick, loading }
   className = '',
 }) => {
   if (!open) return null;
+
+  const renderActions = () => {
+    if (primaryAction || secondaryAction) {
+      return (
+        <div className="mt-6 flex flex-col gap-3">
+          {primaryAction ? (
+            <Button type="button" variant="primary" fullWidth onClick={primaryAction.onClick} loading={primaryAction.loading} className={cn(primaryAction.className || '', 'rounded-full py-3')}>
+              {primaryAction.label}
+            </Button>
+          ) : null}
+          {secondaryAction ? (
+            <Button type="button" variant="secondary" fullWidth onClick={secondaryAction.onClick} loading={secondaryAction.loading} className={cn(secondaryAction.className || '', 'rounded-full py-3')}>
+              {secondaryAction.label}
+            </Button>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (actions) return <div className="mt-6 flex flex-col gap-3">{actions}</div>;
+    return null;
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
@@ -133,7 +180,7 @@ export const ConfirmationOverlay = ({
         {title ? <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Literata, serif' }}>{title}</h2> : null}
         {description ? <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p> : null}
         {children}
-        {actions ? <div className="mt-6 flex flex-col gap-3">{actions}</div> : null}
+        {renderActions()}
       </div>
     </div>
   );
@@ -225,8 +272,17 @@ export const Avatar = ({ src, alt = '', name = '', size = 'md', className = '' }
       .map((part) => part[0]?.toUpperCase())
       .join('') || alt.slice(0, 2).toUpperCase() || 'P';
 
+  const sizeClasses = {
+    xs: 'w-6 h-6 text-[10px]',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+    xl: 'w-16 h-16 text-lg',
+    '2xl': 'w-24 h-24 text-xl',
+  };
+
   return (
-    <span className={cn('avatar', `avatar-${size}`, className)}>
+    <span className={cn('relative inline-flex items-center justify-center shrink-0 overflow-hidden rounded-full bg-[#EFF6FF] text-[#0046CE] font-semibold border border-[#BFDBFE]', sizeClasses[size] || sizeClasses.md, className)}>
       {src && !imgError ? (
         <img src={src} alt={alt || name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
       ) : (

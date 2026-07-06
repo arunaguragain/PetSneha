@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Input, Select, Textarea } from '../../components/ui';
-import { createReminder, getPets } from '../../api/pet.api';
+import { createReminder, getPets, updateReminder } from '../../api/pet.api';
 import { getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { ArrowLeft } from 'lucide-react';
@@ -16,14 +16,23 @@ export default function SetReminderPage() {
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const editReminder = location.state?.reminder;
+  const isEditMode = !!editReminder;
+
+  // Check if the title is one of our standard options
+  const standardOptions = ['Vaccination', 'Deworming', 'Grooming', 'Vet visit'];
+  const initialTitle = editReminder ? (standardOptions.includes(editReminder.title) ? editReminder.title : '') : '';
+  const initialCustomTitle = editReminder && !standardOptions.includes(editReminder.title) ? editReminder.title : '';
+  const initialDueDate = editReminder?.dueDate ? new Date(editReminder.dueDate).toISOString().split('T')[0] : '';
+
   const [form, setForm] = useState({
-    title: '',
-    customTitle: '',
-    dueDate: '',
-    leadTime: 7,
-    notifyVia: ['email'],
-    petId: params.get('petId') || '',
-    notes: '',
+    title: initialTitle,
+    customTitle: initialCustomTitle,
+    dueDate: initialDueDate,
+    leadTime: editReminder?.leadTime ?? 7,
+    notifyVia: editReminder?.notifyVia || ['email'],
+    petId: editReminder?.petId?._id || editReminder?.petId || params.get('petId') || '',
+    notes: editReminder?.notes || '',
   });
 
   useEffect(() => {
@@ -57,10 +66,16 @@ export default function SetReminderPage() {
         notes: form.notes,
       };
 
-      const response = await createReminder(payload);
+      let response;
+      if (isEditMode) {
+        response = await updateReminder(editReminder._id || editReminder.id, payload);
+      } else {
+        response = await createReminder(payload);
+      }
+      
       const reminder = response?.reminder || response?.data?.reminder || payload;
-      addToast('✓ Reminder saved!', 'success');
-      navigate('/reminders/success', { state: { reminder, pet: pets.find((pet) => String(pet._id || pet.id) === String(form.petId)) || null } });
+      addToast(isEditMode ? '✓ Reminder updated!' : '✓ Reminder saved!', 'success');
+      navigate('/reminders/success', { state: { reminder, pet: pets.find((pet) => String(pet._id || pet.id) === String(form.petId)) || null, isUpdate: isEditMode } });
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     } finally {
@@ -75,7 +90,7 @@ export default function SetReminderPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-semibold text-[#1E293B] mb-1" style={{ fontFamily: 'Literata, serif' }}>
-              Set Reminder
+              {isEditMode ? 'Edit Reminder' : 'Set Reminder'}
             </h1>
             <p className="text-sm text-[#64748B]">Schedule a health event or reminder for your pet.</p>
           </div>
@@ -130,6 +145,7 @@ export default function SetReminderPage() {
             <input
               type="date"
               required
+              min={new Date().toISOString().split('T')[0]}
               value={form.dueDate}
               onChange={handleChange('dueDate')}
               className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2.5 text-sm text-[#1E293B] outline-none focus:border-[#0046CE]"

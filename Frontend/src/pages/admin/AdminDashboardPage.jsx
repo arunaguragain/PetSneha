@@ -136,8 +136,8 @@ function ArticleDetailModal({ article, onClose }) {
   const seasonLabel = article.season === 'all' ? 'All seasons' : article.season?.charAt(0).toUpperCase() + article.season?.slice(1);
   return (
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
-      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+      <div className="w-full max-w-5xl sm:mx-6 max-h-[85vh] overflow-auto rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 sticky top-0 left-0 right-0 bg-white z-10">
           <div>
             <h2 className="text-xl font-semibold text-slate-950">{article.title || 'Article details'}</h2>
             <p className="text-sm text-slate-500">{article.authorId?.name || article.author?.name || 'Unknown author'} • {formatDate(article.createdAt)}</p>
@@ -179,7 +179,7 @@ function ProductDetailModal({ product, onClose }) {
         </div>
         <div className="space-y-4 px-6 py-5 text-sm text-slate-700">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div><p className="text-slate-500">Seller</p><p className="font-medium">{product.sellerName || product.sellerId || 'Unknown'}</p></div>
+            <div><p className="text-slate-500">Seller</p><p className="font-medium">{product.sellerName || product.sellerId?.name || 'Unknown'}</p></div>
             <div><p className="text-slate-500">Status</p><p className="font-medium">{product.isVerifiedSeller ? 'Approved' : 'Pending'}</p></div>
           </div>
           {product.images?.length > 0 && (
@@ -231,6 +231,105 @@ function PostDetailModal({ post, onClose }) {
             <div><p className="font-semibold text-slate-700">Upvotes</p><p>{post.upvotes ?? 0}</p></div>
             <div><p className="font-semibold text-slate-700">Answers</p><p>{safeArray(post.answers).length}</p></div>
             <div><p className="font-semibold text-slate-700">Reports</p><p>{post.reportCount ?? 0}</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderDetailModal({ order, onClose }) {
+  if (!order) return null;
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/50 px-4 py-8">
+      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col max-h-full">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">Order #{order.orderNumber || order._id?.slice(-6)}</h2>
+            <p className="text-sm text-slate-500">{formatDate(order.createdAt)}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-6 px-6 py-5 text-sm text-slate-700 overflow-y-auto">
+          {/* Buyer Details */}
+          <div className="border-b border-slate-100 pb-6">
+            <h3 className="font-semibold text-slate-950 mb-3">Buyer Details</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 mb-1">Name</p>
+                <p className="font-medium">{order.deliveryAddress?.fullName || order.userId?.name || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 mb-1">Email</p>
+                <p className="font-medium text-slate-600">{order.deliveryAddress?.email || order.userId?.email || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 mb-1">Phone</p>
+                <p className="font-medium text-slate-600">{order.deliveryAddress?.phone || order.userId?.phone || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 mb-1">Delivery Address</p>
+                {order.deliveryAddress ? (
+                  <p className="text-slate-600 leading-relaxed">
+                    {order.deliveryAddress.address}
+                    {order.deliveryAddress.area ? `, ${order.deliveryAddress.area}` : ''}
+                  </p>
+                ) : (
+                  <p className="text-slate-600">{order.userId?.address || 'N/A'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Address block removed — details moved into Buyer Details to avoid duplication/overflow */}
+
+          {/* Products Details */}
+          <div className="border-b border-slate-100 pb-6">
+            <h3 className="font-semibold text-slate-950 mb-3">Products ({order.items?.length ?? 0})</h3>
+            <div className="space-y-3">
+              {safeArray(order.items).map((item, idx) => (
+                <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Product</p>
+                      <p className="font-medium">{item.productId?.name || item.name || 'Unknown'}</p>
+                      <p className="text-xs text-neutral-500 mt-1">Seller: <span className="font-medium text-neutral-700">{item.productId?.sellerId?.name || 'Unknown'}</span></p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Quantity</p>
+                      <p className="font-medium">{item.quantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Unit Price</p>
+                      <p className="font-medium">{formatCurrency(item.price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Subtotal</p>
+                      <p className="font-medium">{formatCurrency(item.price * item.quantity)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="border-b border-slate-100 pb-6">
+            <h3 className="font-semibold text-slate-950 mb-3">Order Summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-slate-600">Subtotal:</span><span className="font-medium">{formatCurrency(order.subtotal ?? 0)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Delivery Fee:</span><span className="font-medium">{formatCurrency(order.deliveryFee ?? 0)}</span></div>
+              <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold"><span>Total:</span><span>{formatCurrency(order.total ?? order.totalAmount ?? 0)}</span></div>
+            </div>
+          </div>
+
+          {/* Order Status */}
+          <div>
+            <h3 className="font-semibold text-slate-950 mb-3">Order Status</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><p className="text-xs font-semibold text-slate-500 mb-1">Status</p><p><Badge variant={getStatusTone(order.status)}>{order.status || 'placed'}</Badge></p></div>
+              <div><p className="text-xs font-semibold text-slate-500 mb-1">Payment Method</p><p className="font-medium capitalize">{order.paymentMethod || 'N/A'}</p></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1179,6 +1278,7 @@ function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [orderModal, setOrderModal] = useState(null);
 
   const fetchOrders = useCallback(async (params) => {
     setLoading(true);
@@ -1191,41 +1291,44 @@ function OrdersTab() {
   useEffect(() => { fetchOrders({ status: status || undefined, page }); }, [page]); // eslint-disable-line
 
   return (
-    <Card className="p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Orders</h2><Badge variant="neutral">{data.total} total</Badge></div>
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-44">
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </Select>
-      </div>
-      <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        Orders are view-only. 
-      </div>
-      {loading ? <SectionSkeleton rows={5} /> : data.orders.length === 0 ? (
-        <EmptyState icon={ShoppingBag} message="No orders found." />
-      ) : (
-        <>
-          <div className="space-y-2">
-            {data.orders.map((order) => (
-              <div key={uid(order)} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition">
-                <div>
-                  <p className="font-semibold text-neutral-900">Order #{order.orderNumber || uid(order)?.slice(-6)}</p>
-                  <p className="text-xs text-neutral-500">{formatDate(order.createdAt)} / {order.items?.length ?? 0} item(s) / {formatCurrency(order.totalAmount ?? order.total ?? 0)}</p>
+    <>
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3"><h2 className="font-display text-xl font-bold text-neutral-900">Orders</h2><Badge variant="neutral">{data.total} total</Badge></div>
+          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-44">
+            <option value="">All statuses</option>
+            <option value="placed">Placed</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </Select>
+        </div>
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Orders are view-only. 
+        </div>
+        {loading ? <SectionSkeleton rows={5} /> : data.orders.length === 0 ? (
+          <EmptyState icon={ShoppingBag} message="No orders found." />
+        ) : (
+          <>
+            <div className="space-y-2">
+              {data.orders.map((order) => (
+                <div key={uid(order)} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3 hover:shadow-sm transition cursor-pointer" onClick={() => setOrderModal(order)}>
+                  <div>
+                    <p className="font-semibold text-neutral-900">Order #{order.orderNumber || uid(order)?.slice(-6)}</p>
+                    <p className="text-xs text-neutral-500">{formatDate(order.createdAt)} / {order.items?.length ?? 0} item(s) / {formatCurrency(order.totalAmount ?? order.total ?? 0)}</p>
+                  </div>
+                  <Badge variant={getStatusTone(order.status)}>{order.status || 'placed'}</Badge>
                 </div>
-                <Badge variant={getStatusTone(order.status)}>{order.status || 'pending'}</Badge>
-              </div>
-            ))}
-          </div>
-          <Pagination page={data.page} pages={data.pages} onPage={setPage} />
-        </>
-      )}
-    </Card>
+              ))}
+            </div>
+            <Pagination page={data.page} pages={data.pages} onPage={setPage} />
+          </>
+        )}
+      </Card>
+      <OrderDetailModal order={orderModal} onClose={() => setOrderModal(null)} />
+    </>
   );
 }
 

@@ -118,7 +118,11 @@ export default function ArticlesPage() {
                 onClick={() => navigate(`/articles/${seasonalArticle._id}`)}
               >
                 <div className="w-full h-32 bg-[#F1F5F9] relative">
-                  <div className="absolute inset-0 bg-blue-100 flex items-center justify-center text-4xl">📰</div>
+                  {seasonalArticle.imageUrl ? (
+                    <img src={seasonalArticle.imageUrl} alt={seasonalArticle.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-blue-100 flex items-center justify-center text-4xl">📰</div>
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-[#1E293B] line-clamp-1">{seasonalArticle.title}</h3>
@@ -240,9 +244,19 @@ export default function ArticlesPage() {
                   className="flex flex-col sm:flex-row items-start gap-4 bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer"
                   onClick={() => navigate(`/articles/${article._id}`)}
                 >
-                  <div className="w-full sm:w-24 h-40 sm:h-24 rounded-lg bg-[#F1F5F9] flex-shrink-0 flex items-center justify-center text-3xl">
-                    📰
-                  </div>
+                  {article.imageUrl ? (
+                    <div className="w-full sm:w-24 h-40 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
+                      <img 
+                        src={article.imageUrl} 
+                        alt={article.title} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full sm:w-24 h-40 sm:h-24 rounded-lg bg-[#F1F5F9] flex-shrink-0 flex items-center justify-center text-3xl">
+                      📰
+                    </div>
+                  )}
                   
                   <div className="flex-1 min-w-0 flex flex-col h-full justify-between">
                     <div>

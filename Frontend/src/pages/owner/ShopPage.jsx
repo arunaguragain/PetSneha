@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Badge, Button, Card, Input, Skeleton } from '../../components/ui';
 import { getProducts } from '../../api/shop.api';
+import { getPets } from '../../api/pet.api';
 import { formatCurrency, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
+import { getImageUrl } from '../../utils/imageUrl';
 
 export default function ShopPage() {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ export default function ShopPage() {
   const { addItem, itemCount } = useCart();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
+  const [myPets, setMyPets] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('popular');
@@ -37,6 +40,13 @@ export default function ShopPage() {
     load();
   }, [addToast, search, category, sort]);
 
+  useEffect(() => {
+    getPets().then((res) => {
+      const list = res.data?.pets || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+      setMyPets(list);
+    }).catch(() => {});
+  }, []);
+
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-[1440px] mx-auto px-8 py-10">
@@ -45,16 +55,33 @@ export default function ShopPage() {
         <div 
           className="bg-[#EFF6FF] rounded-xl p-8 flex flex-col items-start justify-center mb-6 min-h-[200px] relative overflow-hidden"
         >
-          <img src="/Golden.png" alt="Golden Retriever" className="absolute right-0 top-0 h-full object-cover opacity-80 mix-blend-multiply" />
+          <img src="/Golden.png" alt="Pet" className="absolute right-0 top-0 h-full object-cover opacity-80 mix-blend-multiply" />
           <div className="relative z-10 max-w-xl">
-            <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">BUDDY'S CHOICE</span>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
-              Perfectly curated for your Golden Retriever
-            </h1>
-            <p className="text-sm text-[#475569] mt-2">Based on Buddy's age, breed, and weight...</p>
-            <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
-              Explore Buddy's Picks
-            </button>
+            {myPets.length > 0 ? (
+              <>
+                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">
+                  {myPets.map(p => p.name).join(' & ')}'S CHOICE
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
+                  Perfectly curated for your {myPets.map(p => p.breed || p.species || 'Pet').join(' & ')}
+                </h1>
+                <p className="text-sm text-[#475569] mt-2">Based on {myPets.map(p => p.name).join(' & ')}'s age, breed, and weight...</p>
+                <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
+                  Explore {myPets[0].name}'s Picks
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">YOUR PET'S CHOICE</span>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
+                  Perfectly curated for your pet
+                </h1>
+                <p className="text-sm text-[#475569] mt-2">Add your pet to get personalised picks</p>
+                <button onClick={() => navigate('/pets/new')} className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
+                  Add a pet
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -138,7 +165,7 @@ export default function ShopPage() {
                 <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center overflow-hidden">
                   {product.images && product.images.length > 0 ? (
                     <img
-                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${product.images[0]}`}
+                      src={getImageUrl(product.images[0])}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -146,12 +173,6 @@ export default function ShopPage() {
                     <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
                   )}
                   
-                  {/* Badge on every 3rd item */}
-                  {index % 3 === 0 && (
-                    <div className="absolute top-2 left-2 bg-[#0046CE] text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">
-                      BUDDY'S CHOICE
-                    </div>
-                  )}
                 </div>
                 
                 {/* Content */}

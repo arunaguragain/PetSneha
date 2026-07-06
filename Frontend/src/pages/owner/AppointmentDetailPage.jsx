@@ -4,6 +4,7 @@ import { Badge, Spinner } from '../../components/ui';
 import { getAppointment, cancelAppointment } from '../../api/pet.api';
 import { getErrorMessage, formatCurrency, formatDate } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Calendar, Clock, MapPin, User, XCircle, Stethoscope, Phone, Mail, FileText, ArrowLeft } from 'lucide-react';
 
 const statusVariant = (status) => {
@@ -16,6 +17,7 @@ export default function AppointmentDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [appointment, setAppointment] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -38,8 +40,14 @@ export default function AppointmentDetailPage() {
   }, [addToast, id, navigate]);
 
   const handleCancel = async () => {
-    const confirmed = window.confirm('Are you sure you want to cancel this appointment?');
-    if (!confirmed) return;
+    const isConfirmed = await confirm({
+      title: 'Cancel Appointment',
+      message: 'Are you sure you want to cancel this appointment? This action cannot be undone.',
+      confirmText: 'Cancel appointment',
+      cancelText: 'Keep it',
+      variant: 'danger'
+    });
+    if (!isConfirmed) return;
 
     try {
       setCancelling(true);
@@ -66,9 +74,9 @@ export default function AppointmentDetailPage() {
   }
 
   const vetName = appointment.vetId?.name
-    ? `Dr. ${appointment.vetId.name}`
+    ? (appointment.vetId.name.startsWith('Dr') ? appointment.vetId.name : `Dr. ${appointment.vetId.name}`)
     : appointment.vet?.name
-    ? `Dr. ${appointment.vet.name}`
+    ? (appointment.vet.name.startsWith('Dr') ? appointment.vet.name : `Dr. ${appointment.vet.name}`)
     : appointment.vetName || null;
 
   const clinicName = appointment.vetId?.clinicName
