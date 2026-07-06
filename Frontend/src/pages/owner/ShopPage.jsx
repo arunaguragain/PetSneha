@@ -8,6 +8,7 @@ import { formatCurrency, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
+import { getImageUrl } from '../../utils/imageUrl';
 
 export default function ShopPage() {
   const navigate = useNavigate();
@@ -164,7 +165,7 @@ export default function ShopPage() {
                 <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center overflow-hidden">
                   {product.images && product.images.length > 0 ? (
                     <img
-                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${product.images[0]}`}
+                      src={getImageUrl(product.images[0])}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -172,12 +173,6 @@ export default function ShopPage() {
                     <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🛍️</div>
                   )}
                   
-                  {/* Badge on every 3rd item */}
-                  {index % 3 === 0 && (
-                    <div className="absolute top-2 left-2 bg-[#0046CE] text-white text-[10px] px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">
-                      BUDDY'S CHOICE
-                    </div>
-                  )}
                 </div>
                 
                 {/* Content */}
