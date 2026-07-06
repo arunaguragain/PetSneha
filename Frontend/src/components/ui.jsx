@@ -82,7 +82,8 @@ export const Button = forwardRef(function Button(
     primary: 'bg-primary-600 text-white shadow-card hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-lift',
     secondary: 'border border-neutral-200 bg-white text-neutral-800 shadow-surface hover:-translate-y-0.5 hover:border-primary-200 hover:text-primary-700',
     ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900',
-    danger: 'bg-danger text-white shadow-card hover:-translate-y-0.5 hover:bg-danger-600'
+    danger: 'bg-danger text-white shadow-card hover:-translate-y-0.5 hover:bg-danger-600',
+    white: 'bg-white text-primary-600 hover:bg-neutral-50 hover:-translate-y-0.5 shadow-card hover:shadow-lift'
   };
 
   const sizes = {

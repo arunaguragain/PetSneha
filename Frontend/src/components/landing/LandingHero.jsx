@@ -24,7 +24,7 @@ export default function LandingHero({ puppySrc, badgeSrc, backdropSrc }) {
 
           <div className="flex flex-wrap gap-3">
             <Link to="/register">
-              <Button className="bg-white text-primary-600 hover:bg-neutral-50">Get started →</Button>
+              <Button variant="white">Get started →</Button>
             </Link>
             <a href="#features">
               <Button variant="secondary" className="border border-white/30 bg-transparent text-white hover:bg-white/10">
