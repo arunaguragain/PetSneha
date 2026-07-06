@@ -52,7 +52,16 @@ export default function CheckoutPage() {
         productId: item.productId,
         quantity: item.quantity,
       }));
-      await placeOrder({ items, ...form });
+
+      const deliveryAddress = {
+        fullName: form.name,
+        phone: form.phone,
+        email: form.email,
+        address: form.address,
+        area: form.area,
+      };
+
+      await placeOrder({ items, deliveryAddress, paymentMethod: form.paymentMethod, deliveryFee });
       setOrderPlaced(true);
       clearCart();
     } catch (apiError) {
@@ -282,16 +291,8 @@ export default function CheckoutPage() {
         icon={<CheckCircle2 size={32} />}
         title="Order Confirmed!"
         description="Your order has been placed successfully and will be delivered soon."
-        actions={(
-          <>
-            <Button type="button" onClick={() => navigate('/orders')} fullWidth>
-              View My Orders
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => navigate('/shop')} fullWidth>
-              Continue Shopping
-            </Button>
-          </>
-        )}
+        primaryAction={{ label: 'View My Orders', onClick: () => navigate('/orders') }}
+        secondaryAction={{ label: 'Continue Shopping', onClick: () => navigate('/shop') }}
       />
     </div>
   );

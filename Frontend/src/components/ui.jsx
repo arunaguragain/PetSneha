@@ -122,9 +122,33 @@ export const ConfirmationOverlay = ({
   description,
   children,
   actions,
+  primaryAction, // { label, onClick, loading }
+  secondaryAction, // { label, onClick, loading }
   className = '',
 }) => {
   if (!open) return null;
+
+  const renderActions = () => {
+    if (primaryAction || secondaryAction) {
+      return (
+        <div className="mt-6 flex flex-col gap-3">
+          {primaryAction ? (
+            <Button type="button" variant="primary" fullWidth onClick={primaryAction.onClick} loading={primaryAction.loading} className={cn(primaryAction.className || '', 'rounded-full py-3')}>
+              {primaryAction.label}
+            </Button>
+          ) : null}
+          {secondaryAction ? (
+            <Button type="button" variant="secondary" fullWidth onClick={secondaryAction.onClick} loading={secondaryAction.loading} className={cn(secondaryAction.className || '', 'rounded-full py-3')}>
+              {secondaryAction.label}
+            </Button>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (actions) return <div className="mt-6 flex flex-col gap-3">{actions}</div>;
+    return null;
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
@@ -133,7 +157,7 @@ export const ConfirmationOverlay = ({
         {title ? <h2 className="text-xl font-semibold text-slate-900" style={{ fontFamily: 'Literata, serif' }}>{title}</h2> : null}
         {description ? <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p> : null}
         {children}
-        {actions ? <div className="mt-6 flex flex-col gap-3">{actions}</div> : null}
+        {renderActions()}
       </div>
     </div>
   );
