@@ -76,10 +76,32 @@ export const Button = forwardRef(function Button(
   { variant = 'primary', size = 'md', fullWidth = false, loading = false, className = '', as: Component = 'button', children, ...props },
   ref,
 ) {
+  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/15 disabled:cursor-not-allowed disabled:opacity-60';
+  
+  const variants = {
+    primary: 'bg-primary-600 text-white shadow-card hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-lift',
+    secondary: 'border border-neutral-200 bg-white text-neutral-800 shadow-surface hover:-translate-y-0.5 hover:border-primary-200 hover:text-primary-700',
+    ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900',
+    danger: 'bg-danger text-white shadow-card hover:-translate-y-0.5 hover:bg-danger-600'
+  };
+
+  const sizes = {
+    sm: 'px-3 py-2 text-xs uppercase tracking-wider',
+    md: 'px-4 py-3 text-sm',
+    lg: 'px-5 py-4 text-base'
+  };
+
   return (
     <Component
       ref={ref}
-      className={cn('btn', `btn-${variant}`, `btn-${size}`, fullWidth && 'w-full', loading && 'cursor-wait opacity-80', className)}
+      className={cn(
+        baseStyles,
+        variants[variant],
+        sizes[size],
+        fullWidth && 'w-full',
+        loading && 'cursor-wait opacity-80',
+        className
+      )}
       disabled={loading || props.disabled}
       {...props}
     >

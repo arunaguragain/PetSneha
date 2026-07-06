@@ -1984,16 +1984,36 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 <p><span className="font-semibold text-[#1E293B]">Updated:</span> {formatDate(selectedSellerOrder.updatedAt)}</p>
                 <p><span className="font-semibold text-[#1E293B]">Total:</span> Rs {selectedSellerOrder.total ?? selectedSellerOrder.totalAmount ?? 0}</p>
               </div>
-              {selectedSellerOrder.deliveryAddress ? (
-                <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 text-sm text-[#475569] space-y-1">
-                  <p className="font-semibold text-[#1E293B]">Delivery address</p>
-                  <p>{selectedSellerOrder.deliveryAddress.fullName}</p>
-                  <p>{selectedSellerOrder.deliveryAddress.phone}</p>
-                  <p>{selectedSellerOrder.deliveryAddress.email}</p>
-                  <p>{selectedSellerOrder.deliveryAddress.address}</p>
-                  <p>{selectedSellerOrder.deliveryAddress.area}</p>
+
+              {/* Buyer Details (derive from deliveryAddress when user fields missing) */}
+              <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 text-sm text-[#475569]">
+                <p className="font-semibold text-[#1E293B]">Buyer Details</p>
+                <div className="grid gap-2 sm:grid-cols-2 mt-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Name</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.name || selectedSellerOrder.deliveryAddress?.fullName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Email</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.email || selectedSellerOrder.deliveryAddress?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Phone</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.phone || selectedSellerOrder.deliveryAddress?.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-1">Delivery Address</p>
+                    {selectedSellerOrder.deliveryAddress ? (
+                      <p className="text-[#475569] leading-relaxed">
+                        {selectedSellerOrder.deliveryAddress.address}
+                        {selectedSellerOrder.deliveryAddress.area ? `, ${selectedSellerOrder.deliveryAddress.area}` : ''}
+                      </p>
+                    ) : (
+                      <p className="font-medium">{selectedSellerOrder.userId?.address || 'N/A'}</p>
+                    )}
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
 
             <div className="space-y-3">
