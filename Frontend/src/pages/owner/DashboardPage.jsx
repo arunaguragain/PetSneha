@@ -67,11 +67,11 @@ export default function DashboardPage() {
 
         setSavedVet(getSavedVet());
 
-        // Fetch latest 2 published articles for sidebar
+        // Fetch latest 3 published articles for sidebar
         try {
-          const artRes = await getArticles({ limit: 2, status: 'published' });
+          const artRes = await getArticles({ limit: 3, status: 'published' });
           const artList = artRes?.data?.articles || artRes?.data?.items || artRes?.data || [];
-          setArticles(Array.isArray(artList) ? artList.slice(0, 2) : []);
+          setArticles(Array.isArray(artList) ? artList.slice(0, 3) : []);
         } catch (_) {
           // non-critical — leave articles empty
         }
@@ -329,12 +329,20 @@ export default function DashboardPage() {
 
             {/* Upcoming Events */}
             <div>
-              <h3
-                className="text-xl font-semibold text-[#1E293B] mb-4"
-                style={{ fontFamily: 'Literata, serif' }}
-              >
-                {t('appointments.upcomingAppointments')}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3
+                  className="text-xl font-semibold text-[#1E293B]"
+                  style={{ fontFamily: 'Literata, serif' }}
+                >
+                  {t('appointments.upcomingAppointments')}
+                </h3>
+                <button
+                  onClick={() => navigate('/records')}
+                  className="text-sm text-[#0046CE] font-semibold hover:underline"
+                >
+                  View all
+                </button>
+              </div>
               <div className="space-y-3">
                 {upcomingAppointments?.length === 0 || !upcomingAppointments ? (
                   <div className="bg-white border border-dashed border-[#E2E8F0] rounded-2xl py-10 text-center">

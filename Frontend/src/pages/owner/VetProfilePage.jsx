@@ -4,7 +4,7 @@ import { Avatar, Badge, Button, Card, Input, StarRating, Textarea, VerifiedBadge
 import { getVet, submitReview } from '../../api/vet.api';
 import { formatCurrency, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap, Zap } from 'lucide-react';
 import { openGoogleMapsDirections } from '../../utils/helpers';
 import { useAuth } from '../../hooks/useAuth';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -436,7 +436,7 @@ export default function VetProfilePage() {
                   </button>
                   
                   <div className="text-xs text-[#64748B] text-center mt-3 flex items-center justify-center gap-1">
-                    ⚡ Instant confirmation within 15 mins
+                    <Zap className="w-4 h-4" /> Instant confirmation within 15 mins
                   </div>
                 </div>
               )}

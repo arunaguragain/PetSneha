@@ -143,6 +143,20 @@ export default function OrdersPage() {
                         <p className="text-sm text-[#64748B]">
                           Delivery fee {formatCurrency(order.deliveryFee ?? 0)} • Payment {String(order.paymentMethod || 'cod').toUpperCase()}
                         </p>
+                        <div className="space-y-1 mt-3 text-sm text-[#475569]">
+                          {order.items?.slice(0, 2).map((item, index) => {
+                            const product = item.productId || {};
+                            const name = product.name || item.name || `Item ${index + 1}`;
+                            return (
+                              <p key={`${order._id}-item-${index}`} className="truncate">
+                                {name} × {item.quantity || 1}
+                              </p>
+                            );
+                          })}
+                          {order.items?.length > 2 ? (
+                            <p className="truncate">and {order.items.length - 2} more item{order.items.length - 2 === 1 ? '' : 's'}</p>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 
