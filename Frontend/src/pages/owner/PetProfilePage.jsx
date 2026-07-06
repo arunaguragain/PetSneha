@@ -417,7 +417,7 @@ export default function PetProfilePage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => navigate(`/reminders/new?petId=${petId}`)} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => navigate(`/reminders/new?petId=${petId}`, { state: { reminder, from: location.pathname } })} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
                     <button className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
