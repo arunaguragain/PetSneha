@@ -272,8 +272,17 @@ export const Avatar = ({ src, alt = '', name = '', size = 'md', className = '' }
       .map((part) => part[0]?.toUpperCase())
       .join('') || alt.slice(0, 2).toUpperCase() || 'P';
 
+  const sizeClasses = {
+    xs: 'w-6 h-6 text-[10px]',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base',
+    xl: 'w-16 h-16 text-lg',
+    '2xl': 'w-24 h-24 text-xl',
+  };
+
   return (
-    <span className={cn('avatar', `avatar-${size}`, className)}>
+    <span className={cn('relative inline-flex items-center justify-center shrink-0 overflow-hidden rounded-full bg-[#EFF6FF] text-[#0046CE] font-semibold border border-[#BFDBFE]', sizeClasses[size] || sizeClasses.md, className)}>
       {src && !imgError ? (
         <img src={src} alt={alt || name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
       ) : (
