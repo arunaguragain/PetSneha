@@ -7,7 +7,7 @@ import { getPets } from '../../api/pet.api';
 import { formatCurrency, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
-import { ShoppingCart, ArrowRight, ChevronDown } from 'lucide-react';
+import { ShoppingCart, ArrowRight, ChevronDown, X } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
 
 export default function ShopPage() {
@@ -19,6 +19,7 @@ export default function ShopPage() {
   const [products, setProducts] = useState([]);
   const [myPets, setMyPets] = useState([]);
   const [search, setSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('popular');
 
@@ -159,7 +160,7 @@ export default function ShopPage() {
               <div 
                 key={product._id} 
                 className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition relative flex flex-col group cursor-pointer"
-                onClick={() => navigate(`/products/${product._id}`)}
+                onClick={() => setSelectedProduct(product)}
               >
                 {/* Image */}
                 <div className="w-full h-40 bg-[#F1F5F9] relative flex items-center justify-center overflow-hidden">
@@ -218,6 +219,75 @@ export default function ShopPage() {
             </span>
           )}
         </button>
+
+      {/* Product Overlay Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#0F172A]/40 backdrop-blur-sm" onClick={() => setSelectedProduct(null)}>
+          <div 
+            className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 sm:p-8 relative">
+              <button 
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 flex items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#1E293B] transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="flex flex-col md:flex-row gap-6 sm:gap-8">
+                <div className="w-full md:w-5/12 shrink-0">
+                  <div className="w-full aspect-square bg-[#F1F5F9] rounded-2xl flex items-center justify-center overflow-hidden border border-[#E2E8F0]">
+                    {selectedProduct.images && selectedProduct.images.length > 0 ? (
+                      <img src={getImageUrl(selectedProduct.images[0])} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-6xl">🛍️</span>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full md:w-7/12 flex flex-col justify-center">
+                  <div className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest mb-1.5">
+                    {selectedProduct.category || 'Pet Supplies'}
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1E293B] mb-3 leading-tight" style={{ fontFamily: 'Literata, serif' }}>
+                    {selectedProduct.name}
+                  </h2>
+                  <div className="text-xl font-bold text-[#0046CE] mb-4">
+                    {formatCurrency(selectedProduct.price)}
+                  </div>
+                  <div className="h-px w-full bg-[#E2E8F0] mb-4"></div>
+                  <p className="text-sm text-[#475569] leading-relaxed mb-6">
+                    {selectedProduct.description}
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-3 mt-auto">
+                    <button 
+                      onClick={() => {
+                        addItem(selectedProduct, 1);
+                        addToast(`${selectedProduct.name} ${t('shop.savedToCart')}`, 'success');
+                        setSelectedProduct(null);
+                        navigate('/checkout');
+                      }}
+                      className="w-full sm:w-1/2 bg-[#0046CE] hover:bg-[#003DA8] text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition shadow-sm hover:shadow text-center"
+                    >
+                      {t('buttons.buynow', 'Buy Now')}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        addItem(selectedProduct, 1);
+                        addToast(`${selectedProduct.name} ${t('shop.savedToCart')}`, 'success');
+                      }}
+                      className="w-full sm:w-1/2 bg-white hover:bg-[#F8FAFC] text-[#0046CE] border-2 border-[#0046CE] text-sm font-semibold py-2.5 px-4 rounded-xl transition text-center"
+                    >
+                      {t('buttons.addToCart', 'Add to Cart')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
