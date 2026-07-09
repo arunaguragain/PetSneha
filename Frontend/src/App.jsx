@@ -33,6 +33,7 @@ import ShopPage from './pages/owner/ShopPage';
 import ProductPage from './pages/owner/ProductPage';
 import CheckoutPage from './pages/owner/CheckoutPage';
 import OrdersPage from './pages/owner/OrdersPage';
+import UserProfilePage from './pages/owner/UserProfilePage';
 import VetDashboardPage from './pages/vet/VetDashboardPage';
 import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
@@ -153,6 +154,7 @@ export default function App() {
       <Route element={<ProtectedRoute allowedRoles={['petOwner']} />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
           <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />

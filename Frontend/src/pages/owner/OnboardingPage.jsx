@@ -7,8 +7,8 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
         <div className="rounded-3xl bg-[#0046CE] px-6 py-8 text-white shadow-sm sm:px-8">
           <div className="max-w-2xl">
             <div className="text-xs uppercase tracking-[0.2em] text-white/80">Onboarding</div>
