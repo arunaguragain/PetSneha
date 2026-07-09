@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LandingCTA from '../components/landing/LandingCTA';
 import { Button } from '../components/ui';
 import FeatureCard from '../components/landing/FeatureCard';
@@ -49,6 +50,7 @@ const features = [
 ];
 
 export default function HomePage() {
+  const { t } = useTranslation();
   return (
     <div id="top" className="bg-neutral-50 text-neutral-900">
       <LandingNavbar />
@@ -62,24 +64,24 @@ export default function HomePage() {
             <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.95fr] lg:gap-16">
               <div className="max-w-2xl space-y-10">
                 <span className="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm text-white/90 shadow-sm backdrop-blur">
-                  Nepal's all-in-one pet health platform
+                  {t('home.tagline', "Nepal's all-in-one pet health platform")}
                 </span>
 
                 <div className="space-y-3">
                   <h1 className="max-w-xl font-display text-4xl leading-tight text-white sm:text-5xl lg:text-[58px]">
-                    Your pet deserves better care
+                    {t('home.heroTitle', 'Your pet deserves better care')}
                   </h1>
                   <p className="max-w-xl text-[17px] leading-8 text-white/80">
-                    Connect with verified vets, track health records, and shop for your pet’s needs - all in one place built specifically for Nepal.
+                    {t('home.heroDesc', "Connect with verified vets, track health records, and shop for your pet's needs - all in one place built specifically for Nepal.")}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
                   <Button as={Link} to="/register" variant="white" size="lg" className="!rounded-full px-6 py-3 text-base font-semibold">
-                    Get started →
+                    {t('home.getStarted', 'Get started')} →
                   </Button>
                   <Button as={Link} to="/login" size="lg" className="!rounded-full border border-white/30 bg-transparent px-6 py-3 text-base font-semibold text-white hover:bg-white/10 !shadow-none">
-                    Learn more
+                    {t('home.learnMore', 'Learn more')}
                   </Button>
                 </div>
 
@@ -103,8 +105,8 @@ export default function HomePage() {
         <section id="features" className="relative overflow-hidden bg-[rgba(247,249,251,1)] py-20 text-black">
           <div className="container-app relative">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 className="font-display text-3xl text-black sm:text-4xl">Everything your pet needs</h2>
-              <p className="mt-4 text-base leading-7 text-black/55">From emergency vet finds to health records - PetSneha keeps it all organised.</p>
+              <h2 className="font-display text-3xl text-black sm:text-4xl">{t('home.featuresTitle', 'Everything your pet needs')}</h2>
+              <p className="mt-4 text-base leading-7 text-black/55">{t('home.featuresDesc', 'From emergency vet finds to health records - PetSneha keeps it all organised.')}</p>
             </div>
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

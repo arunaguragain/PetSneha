@@ -12,21 +12,21 @@ import { getImageUrl } from '../utils/imageUrl';
 
 const navItemsByRole = {
   petOwner: [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Vets', href: '/vets' },
-    { label: 'Records', href: '/records' },
-    { label: 'Shop', href: '/shop' },
-    { label: 'Orders', href: '/orders' },
-    { label: 'Articles', href: '/articles' },
+    { labelKey: 'nav.dashboard', href: '/dashboard' },
+    { labelKey: 'nav.vets', href: '/vets' },
+    { labelKey: 'dashboard.healthRecords', href: '/records' },
+    { labelKey: 'nav.shop', href: '/shop' },
+    { labelKey: 'dashboard.orders', href: '/orders' },
+    { labelKey: 'nav.articles', href: '/articles' },
   ],
   vet: [
-    { label: 'Dashboard', href: '/vet/dashboard' },
-    { label: 'Appointments', href: '/vet/appointments' },
-    { label: 'Articles', href: '/vet/articles' },
-    { label: 'Forum', href: '/vet/forum' },
-    { label: 'Products', href: '/vet/products' },
+    { labelKey: 'nav.dashboard', href: '/vet/dashboard' },
+    { labelKey: 'dashboard.appointments', href: '/vet/appointments' },
+    { labelKey: 'nav.articles', href: '/vet/articles' },
+    { labelKey: 'nav.forum', href: '/vet/forum' },
+    { labelKey: 'nav.products', href: '/vet/products' },
   ],
-  admin: [{ label: 'Admin', href: '/admin/dashboard' }],
+  admin: [{ labelKey: 'nav.admin', href: '/admin/dashboard' }],
 };
 
 const getPhotoUrl = (photoSrc) => {
@@ -124,7 +124,7 @@ export default function Navbar() {
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary navigation">
           {navItems.map((item) => (
             <NavLink
-              key={item.label}
+              key={item.labelKey || item.label}
               to={item.href}
               end
               className={({ isActive }) =>
@@ -135,7 +135,7 @@ export default function Navbar() {
                 }`
               }
             >
-              {item.label}
+              {item.labelKey ? t(item.labelKey, item.label) : item.label}
             </NavLink>
           ))}
         </nav>
@@ -178,32 +178,32 @@ export default function Navbar() {
                       <>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/dashboard'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <LayoutDashboard size={18} className="text-[#0046CE]" />
-                          My dashboard
+                          {t('nav.dashboard', 'My dashboard')}
                         </button>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/appointments'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <Calendar size={18} className="text-[#0046CE]" />
-                          My schedule
+                          {t('dashboard.appointments', 'My schedule')}
                         </button>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/articles'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <BookOpen size={18} className="text-[#0046CE]" />
-                          My articles
+                          {t('nav.articles', 'My articles')}
                         </button>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/vet/products'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <ShoppingBag size={18} className="text-[#0046CE]" />
-                          My products
+                          {t('nav.products', 'My products')}
                         </button>
                       </>
                     ) : (
                       <>
                         <button onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <User size={18} className="text-[#0046CE]" />
-                          My profile
+                          {t('nav.profile', 'My profile')}
                         </button>
                         
                         <div className="w-full px-6 py-2">
                           <div className="flex items-center gap-3 text-sm font-semibold text-[#475569] mb-2">
                             <PawPrint size={18} className="text-[#0046CE]" />
-                            My pets
+                            {t('dashboard.myPets', 'My pets')}
                           </div>
                           <div className="pl-7 space-y-2">
                             {pets.map((pet) => (
@@ -235,7 +235,7 @@ export default function Navbar() {
 
                         <button onClick={() => navigate('/pets/new')} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <PlusCircle size={18} className="text-[#0046CE]" />
-                          Add pet
+                          {t('pets.addPet', 'Add pet')}
                         </button>
                       </>
                     )}
@@ -245,7 +245,7 @@ export default function Navbar() {
                     <div className="w-full flex items-center justify-between px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition cursor-pointer" onClick={handleLanguageToggle}>
                       <div className="flex items-center gap-3">
                         <Globe size={18} className="text-[#64748B]" />
-                        Language toggle
+                        {t('nav.language', 'Language toggle')}
                       </div>
                       <div className="flex items-center bg-[#0046CE] rounded-full p-1">
                         <div className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${currentLanguage === 'ne' ? 'bg-white text-[#0046CE]' : 'text-white/80'}`}>नेप</div>
@@ -255,7 +255,7 @@ export default function Navbar() {
 
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#DC2626] hover:bg-red-50 transition">
                       <LogOut size={18} />
-                      Log out
+                      {t('common.logout', 'Log out')}
                     </button>
                   </div>
 

@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getArticles, getForumPosts } from '../../api/content.api';
 import { getErrorMessage, formatDate, unwrapItems } from '../../utils/api';
+import { translateDynamic } from '../../utils/mappings';
 import { useToast } from '../../context/ToastContext';
 import { AlertTriangle, MessageSquare, Check, ArrowRight, Search } from 'lucide-react';
 import OwnerChecklistPanel from '../../components/onboarding/OwnerChecklistPanel';
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [articles, setArticles] = useState([]);
@@ -76,20 +79,20 @@ export default function ArticlesPage() {
         <div className="bg-[#0046ce] rounded-xl flex flex-col md:flex-row items-stretch justify-between shadow-sm overflow-hidden relative min-h-[220px]">
           <div className="p-8 relative z-10 md:w-3/5 lg:w-1/2">
             <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'Literata, serif' }}>
-              Expertise meets Empathy
+              {t('articles.heroTitle', 'Expertise meets Empathy')}
             </h1>
             <p className="text-sm text-white opacity-90 mt-2 max-w-lg">
-              Your comprehensive guide to pet health, seasonal care, and community-driven support in Nepal.
+              {t('articles.heroDesc', 'Your comprehensive guide to pet health, seasonal care, and community-driven support in Nepal.')}
             </p>
             <div className="flex flex-wrap gap-3 mt-5">
               <button onClick={() => navigate('/onboarding')} className="bg-white hover:bg-neutral-50 text-[#0046CE] rounded px-4 py-2 text-sm font-medium transition">
-                Browse Checklist
+                {t('articles.browseChecklist', 'Browse Checklist')}
               </button>
               <button 
                 onClick={() => navigate('/forum', { state: { showCreateModal: true } })}
                 className="border border-white hover:bg-white/10 text-white rounded px-4 py-2 text-sm font-medium transition"
               >
-                Ask a Vet
+                {t('articles.askAVet', 'Ask a Vet')}
               </button>
             </div>
           </div>
@@ -110,7 +113,7 @@ export default function ArticlesPage() {
           {/* Centre (col-span-1) - Seasonal */}
           <div>
             <div className="text-xs text-amber-600 uppercase tracking-wide flex items-center gap-1 mb-2">
-              <AlertTriangle className="w-3.5 h-3.5" /> SEASONAL ALERT
+              <AlertTriangle className="w-3.5 h-3.5" /> {t('articles.seasonalAlert', 'SEASONAL ALERT')}
             </div>
             {seasonalArticle ? (
               <div
@@ -125,14 +128,14 @@ export default function ArticlesPage() {
                   )}
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-[#1E293B] line-clamp-1">{seasonalArticle.title}</h3>
-                  <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{seasonalArticle.summary || seasonalArticle.excerpt || seasonalArticle.content}</p>
-                  <div className="text-sm text-[#0046CE] mt-3 font-medium">Read Article</div>
+                  <h3 className="font-semibold text-[#1E293B] line-clamp-1">{translateDynamic(seasonalArticle.title, i18n.language)}</h3>
+                  <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{translateDynamic(seasonalArticle.summary || seasonalArticle.excerpt || seasonalArticle.content, i18n.language)}</p>
+                  <div className="text-sm text-[#0046CE] mt-3 font-medium">{t('articles.readArticle', 'Read Article')}</div>
                 </div>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-[#E2E8F0] p-5 text-sm text-[#64748B]">
-                No seasonal article available for this time of year yet.
+                {t('articles.noSeasonal', 'No seasonal article available for this time of year yet.')}
               </div>
             )}
           </div>
@@ -140,12 +143,12 @@ export default function ArticlesPage() {
           {/* Right (col-span-1) - Forum */}
           <div>
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-base font-semibold text-[#1E293B]">Community Forum</h2>
+              <h2 className="text-base font-semibold text-[#1E293B] cursor-pointer hover:text-[#0046CE]" onClick={() => navigate('/forum')}>{t('forum.communityTitle', 'Community Forum')}</h2>
               <button 
                 onClick={() => navigate('/forum', { state: { showCreateModal: true } })}
                 className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-3 py-1.5 text-sm transition"
               >
-                Ask a Question
+                {t('forum.askQuestion', 'Ask a Question')}
               </button>
             </div>
             
@@ -169,21 +172,28 @@ export default function ArticlesPage() {
                       </div>
                       {hasVetAnswer && (
                         <div className="bg-[#F0FDF4] text-[#166534] text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-full w-fit font-medium mb-2 uppercase tracking-wide">
-                          <Check className="w-3 h-3" /> VET VERIFIED
+                          <Check className="w-3 h-3" /> {t('forum.vetVerified', 'VET VERIFIED')}
                         </div>
                       )}
-                      <h3 className="text-sm font-medium text-[#1E293B] line-clamp-2">{post.title}</h3>
+                      <h3 className="text-sm font-medium text-[#1E293B] line-clamp-2">{translateDynamic(post.title, i18n.language)}</h3>
                       <div className="flex items-center gap-2 mt-2 text-xs text-[#64748B]">
-                        <MessageSquare className="w-3 h-3" /> {answersCount} answers
+                        <MessageSquare className="w-3 h-3" /> {answersCount} {t('forum.answers', 'answers')}
                       </div>
                     </div>
                   );
               }) : (
                 <div className="bg-[#F8FAFC] rounded-xl p-3 text-xs text-[#64748B]">
-                  No recent forum posts.
+                  {t('forum.noRecent', 'No recent forum posts.')}
                 </div>
               )}
             </div>
+            
+            <button 
+              onClick={() => navigate('/forum')}
+              className="w-full mt-4 text-center text-sm font-medium text-[#0046CE] hover:underline"
+            >
+              {t('articles.browseDiscussions', 'Browse all discussions →')}
+            </button>
           </div>
           
         </div>
@@ -191,9 +201,9 @@ export default function ArticlesPage() {
         {/* Latest Insights Header */}
         <div className="flex flex-col gap-4 mt-10 mb-4 border-t border-[#E2E8F0] pt-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Latest Health Insights</h2>
+            <h2 className="text-xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('articles.latestInsights', 'Latest Health Insights')}</h2>
             <p className="text-sm text-[#64748B] mt-1">
-              Browse featured reads or search by topic, category, or season.
+              {t('articles.browseDesc', 'Browse featured reads or search by topic, category, or season.')}
             </p>
           </div>
 
@@ -207,7 +217,7 @@ export default function ArticlesPage() {
                   setArticleQuery(event.target.value);
                   setShowAllArticles(false);
                 }}
-                placeholder="Search articles"
+                placeholder={t('articles.searchPlaceholder', 'Search articles')}
                 className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#1E293B] outline-none transition focus:border-[#0046CE] focus:ring-2 focus:ring-[#0046CE]/10"
               />
             </label>
@@ -218,7 +228,7 @@ export default function ArticlesPage() {
                 onClick={() => setShowAllArticles((current) => !current)}
                 className="text-sm font-medium text-[#0046CE] cursor-pointer hover:underline sm:whitespace-nowrap"
               >
-                {showAllArticles ? 'Show fewer articles' : 'See all articles'}
+                {showAllArticles ? t('articles.showFewer', 'Show fewer articles') : t('articles.seeAll', 'See all articles')}
               </button>
             )}
           </div>
@@ -261,14 +271,14 @@ export default function ArticlesPage() {
                   <div className="flex-1 min-w-0 flex flex-col h-full justify-between">
                     <div>
                       <span className={`inline-block text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${badgeClass}`}>
-                        {article.category || 'MEDICAL'}
+                        {translateDynamic(article.category, i18n.language) || t('articles.medical', 'MEDICAL')}
                       </span>
-                      <h3 className="text-base font-semibold text-[#1E293B] mt-1.5 line-clamp-1">{article.title}</h3>
-                      <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{article.summary || article.excerpt || article.content}</p>
+                      <h3 className="text-base font-semibold text-[#1E293B] mt-1.5 line-clamp-1">{translateDynamic(article.title, i18n.language)}</h3>
+                      <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{translateDynamic(article.summary || article.excerpt || article.content, i18n.language)}</p>
                     </div>
                     
                     <div className="text-sm text-[#0046CE] mt-3 font-medium flex items-center gap-1 group">
-                      View Details <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      {t('articles.viewDetails', 'View Details')} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
@@ -277,8 +287,8 @@ export default function ArticlesPage() {
           ) : (
             <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-sm text-[#64748B]">
               {articleQuery.trim()
-                ? `No articles match "${articleQuery.trim()}". Try a different keyword or clear the search.`
-                : 'No articles found. Check back later for new insights!'}
+                ? t('articles.noMatch', 'No articles match "{{query}}". Try a different keyword or clear the search.', { query: articleQuery.trim() })
+                : t('articles.noneFound', 'No articles found. Check back later for new insights!')}
             </div>
           )}
         </div>

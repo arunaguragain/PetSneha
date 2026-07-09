@@ -6,13 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { getAppointments, getPets, getPetReminders } from '../../api/pet.api';
 import { getArticles } from '../../api/content.api';
 import { getErrorMessage, getPetEmoji, unwrapItems } from '../../utils/api';
+import { translateDynamic } from '../../utils/mappings';
 import { getSavedVet } from '../../utils/ownerState';
 import { useToast } from '../../context/ToastContext';
 import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight, Clock, Pencil, Plus, MapPin, Phone, Heart, Star, ShoppingCart, MoreHorizontal, Syringe, ClipboardList, Dumbbell, BookOpen, Utensils, PawPrint, Newspaper } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -125,7 +126,7 @@ export default function DashboardPage() {
     return reminders.filter(r => new Date(r.dueDate) < new Date());
   }, [reminders]);
 
-  const petNames = pets.length > 0 ? pets.map((p) => p.name).join(' and ') : 'your furry friends';
+  const petNames = pets.length > 0 ? pets.map((p) => p.name).join(` ${t('common.and', 'and')} `) : t('dashboard.yourFurryFriends', 'your furry friends');
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -147,7 +148,7 @@ export default function DashboardPage() {
               {t('dashboard.welcomeBack')}, {user?.name || 'Pet parent'}
             </h2>
             <p className="text-sm text-white/70 mt-1.5">
-              Here's an overview for {petNames}.
+              {t('dashboard.overviewFor', 'Here\'s an overview for')} {petNames}.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -156,7 +157,7 @@ export default function DashboardPage() {
               className="flex items-center gap-2 bg-white border border-[#FCA5A5] text-[#DC2626] hover:bg-red-50 rounded-xl px-5 py-2.5 text-sm font-semibold transition"
             >
               <AlertTriangle size={15} />
-              Emergency
+              {t('dashboard.emergencyContacts', 'Emergency')}
             </button>
             <button
               onClick={() => navigate('/vets')}
@@ -180,9 +181,9 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                {upcomingVaccination ? `${upcomingVaccination.petName || 'Pet'}: Upcoming` : 'No upcoming'}
+                {upcomingVaccination ? `${upcomingVaccination.petName || t('pets.pet', 'Pet')}: ${t('dashboard.upcoming', 'Upcoming')}` : t('dashboard.noUpcoming', 'No upcoming')}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">{upcomingVaccination ? new Date(upcomingVaccination.dueDate).toLocaleDateString() : (pets.length > 0 ? 'All up to date' : 'Add a pet first')}</p>
+              <p className="text-sm text-[#64748B] mt-1">{upcomingVaccination ? new Date(upcomingVaccination.dueDate).toLocaleDateString() : (pets.length > 0 ? t('dashboard.allUpToDate', 'All up to date') : t('dashboard.addPetFirst', 'Add a pet first'))}</p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
               <Syringe size={22} />
@@ -193,13 +194,13 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div className="flex-1 pr-4">
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                UPCOMING APPOINTMENTS
+                {t('appointments.upcomingAppointments', 'UPCOMING APPOINTMENTS')}
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                {upcomingAppointments.length} Upcoming
+                {upcomingAppointments.length} {t('dashboard.upcoming', 'Upcoming')}
               </p>
               <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full mt-4 overflow-hidden">
                 <div className="h-full bg-[#0046CE] rounded-full" style={{ width: upcomingAppointments.length > 0 ? '100%' : '0%' }}></div>
@@ -214,16 +215,16 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                PENDING ALERTS
+                {t('dashboard.pendingAlerts', 'PENDING ALERTS')}
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                {pendingAlerts.length} Alert{pendingAlerts.length !== 1 ? 's' : ''}
+                {pendingAlerts.length} {pendingAlerts.length !== 1 ? t('dashboard.alerts', 'Alerts') : t('dashboard.alert', 'Alert')}
               </p>
               <p className="text-sm text-[#64748B] mt-1">
-                {pendingAlerts.length > 0 ? pendingAlerts[0].title : 'All caught up!'}
+                {pendingAlerts.length > 0 ? translateDynamic(pendingAlerts[0].title, i18n.language) : t('dashboard.allCaughtUp', 'All caught up!')}
               </p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
@@ -234,23 +235,23 @@ export default function DashboardPage() {
 
         {/* Seasonal Tip Banner */}
         <div className="mt-6 bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-7 py-6">
-          <span className="bg-[#0046CE] text-white text-[11px] font-bold px-3 py-1 rounded-full tracking-wide">
-            SEASONAL TIP
+          <span className="bg-[#0046CE] text-white text-[11px] font-bold px-3 py-1 rounded-full tracking-wide uppercase">
+            {t('dashboard.seasonalTip', 'SEASONAL TIP')}
           </span>
           <p
             className="text-[#0046CE] font-semibold text-lg mt-3"
             style={{ fontFamily: 'Literata, serif' }}
           >
-            {seasonalArticle?.title || 'Monsoon-Safe Walking Routes and Times'}
+            {translateDynamic(seasonalArticle?.title, i18n.language) || t('dashboard.fallbackTipTitle', 'Monsoon-Safe Walking Routes and Times')}
           </p>
           <p className="text-sm text-[#475569] mt-1.5 max-w-2xl leading-relaxed">
-            {seasonalArticle?.summary || seasonalArticle?.excerpt || 'Reducing infection risk while still exercising your dog in the rain.'}
+            {translateDynamic(seasonalArticle?.summary || seasonalArticle?.excerpt, i18n.language) || t('dashboard.fallbackTipDesc', 'Reducing infection risk while still exercising your dog in the rain.')}
           </p>
           <button
             onClick={() => seasonalArticle ? navigate(`/articles/${seasonalArticle._id || seasonalArticle.id}`) : navigate('/articles')}
             className="mt-3.5 text-sm text-[#0046CE] font-semibold flex items-center gap-1 hover:gap-2 transition-all"
           >
-            Read Article <ChevronRight size={14} />
+            {t('articles.readMore', 'Read Article')} <ChevronRight size={14} />
           </button>
         </div>
 
@@ -340,7 +341,7 @@ export default function DashboardPage() {
                   onClick={() => navigate('/records')}
                   className="text-sm text-[#0046CE] font-semibold hover:underline"
                 >
-                  View all
+                  {t('common.viewAll', 'View all')}
                 </button>
               </div>
               <div className="space-y-3">
@@ -351,7 +352,7 @@ export default function DashboardPage() {
                 ) : (
                   upcomingAppointments.map((apt, i) => {
                     const dateObj = new Date(apt.date || apt.appointmentDate);
-                    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
+                    const month = dateObj.toLocaleString(i18n.language || 'en', { month: 'short' }).toUpperCase();
                     const day = dateObj.getDate().toString().padStart(2, '0');
                     const petName = apt.petId?.name || apt.petName || 'Pet';
                     const clinicName = apt.vetId?.clinicName || apt.vetId?.name || apt.vetName || 'Clinic';
@@ -370,8 +371,8 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#1E293B] truncate">{apt.reason || 'Appointment'}</p>
-                        <p className="text-xs text-[#64748B] mt-0.5 truncate">{petName} • {clinicName}</p>
+                        <p className="font-semibold text-[#1E293B] truncate">{translateDynamic(apt.reason, i18n.language) || t('appointments.appointment', 'Appointment')}</p>
+                        <p className="text-xs text-[#64748B] mt-0.5 truncate">{petName} • {translateDynamic(clinicName, i18n.language)}</p>
                       </div>
                       <div className="flex gap-1.5 flex-shrink-0">
                         <span className="w-2 h-2 rounded-full bg-[#0046CE]" />
@@ -390,7 +391,7 @@ export default function DashboardPage() {
             {/* Saved Vet */}
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-3">
-                SAVED VETERINARIAN
+                {t('dashboard.savedVet', 'SAVED VETERINARIAN')}
               </p>
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -407,21 +408,21 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-[#1E293B] text-sm">
-                      {savedVet?.name || 'No saved vet'}
+                      {savedVet?.name || t('dashboard.noSavedVet', 'No saved vet')}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {savedVet?.clinicName || savedVet?.clinic || 'Save a vet from directory'}
+                      {savedVet?.clinicName || savedVet?.clinic || t('dashboard.saveAVetFromDir', 'Save a vet from directory')}
                     </p>
                   </div>
                 </div>
                 {savedVet?.nextAvailable && (
                   <div className="flex items-center gap-2 mt-4 text-xs text-[#64748B]">
                     <Clock size={13} />
-                    <span>Next Available: {savedVet.nextAvailable}</span>
+                    <span>{t('dashboard.nextAvailable', 'Next Available')}: {savedVet.nextAvailable}</span>
                   </div>
                 )}
                 <button className="w-full mt-4 bg-[#0046CE] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#003DA8] transition">
-                  Call Now
+                  {t('dashboard.callNow', 'Call Now')}
                 </button>
                 <button
                   onClick={() => {
@@ -434,7 +435,7 @@ export default function DashboardPage() {
                   }}
                   className="w-full mt-2.5 border border-[#0046CE] text-[#0046CE] rounded-xl py-3 text-sm font-semibold hover:bg-[#EFF6FF] transition bg-transparent"
                 >
-                  Book →
+                  {t('common.book', 'Book')} →
                 </button>
               </div>
             </div>
@@ -442,8 +443,8 @@ export default function DashboardPage() {
             {/* Articles */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-[#1E293B]">Articles</p>
-                <button onClick={() => navigate('/articles')} className="text-xs text-[#0046CE] font-medium hover:underline">View all</button>
+                <p className="text-sm font-bold text-[#1E293B]">{t('articles.title', 'Articles')}</p>
+                <button onClick={() => navigate('/articles')} className="text-xs text-[#0046CE] font-medium hover:underline">{t('common.viewAll', 'View all')}</button>
               </div>
               <div className="space-y-2.5">
                 {articles.length > 0 ? articles.map((article, i) => (
@@ -456,13 +457,13 @@ export default function DashboardPage() {
                       <BookOpen size={18} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#1E293B] truncate">{article.title}</p>
-                      <p className="text-xs text-[#64748B] mt-0.5">{article.readTime ? `${article.readTime} min read` : 'Read now'}</p>
+                      <p className="text-sm font-semibold text-[#1E293B] truncate">{translateDynamic(article.title, i18n.language)}</p>
+                      <p className="text-xs text-[#64748B] mt-0.5">{article.readTime ? `${article.readTime} ${t('articles.minRead', 'min read')}` : t('articles.readNow', 'Read now')}</p>
                     </div>
                   </div>
                 )) : (
                   // Fallback placeholders while loading / if no articles yet
-                  [{ title: 'Puppy Training 101', time: '5 min read', bg: 'bg-[#475569]' }, { title: 'Healthy Diet for Cats', time: '3 min read', bg: 'bg-[#0046CE]' }].map((a, i) => (
+                  [{ title: 'Puppy Training 101', time: `5 ${t('articles.minRead', 'min read')}`, bg: 'bg-[#475569]' }, { title: 'Healthy Diet for Cats', time: `3 ${t('articles.minRead', 'min read')}`, bg: 'bg-[#0046CE]' }].map((a, i) => (
                     <div
                       key={i}
                       onClick={() => navigate('/articles')}
@@ -472,7 +473,7 @@ export default function DashboardPage() {
                         <BookOpen size={18} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-[#1E293B]">{a.title}</p>
+                        <p className="text-sm font-semibold text-[#1E293B]">{translateDynamic(a.title, i18n.language)}</p>
                         <p className="text-xs text-[#64748B] mt-0.5">{a.time}</p>
                       </div>
                     </div>

@@ -89,7 +89,7 @@ export default function CheckoutPage() {
             onClick={() => navigate('/shop')} 
             className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to shop
+            <ArrowLeft className="w-4 h-4" /> {t('checkout.backToShop', 'Back to shop')}
           </button>
         </div>
 
@@ -289,10 +289,10 @@ export default function CheckoutPage() {
       <ConfirmationOverlay
         open={orderPlaced}
         icon={<CheckCircle2 size={32} />}
-        title="Order Confirmed!"
-        description="Your order has been placed successfully and will be delivered soon."
-        primaryAction={{ label: 'View My Orders', onClick: () => navigate('/orders') }}
-        secondaryAction={{ label: 'Continue Shopping', onClick: () => navigate('/shop') }}
+        title={t('checkout.orderConfirmed', 'Order Confirmed!')}
+        description={t('checkout.orderConfirmedDesc', 'Your order has been placed successfully and will be delivered soon.')}
+        primaryAction={{ label: t('checkout.viewMyOrders', 'View My Orders'), onClick: () => navigate('/orders') }}
+        secondaryAction={{ label: t('buttons.continueShopping', 'Continue Shopping'), onClick: () => navigate('/shop') }}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { isValidEmail } from '../../utils/helpers';
@@ -19,6 +20,7 @@ function GoogleMark() {
 export default function LoginPage({ variant = 'owner' }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const auth = useAuth();
   
   const isVetLogin = variant === 'vet';
@@ -85,11 +87,11 @@ export default function LoginPage({ variant = 'owner' }) {
     const nextErrors = {};
 
     if (!email || !isValidEmail(email)) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = t('auth.validEmail', 'Enter a valid email address.');
     }
 
     if (!password) {
-      nextErrors.password = 'Password is required.';
+      nextErrors.password = t('auth.passwordRequired', 'Password is required.');
     }
 
     setFieldErrors(nextErrors);
@@ -119,7 +121,7 @@ export default function LoginPage({ variant = 'owner' }) {
 
       navigate(targetPath, { replace: true });
     } catch (apiError) {
-      setError(typeof apiError === 'string' ? apiError : 'Could not connect to server. Please try again.');
+      setError(typeof apiError === 'string' ? apiError : t('auth.connectionError', 'Could not connect to server. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -158,7 +160,7 @@ export default function LoginPage({ variant = 'owner' }) {
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input
-                label="Email address"
+                label={t('forms.email', 'Email address')}
                 required
                 type="email"
                 value={email}
@@ -170,7 +172,7 @@ export default function LoginPage({ variant = 'owner' }) {
 
               <div className="space-y-2">
                 <Input
-                  label="Password"
+                  label={t('forms.password', 'Password')}
                   required
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -192,7 +194,7 @@ export default function LoginPage({ variant = 'owner' }) {
                 {!isAdminLogin && (
                   <div className="flex justify-end">
                     <Link to={isVetLogin ? '/forgot-password?role=vet' : '/forgot-password'} className={`text-xs font-semibold ${theme.linkClass}`}>
-                      Forgot password?
+                      {t('auth.forgotPassword', 'Forgot password?')}
                     </Link>
                   </div>
                 )}
@@ -201,21 +203,21 @@ export default function LoginPage({ variant = 'owner' }) {
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
 
               <Button type="submit" fullWidth loading={loading} className={`justify-center ${theme.buttonClass}`}>
-                Login to account
+                {t('auth.loginToAccount', 'Login to account')}
               </Button>
 
               {theme.showSocial && (
                 <>
                   <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
                     <div className="h-px flex-1 bg-neutral-200" />
-                    <span>or continue with</span>
+                    <span>{t('auth.orContinueWith', 'or continue with')}</span>
                     <div className="h-px flex-1 bg-neutral-200" />
                   </div>
 
                   <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
                     <span className="flex items-center gap-2">
                       <GoogleMark />
-                      Continue with Google
+                      {t('auth.continueWithGoogle', 'Continue with Google')}
                     </span>
                   </Button>
                 </>
@@ -224,13 +226,13 @@ export default function LoginPage({ variant = 'owner' }) {
               <div className="pt-2 text-center text-sm text-neutral-500">
                 {theme.showSignup ? (
                   <>
-                    Don't have an account?{' '}
+                    {t('auth.noAccount', "Don't have an account?")}{' '}
                     <Link to={theme.signupPath} className={`font-semibold ${theme.linkClass}`}>
                       {theme.signupText}
                     </Link>
                   </>
                 ) : (
-                  <p>Admin accounts are provisioned internally and cannot be self-registered.</p>
+                  <p>{t('auth.adminProvision', 'Admin accounts are provisioned internally and cannot be self-registered.')}</p>
                 )}
               </div>
             </form>

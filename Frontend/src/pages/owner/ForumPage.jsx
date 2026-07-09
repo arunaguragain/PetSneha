@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Avatar, Badge, Button, Card, Input, Modal, Select, Skeleton, Textarea } from '../../components/ui';
 import { createForumPost, getForumPosts, reportPost } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItems } from '../../utils/api';
@@ -10,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 export default function ForumPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const { role } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -22,11 +24,11 @@ export default function ForumPage() {
   const [createForm, setCreateForm] = useState({ title: '', content: '', group: 'all', isAnonymous: false });
 
   const groups = [
-    { label: 'All', value: 'all' },
-    { label: 'Dogs', value: 'dogs' },
-    { label: 'Cats', value: 'cats' },
-    { label: 'New Owners', value: 'newOwners' },
-    { label: 'Emergency', value: 'emergency' },
+    { label: t('forum.all', 'All'), value: 'all' },
+    { label: t('forum.dogs', 'Dogs'), value: 'dogs' },
+    { label: t('forum.cats', 'Cats'), value: 'cats' },
+    { label: t('forum.newOwners', 'New Owners'), value: 'newOwners' },
+    { label: t('forum.emergency', 'Emergency'), value: 'emergency' },
   ];
 
   const isVet = role === 'vet';
@@ -90,15 +92,15 @@ export default function ForumPage() {
     }
   };
 
-  const ctaLabel = 'Create new post';
+  const ctaLabel = t('forum.createPost', 'Create new post');
 
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-[1440px] mx-auto px-8 py-10">
         
         {/* Header */}
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>PetSneha Community</h1>
-        <p className="text-sm text-[#64748B] mt-1">Connect with pet parents and veterinary experts across Nepal.</p>
+        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('forum.communityTitle', 'PetSneha Community')}</h1>
+        <p className="text-sm text-[#64748B] mt-1">{t('forum.communitySubtitle', 'Connect with pet parents and veterinary experts across Nepal.')}</p>
 
         {/* Two column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -132,7 +134,7 @@ export default function ForumPage() {
                       : 'bg-white text-[#64748B] border border-[#E2E8F0] hover:bg-neutral-50'
                   }`}
                 >
-                  Unanswered
+                  {t('forum.unanswered', 'Unanswered')}
                 </button>
               ) : null}
             </div>
@@ -140,8 +142,8 @@ export default function ForumPage() {
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm mb-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[#1E293B]">Start a discussion</h2>
-                  <p className="text-sm text-[#64748B]">{isVet ? 'Answer questions from the community or create your own discussion.' : 'Ask the community or create a question for vets to answer.'}</p>
+                  <h2 className="text-lg font-semibold text-[#1E293B]">{t('forum.startDiscussion', 'Start a discussion')}</h2>
+                  <p className="text-sm text-[#64748B]">{isVet ? t('forum.vetPrompt', 'Answer questions from the community or create your own discussion.') : t('forum.ownerPrompt', 'Ask the community or create a question for vets to answer.')}</p>
                 </div>
                 <Button variant="primary" onClick={handleCreatePost}>{ctaLabel}</Button>
               </div>
@@ -188,10 +190,10 @@ export default function ForumPage() {
 
                       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[#64748B]">
                         <div className="flex items-center gap-1">
-                          <MessageSquare className="w-4 h-4" /> {answersCount} Answer{answersCount !== 1 ? 's' : ''}
+                          <MessageSquare className="w-4 h-4" /> {answersCount} {t('forum.replies', 'Answers')}
                         </div>
                         <div className="flex items-center gap-1">
-                          <ShieldCheck className="w-4 h-4" /> {upvotes} Upvotes
+                          <ShieldCheck className="w-4 h-4" /> {upvotes} {t('forum.upvotes', 'Upvotes')}
                         </div>
                       </div>
                     </div>
@@ -199,7 +201,7 @@ export default function ForumPage() {
                 })
               ) : (
                 <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-sm text-[#64748B]">
-                  {activeQuickFilter === 'unanswered' ? 'No unanswered posts found.' : 'No posts found. Be the first to start a discussion!'}
+                  {activeQuickFilter === 'unanswered' ? t('forum.noUnanswered', 'No unanswered posts found.') : t('forum.noPostsFound', 'No posts found. Be the first to start a discussion!')}
                 </div>
               )}
             </div>
@@ -212,39 +214,39 @@ export default function ForumPage() {
             {/* Community Guidelines card */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm">
               <h2 className="text-sm font-semibold text-[#1E293B] flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#0046CE]" /> Community Guidelines
+                <ShieldCheck className="w-4 h-4 text-[#0046CE]" /> {t('forum.communityGuidelines', 'Community Guidelines')}
               </h2>
               
               <div className="mt-3 space-y-2">
                 <div className="flex items-start gap-2 text-xs text-[#64748B]">
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Be respectful and supportive to other pet parents.</span>
+                  <span>{t('forum.rule1', 'Be respectful and supportive to other pet parents.')}</span>
                 </div>
                 <div className="flex items-start gap-2 text-xs text-[#64748B]">
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Do not share unverified medical advice.</span>
+                  <span>{t('forum.rule2', 'Do not share unverified medical advice.')}</span>
                 </div>
                 <div className="flex items-start gap-2 text-xs text-[#64748B]">
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>In emergencies, always contact a vet directly.</span>
+                  <span>{t('forum.rule3', 'In emergencies, always contact a vet directly.')}</span>
                 </div>
               </div>
               
               <button className="w-full border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] rounded-lg py-2 text-xs font-medium mt-3 transition">
-                Read Full Rules
+                {t('forum.readFullRules', 'Read Full Rules')}
               </button>
             </div>
 
             {/* Need help card */}
             <div className="bg-[#EFF6FF] rounded-xl p-4 mt-4 border border-[#BFDBFE]">
-              <div className="font-medium text-[#0046CE] text-sm">Need professional help?</div>
-              <p className="text-xs text-[#64748B] mt-1">Browse our extensive library of vet-approved articles or book a consultation.</p>
+              <div className="font-medium text-[#0046CE] text-sm">{t('forum.needHelp', 'Need professional help?')}</div>
+              <p className="text-xs text-[#64748B] mt-1">{t('forum.needHelpDesc', 'Browse our extensive library of vet-approved articles or book a consultation.')}</p>
               
               <button 
                 onClick={() => navigate('/articles')}
                 className="w-full border border-[#0046CE] hover:bg-[#E0E7FF] text-[#0046CE] rounded-lg px-4 py-2 text-xs font-medium mt-3 transition"
               >
-                Visit Library →
+                {t('forum.visitLibrary', 'Visit Library')} →
               </button>
             </div>
 
@@ -274,16 +276,16 @@ export default function ForumPage() {
         </div>
       </Modal>
 
-      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} size="lg" title="Create forum post">
+      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} size="lg" title={t('forum.createPost', 'Create forum post')}>
         <form className="px-6 pb-6 space-y-5" onSubmit={handleCreateSubmit}>
           <Input
-            label="Title"
+            label={t('forum.postTitle', 'Title')}
             value={createForm.title}
             onChange={(event) => setCreateForm((current) => ({ ...current, title: event.target.value }))}
             required
           />
           <Textarea
-            label="Content"
+            label={t('forum.postContent', 'Content')}
             value={createForm.content}
             onChange={(event) => setCreateForm((current) => ({ ...current, content: event.target.value }))}
             rows={8}
@@ -307,11 +309,11 @@ export default function ForumPage() {
               onChange={(event) => setCreateForm((current) => ({ ...current, isAnonymous: event.target.checked }))}
               className="h-4 w-4 rounded border border-slate-300 text-primary-600 focus:ring-primary-500"
             />
-            Post anonymously
+            {t('forum.postAnonymously', 'Post anonymously')}
           </label>
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>Cancel</Button>
-            <Button type="submit" loading={creatingPost}>Post</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>{t('buttons.cancel', 'Cancel')}</Button>
+            <Button type="submit" loading={creatingPost}>{t('forum.post', 'Post')}</Button>
           </div>
         </form>
       </Modal>

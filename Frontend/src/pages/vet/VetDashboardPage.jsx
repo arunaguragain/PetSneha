@@ -63,10 +63,12 @@ import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import ForumPage from '../owner/ForumPage';
 
 export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const { addToast } = useToast();
   const { confirm } = useConfirm();
@@ -558,15 +560,15 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const trustScoreProgress = dashboard?.vet?.isVerified ? 100 : 45;
 
   const sidebarItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'appointments', label: 'Schedule & Calendar', icon: Calendar },
-    { id: 'records', label: 'Clinical Entry', icon: FileSpreadsheet },
-    { id: 'articles', label: 'Knowledge Hub', icon: BookOpen },
-    { id: 'products', label: 'My Products', icon: ShoppingBag },
-    { id: 'orders', label: 'Orders', icon: Package },
-    { id: 'reviews', label: 'Patient Reviews', icon: MessageSquare },
-    { id: 'profile', label: 'Profile Settings', icon: User },
-    { id: 'forum', label: 'Community Forum', icon: Users },
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
+    { id: 'appointments', label: t('dashboard.appointments', 'Schedule & Calendar'), icon: Calendar },
+    { id: 'records', label: t('dashboard.healthRecords', 'Clinical Entry'), icon: FileSpreadsheet },
+    { id: 'articles', label: t('nav.articles', 'Knowledge Hub'), icon: BookOpen },
+    { id: 'products', label: t('nav.products', 'My Products'), icon: ShoppingBag },
+    { id: 'orders', label: t('dashboard.orders', 'Orders'), icon: Package },
+    { id: 'reviews', label: t('dashboard.reviews', 'Patient Reviews'), icon: MessageSquare },
+    { id: 'profile', label: t('dashboard.profile', 'Profile Settings'), icon: User },
+    { id: 'forum', label: t('nav.forum', 'Community Forum'), icon: Users },
   ];
 
   const resetProductForm = () => {

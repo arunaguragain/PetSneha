@@ -61,25 +61,25 @@ export default function ShopPage() {
             {myPets.length > 0 ? (
               <>
                 <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">
-                  {myPets.map(p => p.name).join(' & ')}'S CHOICE
+                  {myPets.map(p => p.name).join(' & ')}{t('shop.choice', "'S CHOICE")}
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
-                  Perfectly curated for your {myPets.map(p => p.breed || p.species || 'Pet').join(' & ')}
+                  {t('shop.curatedFor', 'Perfectly curated for your')} {myPets.map(p => p.breed || p.species || 'Pet').join(' & ')}
                 </h1>
-                <p className="text-sm text-[#475569] mt-2">Based on {myPets.map(p => p.name).join(' & ')}'s age, breed, and weight...</p>
+                <p className="text-sm text-[#475569] mt-2">{t('shop.basedOn', "Based on")} {myPets.map(p => p.name).join(' & ')}{t('shop.ageBreedWeight', "'s age, breed, and weight...")}</p>
                 <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
-                  Explore {myPets[0].name}'s Picks
+                  {t('shop.explorePicks', 'Explore')} {myPets[0].name}{t('shop.picks', "'s Picks")}
                 </button>
               </>
             ) : (
               <>
-                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">YOUR PET'S CHOICE</span>
+                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">{t('shop.yourPetsChoice', "YOUR PET'S CHOICE")}</span>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
-                  Perfectly curated for your pet
+                  {t('shop.curatedForPet', 'Perfectly curated for your pet')}
                 </h1>
-                <p className="text-sm text-[#475569] mt-2">Add your pet to get personalised picks</p>
+                <p className="text-sm text-[#475569] mt-2">{t('shop.addPetForPicks', 'Add your pet to get personalised picks')}</p>
                 <button onClick={() => navigate('/pets/new')} className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
-                  Add a pet
+                  {t('pets.addPet', 'Add a pet')}
                 </button>
               </>
             )}
@@ -136,7 +136,7 @@ export default function ShopPage() {
             <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
               {t('shop.browseAllSupplies')}
             </h2>
-            <p className="text-sm text-[#64748B] mt-0.5">Premium quality products sourced for Nepalese pet owners.</p>
+            <p className="text-sm text-[#64748B] mt-0.5">{t('shop.premiumQuality', 'Premium quality products sourced for Nepalese pet owners.')}</p>
           </div>
           <button 
             onClick={() => navigate('/checkout')}
