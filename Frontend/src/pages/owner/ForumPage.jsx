@@ -90,7 +90,7 @@ export default function ForumPage() {
     }
   };
 
-  const ctaLabel = isVet ? 'Answer a Question' : 'Create new post';
+  const ctaLabel = 'Create new post';
 
   return (
     <div className="bg-white min-h-screen">

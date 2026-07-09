@@ -5,10 +5,14 @@ import { addForumAnswer, getForumPost, upvotePost, reportPost } from '../../api/
 import { formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function ForumPostPage() {
   const { postId } = useParams();
   const { addToast } = useToast();
+  const { role } = useAuth();
+  
+  const backLink = role === 'vet' ? '/vet/forum' : '/forum';
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState(null);
   const [answer, setAnswer] = useState('');
@@ -49,7 +53,7 @@ export default function ForumPostPage() {
     <div className="container-app max-w-4xl px-10 py-8">
       <div className="flex items-center justify-end mb-4">
         <Link 
-          to="/forum" 
+          to={backLink} 
           className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
         >
           <ArrowLeft className="w-4 h-4" /> Back to forum
