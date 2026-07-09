@@ -42,7 +42,10 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
   }, [addToast]);
 
   const handleToggle = async (key) => {
-    const nextChecklist = { ...checklist, [key]: !checklist[key] };
+    // Once checked, it stays checked — no unchecking allowed
+    if (checklist[key]) return;
+
+    const nextChecklist = { ...checklist, [key]: true };
     setChecklist(nextChecklist);
     setSavingKey(key);
 
@@ -53,7 +56,7 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
         setChecklist((previous) => ({ ...previous, ...checklistData }));
       }
     } catch (apiError) {
-      setChecklist((previous) => ({ ...previous, [key]: checklist[key] }));
+      setChecklist((previous) => ({ ...previous, [key]: false }));
       addToast(getErrorMessage(apiError), 'danger');
     } finally {
       setSavingKey(null);
@@ -82,7 +85,7 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
               key={item.key}
               type="button"
               onClick={() => handleToggle(item.key)}
-              disabled={savingKey === item.key}
+              disabled={savingKey === item.key || checked}
               className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition ${
                 checked ? 'border-green-200 bg-green-50' : 'border-[#E2E8F0] bg-white hover:bg-[#F8FAFC]'
               } ${savingKey === item.key ? 'opacity-70' : ''}`}

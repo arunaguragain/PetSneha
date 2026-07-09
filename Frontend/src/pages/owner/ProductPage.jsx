@@ -6,6 +6,8 @@ import { getProduct } from '../../api/shop.api';
 import { formatCurrency, getErrorMessage, unwrapItem } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
+import { getImageUrl } from '../../utils/imageUrl';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ProductPage() {
   const { productId } = useParams();
@@ -36,38 +38,60 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="container-app max-w-4xl px-10 py-8">
-      <Link to="/shop" className="font-semibold text-neutral-600 hover:text-primary-600">← {t('buttons.backToShop')}</Link>
-      <Card className="mt-4 p-8">
-        <div className="grid gap-6 md:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-2xl bg-neutral-50 p-8 text-center text-6xl">🛍️</div>
-          <div>
-            <h1 className="font-display text-4xl text-neutral-900">{product?.name}</h1>
-            <Badge className="mt-3" variant="primary">{formatCurrency(product?.price)}</Badge>
-            <p className="mt-4 text-body-md text-neutral-600">{product?.description}</p>
-            <div className="mt-6 flex gap-3">
-              <Button 
-                onClick={() => {
-                  addItem(product, 1);
-                  addToast(`${product.name} ${t('shop.savedToCart')}`, 'success');
-                  navigate('/checkout');
-                }}
-              >
-                {t('buttons.buynow')}
-              </Button>
-              <Button 
-                variant="secondary"
-                onClick={() => {
-                  addItem(product, 1);
-                  addToast(`${product.name} ${t('shop.savedToCart')}`, 'success');
-                }}
-              >
-                {t('buttons.addToCart')}
-              </Button>
-            </div>
+    <div className="min-h-screen bg-[#F8FAFC] pt-8 pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <button onClick={() => navigate('/shop')} className="flex items-center gap-2 text-sm font-semibold text-[#64748B] hover:text-[#1E293B] mb-6 transition">
+          <ArrowLeft className="w-4 h-4" /> {t('buttons.backToShop', 'Back to Shop')}
+        </button>
+
+        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-10 shadow-sm flex flex-col md:flex-row gap-10">
+          
+          {/* Image Column */}
+          <div className="w-full md:w-1/2 flex-shrink-0">
+             <div className="w-full aspect-square bg-[#F1F5F9] rounded-2xl flex items-center justify-center overflow-hidden border border-[#E2E8F0]">
+                {product?.images && product.images.length > 0 ? (
+                  <img src={getImageUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-8xl">🛍️</span>
+                )}
+             </div>
+          </div>
+
+          {/* Details Column */}
+          <div className="w-full md:w-1/2 flex flex-col justify-center">
+             <div className="text-xs font-bold text-[#64748B] uppercase tracking-widest mb-2">{product?.category || 'Pet Supplies'}</div>
+             <h1 className="text-3xl sm:text-4xl font-bold text-[#1E293B] mb-4 leading-tight" style={{ fontFamily: 'Literata, serif' }}>{product?.name}</h1>
+             
+             <div className="text-2xl font-bold text-[#0046CE] mb-6">{formatCurrency(product?.price)}</div>
+             
+             <div className="h-px w-full bg-[#E2E8F0] mb-6"></div>
+             
+             <p className="text-base text-[#475569] leading-relaxed mb-8">{product?.description}</p>
+             
+             <div className="flex flex-col sm:flex-row items-center gap-4 mt-auto">
+                <button 
+                  onClick={() => {
+                    addItem(product, 1);
+                    addToast(`${product.name} ${t('shop.savedToCart')}`, 'success');
+                    navigate('/checkout');
+                  }}
+                  className="w-full sm:w-1/2 bg-[#0046CE] hover:bg-[#003DA8] text-white font-semibold py-3.5 px-6 rounded-xl transition shadow-sm hover:shadow text-center"
+                >
+                  {t('buttons.buynow', 'Buy Now')}
+                </button>
+                <button 
+                  onClick={() => {
+                    addItem(product, 1);
+                    addToast(`${product.name} ${t('shop.savedToCart')}`, 'success');
+                  }}
+                  className="w-full sm:w-1/2 bg-white hover:bg-[#F8FAFC] text-[#0046CE] border-2 border-[#0046CE] font-semibold py-3.5 px-6 rounded-xl transition text-center"
+                >
+                  {t('buttons.addToCart', 'Add to Cart')}
+                </button>
+             </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -112,7 +112,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="navbar bg-white border-b border-[#E2E8F0] relative z-50">
+    <header className="navbar bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
       <div className="max-w-[1440px] mx-auto px-8 flex h-full items-center justify-between gap-4">
         {/* Left — Logo */}
         <button onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer shrink-0 hover:opacity-80">
@@ -195,7 +195,7 @@ export default function Navbar() {
                       </>
                     ) : (
                       <>
-                        <button className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <User size={18} className="text-[#0046CE]" />
                           My profile
                         </button>

@@ -124,6 +124,14 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [selectedSellerOrder, setSelectedSellerOrder] = useState(null);
 
+  const displayAppointments = useMemo(() => {
+    const active = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed');
+    if (active.length > 0) {
+      return active.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
+    }
+    return [...appointments].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  }, [appointments]);
+
   // Dynamic Notifications Feed computed from appointments
   const notifications = useMemo(() => {
     const list = [];
@@ -272,11 +280,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
   const handleConfirm = async (id) => {
     try {
+      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'confirmed' } : a));
       await confirmAppointment(id);
       addToast('Appointment confirmed', 'success');
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
+      loadData();
     }
   };
 
@@ -292,11 +302,14 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     }
     
     try {
+      const idToCancel = cancellingAppointmentId;
+      setAppointments(prev => prev.map(a => a._id === idToCancel ? { ...a, status: 'cancelled' } : a));
       await vetCancelAppointment(cancellingAppointmentId, cancellationReason);
       addToast('Appointment cancelled successfully', 'success');
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
+      loadData();
     } finally {
       setCancellingAppointmentId(null);
       setCancellationReason('');
@@ -556,6 +569,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     { id: 'forum', label: 'Community Forum', icon: Users },
   ];
 
+  const resetProductForm = () => {
+    setProductForm({
+      name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: []
+    });
+    setCurrentProduct(null);
+  };
+
   const handleProductFormChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'images') {
@@ -590,7 +610,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductAddOpen(false);
       resetProductForm();
       addToast('Product submitted for approval!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -623,7 +643,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductEditOpen(false);
       resetProductForm();
       addToast('Product updated successfully!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -637,7 +657,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     try {
       await removeProduct(product._id);
       addToast('Product deleted', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     }
@@ -950,7 +970,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {appointments.slice(0, 5).map((appt) => (
+                        {displayAppointments.map((appt) => (
                           <tr key={appt._id} className="border-b border-neutral-100 hover:bg-[#F8FAFC]/50 transition">
                             <td className="py-3 px-2 font-semibold text-neutral-900 flex items-center gap-2">
                               <Avatar name={appt.pet?.name} size="sm" />
@@ -1113,7 +1133,10 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                               <span 
                                 key={a._id || aIdx} 
                                 className={`h-2 w-2 rounded-full ${
-                                  a.status === 'confirmed' ? 'bg-success' : 'bg-warning'
+                                  a.status === 'confirmed' ? 'bg-success' : 
+                                  a.status === 'completed' ? 'bg-neutral-400' :
+                                  a.status === 'cancelled' ? 'bg-danger' : 
+                                  'bg-warning'
                                 }`} 
                               />
                             ))}
