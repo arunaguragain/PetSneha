@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Skeleton, VerifiedBadge, Avatar } from '../../components/ui';
+import { Button, Card, Skeleton, VerifiedBadge, Avatar, ConfirmationOverlay } from '../../components/ui';
 import { getEmergencyVets } from '../../api/vet.api';
 import { formatCurrency, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
@@ -13,6 +13,7 @@ export default function EmergencyPage() {
 
   const [loading, setLoading] = useState(true);
   const [clinics, setClinics] = useState([]);
+  const [callTarget, setCallTarget] = useState(null); // { name, phone }
 
   useEffect(() => {
     const load = async () => {
@@ -31,6 +32,17 @@ export default function EmergencyPage() {
     load();
   }, [addToast]);
 
+  const handleCall = (vet) => {
+    setCallTarget({ name: vet.name, phone: vet.phone || '9800000000' });
+  };
+
+  const confirmCall = () => {
+    if (callTarget) {
+      window.location.href = `tel:${callTarget.phone}`;
+    }
+    setCallTarget(null);
+  };
+
   return (
     <div className="bg-white min-h-screen">
       
@@ -39,6 +51,22 @@ export default function EmergencyPage() {
         <AlertTriangle className="w-5 h-5 flex-shrink-0" />
         <span className="font-medium text-center">URGENT: Emergency Mode Active. Showing nearest 24/7 open clinics.</span>
       </div>
+
+      {/* Call Confirmation Dialog */}
+      <ConfirmationOverlay
+        open={!!callTarget}
+        icon={<Phone className="w-8 h-8 text-[#0046CE]" />}
+        title={`Call ${callTarget?.name}?`}
+        description={`You are about to call ${callTarget?.phone}. Make sure you are ready to speak with the clinic.`}
+        primaryAction={{
+          label: `📞 Call ${callTarget?.phone}`,
+          onClick: confirmCall,
+        }}
+        secondaryAction={{
+          label: 'Cancel',
+          onClick: () => setCallTarget(null),
+        }}
+      />
 
       <div className="px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto">
         
@@ -72,8 +100,6 @@ export default function EmergencyPage() {
             ) : (
               <div className="space-y-3 max-h-[384px] overflow-y-auto pr-2 pb-2">
                 {clinics.length > 0 ? clinics.map((vet) => {
-                  const isOpen247 = String(vet.name).toLowerCase().includes('emergency') || true; // Mocking status logic for layout
-                  
                   return (
                     <div key={vet._id || vet.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm relative">
                       
@@ -89,12 +115,12 @@ export default function EmergencyPage() {
                       </div>
                       
                       <div className="flex gap-2 mt-4">
-                        <a 
-                          href={`tel:${vet.phone || '9800000000'}`}
+                        <button
+                          onClick={() => handleCall(vet)}
                           className="flex-1 bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium transition flex items-center justify-center gap-1.5"
                         >
                           <Phone className="w-4 h-4" /> Call
-                        </a>
+                        </button>
                         <button 
                           onClick={() => openGoogleMapsDirections(`${vet.clinicName || vet.name}, ${vet.location || ''}, Kathmandu, Nepal`)}
                           className="flex-1 border border-[#0046CE] hover:bg-blue-50 text-[#0046CE] rounded-lg py-2 text-sm font-medium transition flex items-center justify-center gap-1.5"

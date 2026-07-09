@@ -4,6 +4,7 @@ import { Avatar, Badge, Button, Card, Textarea } from '../../components/ui';
 import { addForumAnswer, getForumPost, upvotePost, reportPost } from '../../api/content.api';
 import { formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ForumPostPage() {
   const { postId } = useParams();
@@ -33,6 +34,8 @@ export default function ForumPostPage() {
       await addForumAnswer(postId, { content: answer });
       addToast('Answer posted', 'success');
       setAnswer('');
+      const response = await getForumPost(postId);
+      setPost(unwrapItem(response, 'post'));
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     }
@@ -44,8 +47,15 @@ export default function ForumPostPage() {
 
   return (
     <div className="container-app max-w-4xl px-10 py-8">
-      <Link to="/forum" className="font-semibold text-neutral-600 hover:text-primary-600">← Back to forum</Link>
-      <Card className="mt-4 p-6">
+      <div className="flex items-center justify-end mb-4">
+        <Link 
+          to="/forum" 
+          className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to forum
+        </Link>
+      </div>
+      <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl text-neutral-900">{post?.title}</h1>
@@ -64,7 +74,16 @@ export default function ForumPostPage() {
         <div className="mt-4 space-y-4">
           {unwrapItems(post?.answers).length ? unwrapItems(post.answers).map((item) => (
             <div key={item._id || item.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-              <div className="flex items-center gap-3"><Avatar name={item.author?.name || 'Member'} size="sm" /><p className="font-semibold text-neutral-900">{item.author?.name || 'Member'}</p></div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar name={item.author?.name || 'Member'} size="sm" />
+                  <div>
+                    <p className="font-semibold text-neutral-900">{item.author?.name || 'Member'}</p>
+                    {item.isVet ? <p className="text-xs text-success-700">Verified Vet</p> : null}
+                  </div>
+                </div>
+                {item.isVet ? <Badge variant="success" className="text-[10px] uppercase">Verified Vet</Badge> : null}
+              </div>
               <p className="mt-2 text-body-md text-neutral-600">{item.content}</p>
             </div>
           )) : <p className="text-body-md text-neutral-500">No answers yet.</p>}

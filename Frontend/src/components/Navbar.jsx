@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from './ui';
+import { Button, Avatar } from './ui';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../context/ToastContext';
 import { updateLanguage } from '../api/user.api';
 import { getPets } from '../api/pet.api';
 import { User, PawPrint, PlusCircle, Globe, LogOut, CheckCircle2, Calendar, LayoutDashboard, BookOpen, ShoppingBag } from 'lucide-react';
 import { getPetEmoji } from '../utils/api';
+import { getImageUrl } from '../utils/imageUrl';
 
 const navItemsByRole = {
   petOwner: [
@@ -15,12 +16,14 @@ const navItemsByRole = {
     { label: 'Vets', href: '/vets' },
     { label: 'Records', href: '/records' },
     { label: 'Shop', href: '/shop' },
+    { label: 'Orders', href: '/orders' },
     { label: 'Articles', href: '/articles' },
   ],
   vet: [
     { label: 'Dashboard', href: '/vet/dashboard' },
     { label: 'Appointments', href: '/vet/appointments' },
     { label: 'Articles', href: '/vet/articles' },
+    { label: 'Forum', href: '/vet/forum' },
     { label: 'Products', href: '/vet/products' },
   ],
   admin: [{ label: 'Admin', href: '/admin/dashboard' }],
@@ -109,7 +112,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="navbar bg-white border-b border-[#E2E8F0] relative z-50">
+    <header className="navbar bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
       <div className="max-w-[1440px] mx-auto px-8 flex h-full items-center justify-between gap-4">
         {/* Left — Logo */}
         <button onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer shrink-0 hover:opacity-80">
@@ -150,11 +153,7 @@ export default function Navbar() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-[#F1F5F9] border-2 border-transparent hover:border-[#BFDBFE] transition overflow-hidden"
               >
-                {user.photo ? (
-                  <img src={getPhotoUrl(user.photo)} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="font-semibold text-[#475569]">{user.name?.charAt(0)}</span>
-                )}
+                <Avatar name={user.name || 'User'} src={user.profilePhoto ? getImageUrl(user.profilePhoto) : undefined} size="md" className="w-full h-full border-none" />
               </button>
 
               {isDropdownOpen && (
@@ -163,13 +162,7 @@ export default function Navbar() {
                   <div className="bg-[#FAFAFB] px-6 py-5 flex flex-col items-center justify-center text-center">
                     <div className="relative">
                       <div className="w-16 h-16 rounded-full overflow-hidden bg-[#E2E8F0]">
-                        {user.photo ? (
-                          <img src={getPhotoUrl(user.photo)} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-[#64748B] text-xl">
-                            {user.name?.charAt(0)}
-                          </div>
-                        )}
+                        <Avatar name={user.name || 'User'} src={user.profilePhoto ? getImageUrl(user.profilePhoto) : undefined} size="lg" className="w-full h-full border-none" />
                       </div>
                       <div className="absolute bottom-0 right-0 bg-white rounded-full p-[2px]">
                         <CheckCircle2 className="w-5 h-5 text-[#0046CE] fill-[#0046CE] text-white" />
@@ -202,7 +195,7 @@ export default function Navbar() {
                       </>
                     ) : (
                       <>
-                        <button className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
+                        <button onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] transition">
                           <User size={18} className="text-[#0046CE]" />
                           My profile
                         </button>

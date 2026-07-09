@@ -4,10 +4,11 @@ import { Avatar, Badge, Button, Card, Input, StarRating, Textarea, VerifiedBadge
 import { getVet, submitReview } from '../../api/vet.api';
 import { formatCurrency, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap, Zap } from 'lucide-react';
 import { openGoogleMapsDirections } from '../../utils/helpers';
 import { useAuth } from '../../hooks/useAuth';
 import { getImageUrl } from '../../utils/imageUrl';
+import { AdminTopBar, AdminSidebar } from '../admin/AdminDashboardPage';
 
 export default function VetProfilePage() {
   const { vetId } = useParams();
@@ -75,17 +76,172 @@ export default function VetProfilePage() {
     `${vet?.clinicName || ''}, ${vet?.location || ''}, Kathmandu, Nepal`
   )}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
+  const handleAdminLogout = () => {
+    const loginPath = logout();
+    navigate(loginPath, { replace: true });
+  };
+
+  const handleAdminTabChange = (tabId) => {
+    navigate('/admin/dashboard');
+  };
+
+  if (user?.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        <AdminTopBar user={user} onLogout={handleAdminLogout} />
+        <AdminSidebar activeTab="vets" onChange={handleAdminTabChange} />
+        <main className="ml-64 pt-16">
+          <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1200px] mx-auto">
+            <div className="grid grid-cols-1 gap-[24px]">
+              {/* Profile header */}
+              <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
+                <div className="w-24 h-24 rounded-xl object-cover border-2 border-[#E2E8F0] relative flex-shrink-0 bg-[#F1F5F9]">
+                  <img
+                    src={getImageUrl(vet.profilePhoto || vet.imageUrl)}
+                    alt={vet.name}
+                    className="w-full h-full rounded-xl object-cover"
+                    onError={(e) => { e.currentTarget.src = '/profile.png'; }}
+                  />
+                  {vet.isVerified ? (
+                    <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title="Verified Vet">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  ) : (
+                    <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title="Pending Verification">
+                      <span className="text-white text-[10px] font-bold">⏱</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{vet.name}</h1>
+                    {vet.isVerified ? (
+                      <VerifiedBadge />
+                    ) : (
+                      <Badge variant="warning">Pending Verification</Badge>
+                    )}
+                  </div>
+                  <div className="inline-flex gap-2 mt-1">
+                    <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">DVM</span>
+                    <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">MVSc</span>
+                  </div>
+                  <div className="text-[#0046CE] font-medium text-sm mt-1">{vet.specialisation || 'General Practice'}</div>
+                  <div className="flex items-center gap-4 text-sm text-[#64748B] mt-2 flex-wrap">
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <CalendarIcon className="w-4 h-4" /> {vet.yearsExperience || 0} Years Experience
+                    </div>
+                    <div className="flex items-center gap-1 whitespace-nowrap">
+                      <MapPin className="w-4 h-4" /> {vet.clinicName || vet.location || 'Clinic details unavailable'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="flex gap-6 mt-6 pt-6 border-t border-[#E2E8F0]">
+                <div>
+                  <div className="text-xs text-[#64748B] uppercase tracking-wide">PATIENTS SERVED</div>
+                  <div className="text-xl font-bold text-[#1E293B] mt-1">2,500+</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#64748B] uppercase tracking-wide">RATING</div>
+                  {vet?.reviewCount > 0 ? (
+                    <div className="text-xl font-bold text-[#1E293B] mt-1 flex items-center gap-1">
+                      {vet.rating} <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                    </div>
+                  ) : (
+                    <div className="text-sm text-[#64748B] mt-1.5 font-medium">No reviews yet — be the first to book and review</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Two column info grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div className="bg-[#F8FAFC] rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">About Me</h3>
+                  <p className="text-sm text-[#1E293B] leading-relaxed">
+                    {vet.bio || "Dedicated veterinary professional with extensive experience in small animal care. Committed to providing compassionate and comprehensive medical treatment to ensure the health and well-being of your beloved pets."}
+                  </p>
+                </div>
+                
+                <div className="bg-[#F8FAFC] rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">Licensing & Credentials</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 text-sm text-[#1E293B]">
+                      <Award className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Nepal Veterinary Council (NVC)
+                    </div>
+                    <div className="flex items-start gap-2 text-sm text-[#1E293B]">
+                      <FileBadge className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> License: {vet.licenseNumber || 'NVC-1234'}
+                    </div>
+                    <div className="flex items-start gap-2 text-sm text-[#1E293B]">
+                      <GraduationCap className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Tribhuvan University Graduate
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clinic Location card */}
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm mt-4">
+                <h3 className="text-base font-semibold text-[#1E293B]">Clinic Location</h3>
+                
+                <div className="w-full h-48 bg-[#F1F5F9] rounded-lg mt-3 overflow-hidden border border-[#E2E8F0] relative">
+                  {vet?.location ? (
+                    <iframe
+                      src={mapEmbedUrl}
+                      title="Clinic Location Map"
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#64748B]">
+                      <MapPin className="w-8 h-8 mb-2 opacity-50" />
+                      <span className="text-sm">Location map unavailable</span>
+                    </div>
+                  )}
+                  {vet?.location && (
+                    <div className="absolute top-2 left-2">
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${vet.clinicName || ''} ${vet.location || ''} Kathmandu Nepal`)}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="bg-white px-2 py-1.5 rounded shadow-sm text-xs font-medium text-[#0046CE] flex items-center gap-1 hover:bg-gray-50"
+                      >
+                        Maps <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                      </a>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-4 text-sm">
+                  <div className="font-medium text-[#1E293B]">{vet?.clinicName || 'Gurung Family Vet Care'}</div>
+                  <div className="text-[#64748B] mt-0.5">{vet?.location || 'Balaju, Kathmandu'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white min-h-screen">
       <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto">
         
-        {/* Back link */}
-        <div 
-          onClick={() => navigate('/vets')} 
-          className="text-sm text-[#0046CE] cursor-pointer mb-6 flex items-center gap-1 hover:underline w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Vet Listings
-        </div>
+        {/* Header row with back button (hidden for admins, they use sidebar) */}
+        {user?.role !== 'admin' && (
+          <div className="flex items-center justify-end mb-6">
+            <button
+              onClick={() => navigate('/vets')} 
+              className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Vet Listings
+            </button>
+          </div>
+        )}
 
         {/* Two column layout */}
         <div className="grid grid-cols-12 gap-[24px]">
@@ -230,12 +386,14 @@ export default function VetProfilePage() {
               </div>
             )}
 
-            <button 
-              onClick={() => setReviewOpen(true)}
-              className="w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-medium mt-4 transition"
-            >
-              Add Review
-            </button>
+            {user?.role !== 'admin' && (
+              <button 
+                onClick={() => setReviewOpen(true)}
+                className="w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-medium mt-4 transition"
+              >
+                Add Review
+              </button>
+            )}
 
           </div>
 
@@ -244,42 +402,44 @@ export default function VetProfilePage() {
             <div className="space-y-6 lg:sticky lg:top-[88px]">
               
               {/* Booking card */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <h3 className="text-base font-semibold text-[#1E293B]">Book Appointment</h3>
-                
-                <div className="flex justify-between text-sm mt-4">
-                  <span className="text-[#64748B]">Consultation Fee</span>
-                  <span className="font-semibold text-[#1E293B]">{formatCurrency(vet.consultationFee || vet.fee || 800)}</span>
+              {user?.role !== 'admin' && (
+                <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-[#1E293B]">Book Appointment</h3>
+                  
+                  <div className="flex justify-between text-sm mt-4">
+                    <span className="text-[#64748B]">Consultation Fee</span>
+                    <span className="font-semibold text-[#1E293B]">{formatCurrency(vet.consultationFee || vet.fee || 800)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm mt-3">
+                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Next Availability</span>
+                    <span className="text-[#0046CE] font-medium">Today, 4:30 PM</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-sm mt-3">
+                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Working Hours</span>
+                    <span className="text-[#1E293B] font-medium">9:00 AM - 6:00 PM</span>
+                  </div>
+                  
+                  <div className="mt-4 border-t border-[#E2E8F0]"></div>
+                  
+                  <button 
+                    onClick={() => vet?.isVerified && navigate(`/vets/${vetId}/book`)}
+                    disabled={!vet?.isVerified}
+                    className={`w-full rounded-lg py-3 text-sm font-semibold mt-4 transition ${
+                      vet?.isVerified
+                        ? 'bg-[#0046CE] hover:bg-blue-700 text-white cursor-pointer'
+                        : 'bg-[#F1F5F9] text-[#94A3B8] cursor-not-allowed'
+                    }`}
+                  >
+                    {vet?.isVerified ? 'Schedule Visit' : 'Booking unavailable — pending verification'}
+                  </button>
+                  
+                  <div className="text-xs text-[#64748B] text-center mt-3 flex items-center justify-center gap-1">
+                    <Zap className="w-4 h-4" /> Instant confirmation within 15 mins
+                  </div>
                 </div>
-                
-                <div className="flex justify-between text-sm mt-3">
-                  <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Next Availability</span>
-                  <span className="text-[#0046CE] font-medium">Today, 4:30 PM</span>
-                </div>
-                
-                <div className="flex justify-between text-sm mt-3">
-                  <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Working Hours</span>
-                  <span className="text-[#1E293B] font-medium">9:00 AM - 6:00 PM</span>
-                </div>
-                
-                <div className="mt-4 border-t border-[#E2E8F0]"></div>
-                
-                <button 
-                  onClick={() => vet?.isVerified && navigate(`/vets/${vetId}/book`)}
-                  disabled={!vet?.isVerified}
-                  className={`w-full rounded-lg py-3 text-sm font-semibold mt-4 transition ${
-                    vet?.isVerified
-                      ? 'bg-[#0046CE] hover:bg-blue-700 text-white cursor-pointer'
-                      : 'bg-[#F1F5F9] text-[#94A3B8] cursor-not-allowed'
-                  }`}
-                >
-                  {vet?.isVerified ? 'Schedule Visit' : 'Booking unavailable — pending verification'}
-                </button>
-                
-                <div className="text-xs text-[#64748B] text-center mt-3 flex items-center justify-center gap-1">
-                  ⚡ Instant confirmation within 15 mins
-                </div>
-              </div>
+              )}
 
               {/* Clinic Location card */}
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">

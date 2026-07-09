@@ -37,6 +37,7 @@ import {
   Badge, 
   Button, 
   Card, 
+  Modal,
   Skeleton, 
   InfoBox, 
   Input, 
@@ -55,7 +56,6 @@ import {
   getMyVetArticles,
   replyToReview 
 } from '../../api/vetDashboard.api';
-import { getForumPosts, addForumAnswer } from '../../api/content.api';
 import { getMyProducts, getProducts, addProduct, editProduct, removeProduct, getSellerOrders, updateOrderStatus } from '../../api/shop.api';
 import { updateVetProfile } from '../../api/vet.api';
 import { getErrorMessage, formatDate, unwrapItems } from '../../utils/api';
@@ -63,6 +63,7 @@ import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAuth } from '../../hooks/useAuth';
+import ForumPage from '../owner/ForumPage';
 
 export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const navigate = useNavigate();
@@ -84,7 +85,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const [submittingAnswer, setSubmittingAnswer] = useState(null);
   
   // Form states
-  const [articleForm, setArticleForm] = useState({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+  const [articleForm, setArticleForm] = useState({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5, season: 'all' });
   const [articleImageFile, setArticleImageFile] = useState(null);
   const [submittingArticle, setSubmittingArticle] = useState(false);
   const [replyTexts, setReplyTexts] = useState({});
@@ -115,6 +116,21 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   const [productForm, setProductForm] = useState({
     name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: []
   });
+
+  // Order states
+  const [sellerOrders, setSellerOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [selectedSellerOrder, setSelectedSellerOrder] = useState(null);
+
+  const displayAppointments = useMemo(() => {
+    const active = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed');
+    if (active.length > 0) {
+      return active.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
+    }
+    return [...appointments].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  }, [appointments]);
 
   // Dynamic Notifications Feed computed from appointments
   const notifications = useMemo(() => {
@@ -206,6 +222,50 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
   useEffect(() => {
     loadData();
+    fetchVetProducts();
+    fetchSellerOrders();
+  }, []);
+
+  const fetchVetProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const response = await getMyProducts();
+      const productsList = response.data?.products || response.data?.items || (Array.isArray(response.data) ? response.data : response || []);
+      setVetProducts(productsList);
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const fetchSellerOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const response = await getSellerOrders();
+      const ordersList = response.data?.orders || response.data?.items || (Array.isArray(response.data) ? response.data : response || []);
+      setSellerOrders(ordersList);
+    } catch (err) {
+      addToast(getErrorMessage(err), 'danger');
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const filteredSellerOrders = useMemo(() => {
+    const normalizedSearch = orderSearch.trim().toLowerCase();
+
+    return sellerOrders.filter((order) => {
+      const matchesStatus = orderStatusFilter === 'all' || String(order.status || '').toLowerCase() === orderStatusFilter;
+      const orderNumber = String(order.orderNumber || order._id || '').toLowerCase();
+      const matchesSearch = !normalizedSearch || orderNumber.includes(normalizedSearch);
+      return matchesStatus && matchesSearch;
+    });
+  }, [sellerOrders, orderSearch, orderStatusFilter]);
+
+  useEffect(() => {
+    fetchVetProducts();
+    fetchSellerOrders();
   }, []);
 
   const handleStatusToggle = async () => {
@@ -220,11 +280,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
   const handleConfirm = async (id) => {
     try {
+      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: 'confirmed' } : a));
       await confirmAppointment(id);
       addToast('Appointment confirmed', 'success');
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
+      loadData();
     }
   };
 
@@ -240,11 +302,14 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     }
     
     try {
+      const idToCancel = cancellingAppointmentId;
+      setAppointments(prev => prev.map(a => a._id === idToCancel ? { ...a, status: 'cancelled' } : a));
       await vetCancelAppointment(cancellingAppointmentId, cancellationReason);
       addToast('Appointment cancelled successfully', 'success');
       loadData();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
+      loadData();
     } finally {
       setCancellingAppointmentId(null);
       setCancellationReason('');
@@ -273,6 +338,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
         payload.append('content', articleForm.content);
         payload.append('summary', articleForm.summary || '');
         payload.append('readTime', articleForm.readTime || 5);
+        payload.append('season', articleForm.season || 'all');
         payload.append('image', articleImageFile);
         if (articleForm.tags && articleForm.tags.length > 0) {
           payload.append('tags', articleForm.tags[0]);
@@ -284,7 +350,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
       await submitVetArticle(payload, headers);
       addToast('Practitioner knowledge article published draft successfully', 'success');
-      setArticleForm({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5 });
+      setArticleForm({ title: '', content: '', summary: '', petType: [], tags: [], readTime: 5, season: 'all' });
       setArticleImageFile(null);
       
       const fileInput = document.querySelector('input[type="file"]');
@@ -503,81 +569,19 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     { id: 'forum', label: 'Community Forum', icon: Users },
   ];
 
-  // Load forum posts when forum tab is opened
-  useEffect(() => {
-    if (activeTab === 'forum' && forumPosts.length === 0) {
-      setForumLoading(true);
-      getForumPosts()
-        .then(res => {
-          const list = res.data?.posts || res.data?.items || (Array.isArray(res.data) ? res.data : res || []);
-          setForumPosts(list);
-        })
-        .catch(err => addToast(getErrorMessage(err), 'danger'))
-        .finally(() => setForumLoading(false));
-    }
-  }, [activeTab]);
-
-  // Load vet products when products tab is opened
-  const fetchVetProducts = async () => {
-    setProductsLoading(true);
-    try {
-      const res = await getMyProducts();
-      let products = unwrapItems(res);
-
-      if (products.length === 0) {
-        const currentUserId = user?._id || user?.id;
-        const publicProducts = unwrapItems(await getProducts({ isVerifiedSeller: true }));
-        products = publicProducts.filter((product) => {
-          const sellerId = product.sellerId?._id || product.sellerId?.id || product.sellerId;
-          return currentUserId && sellerId?.toString?.() === currentUserId.toString();
-        });
-      }
-
-      setVetProducts(products);
-    } catch (err) {
-      addToast(getErrorMessage(err), 'danger');
-    } finally {
-      setProductsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'products') {
-      fetchVetProducts();
-    }
-  }, [activeTab]);
-
-  const [sellerOrders, setSellerOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-
-  const fetchSellerOrders = async () => {
-    setOrdersLoading(true);
-    try {
-      const res = await getSellerOrders();
-      setSellerOrders(unwrapItems(res));
-    } catch (err) {
-      addToast(getErrorMessage(err), 'danger');
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'orders') {
-      fetchSellerOrders();
-    }
-  }, [activeTab]);
-
   const resetProductForm = () => {
-    setProductForm({ name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: [] });
+    setProductForm({
+      name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: []
+    });
     setCurrentProduct(null);
   };
 
   const handleProductFormChange = (e) => {
-    if (e.target.type === 'file') {
-      setProductForm({ ...productForm, [e.target.name]: e.target.files });
+    const { name, value, files } = e.target;
+    if (name === 'images') {
+      setProductForm(prev => ({ ...prev, [name]: files }));
     } else {
-      setProductForm({ ...productForm, [e.target.name]: e.target.value });
+      setProductForm(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -591,11 +595,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       form.append('price', Number(productForm.price));
       form.append('stock', Number(productForm.stock));
       form.append('category', productForm.category);
-      const ptArray = productForm.petType.split(',').map(s => s.trim()).filter(Boolean);
+      const ptArray = typeof productForm.petType === 'string' ? productForm.petType.split(',').map(s => s.trim()).filter(Boolean) : productForm.petType;
       ptArray.forEach(pt => form.append('petType', pt));
       if (productForm.images && productForm.images.length) {
         Array.from(productForm.images).forEach(file => {
           if (file instanceof File || file instanceof Blob) {
+            form.append('images', file);
+          } else if (typeof file === 'string') {
             form.append('images', file);
           }
         });
@@ -604,7 +610,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductAddOpen(false);
       resetProductForm();
       addToast('Product submitted for approval!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -637,7 +643,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductEditOpen(false);
       resetProductForm();
       addToast('Product updated successfully!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -651,7 +657,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     try {
       await removeProduct(product._id);
       addToast('Product deleted', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     }
@@ -722,37 +728,45 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
   return (
     <div className="flex bg-[#F8FAFC] h-screen overflow-hidden">
       {/* VetStream Left Workspace Sidebar */}
-      <aside className="w-72 bg-white border-r border-[#E2E8F0] flex flex-col shrink-0 overflow-y-auto">
+      <aside className="w-64 bg-white border-r border-[#E2E8F0] flex flex-col shrink-0 h-full overflow-hidden">
           {/* Header Info */}
-          <div className="p-6 border-b border-[#E2E8F0] shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar name={dashboard?.vet?.name || 'Dr.'} size="lg" className="border-2 border-[#0046CE]/10" />
-                <span className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${isVetOnline ? 'bg-success' : 'bg-danger'}`} />
+          <div className="px-4 py-3 border-b border-[#E2E8F0] shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#E2E8F0] border border-[#0046CE]/10">
+                  {dashboard?.vet?.profilePhoto ? (
+                    <img src={getImageUrl(dashboard.vet.profilePhoto)} alt={dashboard?.vet?.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-neutral-500">
+                      {(dashboard?.vet?.name || 'Dr.').charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${isVetOnline ? 'bg-success' : 'bg-danger'}`} />
               </div>
-              <div className="overflow-hidden">
-                <h4 className="font-semibold text-neutral-900 truncate">{dashboard?.vet?.name || 'Veterinary Surgeon'}</h4>
-                <p className="text-xs text-neutral-500 truncate">{dashboard?.vet?.specialisation || 'General Practice'}</p>
+              <div className="overflow-hidden min-w-0">
+                <h4 className="font-semibold text-sm text-neutral-900 truncate">{dashboard?.vet?.name || 'Veterinary Surgeon'}</h4>
+                <p className="text-[11px] text-neutral-500 truncate">{dashboard?.vet?.specialisation || 'General Practice'}</p>
               </div>
             </div>
             
             {/* Quick Status toggle */}
-            <div className="mt-4 flex items-center justify-between bg-neutral-50 rounded-xl p-3 border border-[#E2E8F0]">
-              <span className="text-xs font-semibold text-neutral-600 flex items-center gap-2">
-                {isVetOnline ? <Wifi className="h-3.5 w-3.5 text-success animate-pulse" /> : <WifiOff className="h-3.5 w-3.5 text-neutral-400" />}
+            <div className="mt-2.5 flex items-center justify-between bg-neutral-50 rounded-lg px-2.5 py-2 border border-[#E2E8F0]">
+              <span className="text-[11px] font-semibold text-neutral-600 flex items-center gap-1.5">
+                {isVetOnline ? <Wifi className="h-3 w-3 text-success animate-pulse" /> : <WifiOff className="h-3 w-3 text-neutral-400" />}
                 {isVetOnline ? 'Receiving Bookings' : 'Offline'}
               </span>
               <button 
                 onClick={handleStatusToggle}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isVetOnline ? 'bg-success' : 'bg-neutral-300'}`}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isVetOnline ? 'bg-success' : 'bg-neutral-300'}`}
               >
-                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isVetOnline ? 'translate-x-5' : 'translate-x-0'}`} />
+                <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isVetOnline ? 'translate-x-4' : 'translate-x-0'}`} />
               </button>
             </div>
           </div>
 
-          {/* Navigation Links — takes remaining space, no scroll */}
-          <nav className="flex-1 p-4 space-y-1 overflow-hidden">
+          {/* Navigation Links — compact, no scroll */}
+          <nav className="flex-1 px-3 py-2 space-y-0.5">
             {sidebarItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -760,13 +774,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition ${
                     isActive 
                       ? 'bg-[#0046CE]/10 text-[#0046CE]' 
                       : 'text-neutral-600 hover:bg-[#F8FAFC] hover:text-neutral-950'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-[#0046CE]' : 'text-neutral-400'}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-[#0046CE]' : 'text-neutral-400'}`} />
                   {item.label}
                 </button>
               );
@@ -956,7 +970,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {appointments.slice(0, 5).map((appt) => (
+                        {displayAppointments.map((appt) => (
                           <tr key={appt._id} className="border-b border-neutral-100 hover:bg-[#F8FAFC]/50 transition">
                             <td className="py-3 px-2 font-semibold text-neutral-900 flex items-center gap-2">
                               <Avatar name={appt.pet?.name} size="sm" />
@@ -1119,7 +1133,10 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                               <span 
                                 key={a._id || aIdx} 
                                 className={`h-2 w-2 rounded-full ${
-                                  a.status === 'confirmed' ? 'bg-success' : 'bg-warning'
+                                  a.status === 'confirmed' ? 'bg-success' : 
+                                  a.status === 'completed' ? 'bg-neutral-400' :
+                                  a.status === 'cancelled' ? 'bg-danger' : 
+                                  'bg-warning'
                                 }`} 
                               />
                             ))}
@@ -1380,6 +1397,16 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                     <option value="Pet Behavior">Pet Behavior</option>
                   </Select>
                 </div>
+                <Select
+                  label="Season"
+                  value={articleForm.season}
+                  onChange={(e) => setArticleForm(prev => ({ ...prev, season: e.target.value }))}
+                >
+                  <option value="all">All</option>
+                  <option value="monsoon">Monsoon</option>
+                  <option value="winter">Winter</option>
+                  <option value="summer">Summer</option>
+                </Select>
 
                 <div className="form-group">
                   <label className="form-label">Featured Image / Picture (Optional)</label>
@@ -1692,124 +1719,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
         {/* Tab 8: Community Forum (embedded with sidebar) */}
         {activeTab === 'forum' && (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-display text-4xl text-neutral-900 font-bold">Community Forum</h1>
-                <p className="text-neutral-500 mt-2">Browse questions from pet owners and share your expertise.</p>
-              </div>
-              <Link to="/forum/new" className="btn btn-primary btn-sm flex items-center gap-2">
-                <Plus className="h-4 w-4" /> New Post
-              </Link>
-            </div>
-
-            {forumLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-28 bg-white border border-[#E2E8F0] rounded-2xl animate-pulse" />
-                ))}
-              </div>
-            ) : forumPosts.length > 0 ? (
-              <div className="space-y-4">
-                {forumPosts.map(post => (
-                  <Card key={post._id} className="p-6 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-3 hover:border-[#0046CE]/30 transition">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#EFF6FF] flex items-center justify-center font-bold text-[#0046CE] text-sm">
-                          {(post.author?.name || 'M')[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-neutral-900 text-sm">{post.author?.name || 'Community Member'}</p>
-                          <p className="text-xs text-neutral-400">{formatDate(post.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {post.species && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0046CE] uppercase tracking-wide">{post.species}</span>
-                        )}
-                        <Link 
-                          to={`/forum/${post._id}`}
-                          onClick={e => e.stopPropagation()}
-                          className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-[#0046CE] transition"
-                          title="Open full thread"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    </div>
-
-                    <h3 className="font-bold text-neutral-900">{post.title}</h3>
-                    <p className="text-sm text-neutral-600 line-clamp-2">{post.content}</p>
-
-                    <div className="flex items-center gap-4 text-xs text-neutral-500 pt-1 border-t border-neutral-100">
-                      <span className="flex items-center gap-1">
-                        <ThumbsUp className="h-3.5 w-3.5" /> {post.likesCount || 0}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="h-3.5 w-3.5" /> {post.answersCount || post.answerCount || 0} Answers
-                      </span>
-                    </div>
-
-                    {/* Quick answer box */}
-                    <div className="flex items-center gap-3 pt-2">
-                      <Avatar name={dashboard?.vet?.name || 'Dr'} size="sm" />
-                      <input
-                        type="text"
-                        placeholder="Write an expert answer as a vet..."
-                        className="input flex-1 py-2 text-sm"
-                        value={forumAnswers[post._id] || ''}
-                        onChange={e => setForumAnswers(prev => ({ ...prev, [post._id]: e.target.value }))}
-                        onKeyDown={async (e) => {
-                          if (e.key === 'Enter' && forumAnswers[post._id]?.trim()) {
-                            setSubmittingAnswer(post._id);
-                            try {
-                              await addForumAnswer(post._id, { content: forumAnswers[post._id] });
-                              addToast('Answer posted!', 'success');
-                              setForumAnswers(prev => ({ ...prev, [post._id]: '' }));
-                              setForumPosts(prev => prev.map(p => p._id === post._id ? { ...p, answersCount: (p.answersCount || 0) + 1 } : p));
-                            } catch (err) {
-                              addToast(getErrorMessage(err), 'danger');
-                            } finally {
-                              setSubmittingAnswer(null);
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        className="btn btn-primary btn-sm flex items-center gap-1"
-                        disabled={!forumAnswers[post._id]?.trim() || submittingAnswer === post._id}
-                        onClick={async () => {
-                          if (!forumAnswers[post._id]?.trim()) return;
-                          setSubmittingAnswer(post._id);
-                          try {
-                            await addForumAnswer(post._id, { content: forumAnswers[post._id] });
-                            addToast('Answer posted!', 'success');
-                            setForumAnswers(prev => ({ ...prev, [post._id]: '' }));
-                            setForumPosts(prev => prev.map(p => p._id === post._id ? { ...p, answersCount: (p.answersCount || 0) + 1 } : p));
-                          } catch (err) {
-                            addToast(getErrorMessage(err), 'danger');
-                          } finally {
-                            setSubmittingAnswer(null);
-                          }
-                        }}
-                      >
-                        {submittingAnswer === post._id ? <span className="inline-block animate-spin h-3.5 w-3.5 rounded-full border-2 border-white border-r-transparent" /> : <Send className="h-3.5 w-3.5" />}
-                        Answer
-                      </button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-12 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl text-center">
-                <Users className="h-10 w-10 mx-auto text-neutral-300 stroke-1" />
-                <p className="text-neutral-500 mt-3 text-sm">No community posts yet.</p>
-                <Link to="/forum/new" className="btn btn-primary btn-sm mt-4 inline-flex items-center gap-2">
-                  <Plus className="h-4 w-4" /> Start a Discussion
-                </Link>
-              </Card>
-            )}
-          </div>
+          <ForumPage />
         )}
 
         {/* Tab: Products */}
@@ -1898,7 +1808,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                         <Badge variant="warning">⏳ Pending</Badge>
                       )}
                     </div>
-                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full mb-3 self-start capitalize">{product.category}</span>
+                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full mb-3 self-start">{product.category}</span>
                     <p className="text-[#0046CE] font-bold text-lg mb-2">Rs {product.price}</p>
                     <div className="flex gap-1.5 flex-wrap mb-3">
                       {(product.petType || []).map(pt => (
@@ -1924,58 +1834,54 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
             )}
 
             {/* Add / Edit Product Modal */}
-            {(productAddOpen || productEditOpen) && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-                <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-xl font-bold text-neutral-900">{productAddOpen ? 'Add Product' : 'Edit Product'}</h3>
-                    <button onClick={handleCloseProductModal} className="p-1 rounded-full hover:bg-neutral-100 text-neutral-500 transition">
-                      <X className="h-5 w-5" />
-                    </button>
+            <Modal
+              open={productAddOpen || productEditOpen}
+              onClose={handleCloseProductModal}
+              size="lg"
+              title={productAddOpen ? 'Add Product' : 'Edit Product'}
+            >
+              <div className="px-6 pb-6">
+                {productAddOpen && (
+                  <InfoBox type="info" className="mb-5">
+                    Your product will be reviewed by the PetSneha admin before appearing in the marketplace.
+                  </InfoBox>
+                )}
+
+                <form onSubmit={productAddOpen ? handleProductAddSubmit : handleProductEditSubmit} className="space-y-4">
+                  <Input name="name" label="Product Name" required value={productForm.name} onChange={handleProductFormChange} />
+                  <Textarea name="description" label="Description" required value={productForm.description} onChange={handleProductFormChange} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input name="price" label="Price (Rs)" type="number" min="0" required value={productForm.price} onChange={handleProductFormChange} />
+                    <Input name="stock" label="Stock" type="number" min="0" required value={productForm.stock} onChange={handleProductFormChange} />
                   </div>
-
-                  {productAddOpen && (
-                    <InfoBox type="info" className="mb-5">
-                      Your product will be reviewed by the PetSneha admin before appearing in the marketplace.
-                    </InfoBox>
-                  )}
-
-                  <form onSubmit={productAddOpen ? handleProductAddSubmit : handleProductEditSubmit} className="space-y-4">
-                    <Input name="name" label="Product Name" required value={productForm.name} onChange={handleProductFormChange} />
-                    <Textarea name="description" label="Description" required value={productForm.description} onChange={handleProductFormChange} />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input name="price" label="Price (Rs)" type="number" min="0" required value={productForm.price} onChange={handleProductFormChange} />
-                      <Input name="stock" label="Stock" type="number" min="0" required value={productForm.stock} onChange={handleProductFormChange} />
-                    </div>
-                    <Select name="category" label="Category" required value={productForm.category} onChange={handleProductFormChange}>
-                      <option value="food">Food</option>
-                      <option value="accessories">Accessories</option>
-                      <option value="shelter">Shelter</option>
-                      <option value="bodycare">Bodycare</option>
-                      <option value="wastemanagement">Waste Management</option>
-                    </Select>
-                    <Input name="petType" label="Pet Types (comma separated)" hint="e.g. Dog, Cat" required value={productForm.petType} onChange={handleProductFormChange} />
-                    <div className="form-group">
-                      <label htmlFor="productImages" className="form-label">Product Images</label>
-                      <input
-                        type="file"
-                        id="productImages"
-                        name="images"
-                        multiple
-                        accept="image/*"
-                        onChange={handleProductFormChange}
-                        className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#EFF6FF] file:text-[#0046CE] hover:file:bg-[#DBEAFE] transition cursor-pointer"
-                      />
-                      <p className="text-xs text-neutral-400 mt-1.5">Upload product pictures (JPEG, PNG — optional)</p>
-                    </div>
-                    <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-neutral-100">
-                      <Button type="button" variant="secondary" onClick={handleCloseProductModal}>Cancel</Button>
-                      <Button type="submit" loading={productFormLoading}>{productAddOpen ? 'Submit for Approval' : 'Save Changes'}</Button>
-                    </div>
-                  </form>
-                </div>
+                  <Select name="category" label="Category" required value={productForm.category} onChange={handleProductFormChange}>
+                    <option value="food">Food</option>
+                    <option value="accessories">Accessories</option>
+                    <option value="shelter">Shelter</option>
+                    <option value="bodycare">Bodycare</option>
+                    <option value="wastemanagement">Waste Management</option>
+                  </Select>
+                  <Input name="petType" label="Pet Types (comma separated)" hint="e.g. Dog, Cat" required value={productForm.petType} onChange={handleProductFormChange} />
+                  <div className="form-group">
+                    <label htmlFor="productImages" className="form-label">Product Images</label>
+                    <input
+                      type="file"
+                      id="productImages"
+                      name="images"
+                      multiple
+                      accept="image/*"
+                      onChange={handleProductFormChange}
+                      className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#EFF6FF] file:text-[#0046CE] hover:file:bg-[#DBEAFE] transition cursor-pointer"
+                    />
+                    <p className="text-xs text-neutral-400 mt-1.5">Upload product pictures (JPEG, PNG — optional)</p>
+                  </div>
+                  <div className="flex gap-3 justify-end pt-4 mt-2 border-t border-neutral-100">
+                    <Button type="button" variant="secondary" onClick={handleCloseProductModal}>Cancel</Button>
+                    <Button type="submit" loading={productFormLoading}>{productAddOpen ? 'Submit for Approval' : 'Save Changes'}</Button>
+                  </div>
+                </form>
               </div>
-            )}
+            </Modal>
           </div>
         )}
 
@@ -1987,25 +1893,45 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                 <h1 className="font-display text-4xl text-neutral-900 font-bold">Orders</h1>
                 <p className="text-neutral-500 mt-2">Orders containing your products from the marketplace.</p>
               </div>
-              <Button variant="secondary" onClick={fetchSellerOrders} disabled={ordersLoading}>
-                {ordersLoading ? <span className="inline-block animate-spin h-4 w-4 rounded-full border-2 border-current border-r-transparent mr-2" /> : null}
-                Refresh
-              </Button>
+              <div className="flex items-center gap-3 flex-wrap justify-end">
+                <Input
+                  value={orderSearch}
+                  onChange={(event) => setOrderSearch(event.target.value)}
+                  placeholder="Search order number"
+                  className="w-56"
+                />
+                <Select
+                  value={orderStatusFilter}
+                  onChange={(event) => setOrderStatusFilter(event.target.value)}
+                  className="w-44"
+                >
+                  <option value="all">All</option>
+                  <option value="placed">Placed</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </Select>
+                <Button variant="secondary" onClick={fetchSellerOrders} disabled={ordersLoading}>
+                  {ordersLoading ? <span className="inline-block animate-spin h-4 w-4 rounded-full border-2 border-current border-r-transparent mr-2" /> : null}
+                  Refresh
+                </Button>
+              </div>
             </div>
 
             {ordersLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
               </div>
-            ) : sellerOrders.length === 0 ? (
+            ) : filteredSellerOrders.length === 0 ? (
               <Card className="p-12 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl text-center">
                 <Package className="h-10 w-10 mx-auto text-neutral-300 stroke-1" />
                 <p className="font-semibold text-neutral-900 mt-3">No orders yet</p>
-                <p className="text-sm text-neutral-500 mt-1">Orders containing your approved products will appear here.</p>
+                <p className="text-sm text-neutral-500 mt-1">Orders matching your current filters will appear here.</p>
               </Card>
             ) : (
               <div className="space-y-4">
-                {sellerOrders.map(order => {
+                {filteredSellerOrders.map(order => {
                   const statusFlow = { placed: 'processing', processing: 'shipped', shipped: 'delivered' };
                   const statusLabel = { placed: 'Confirm', processing: 'Mark Shipped', shipped: 'Mark Delivered' };
                   const nextStatus = statusFlow[order.status];
@@ -2022,15 +1948,20 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                   };
 
                   return (
-                    <Card key={order._id} className="p-5 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-4">
+                    <Card
+                      key={order._id}
+                      className="p-5 bg-white border border-[#E2E8F0] shadow-sm rounded-2xl space-y-4 cursor-pointer hover:shadow-md transition"
+                      onClick={() => setSelectedSellerOrder(order)}
+                    >
                       <div className="flex items-start justify-between gap-3 flex-wrap">
                         <div>
                           <p className="font-bold text-neutral-900">Order #{order.orderNumber || order._id?.slice(-6)}</p>
                           <p className="text-xs text-neutral-500 mt-0.5">{formatDate(order.createdAt)} · {order.items?.length ?? 0} item(s)</p>
                           {order.deliveryAddress && (
-                            <p className="text-xs text-neutral-400 mt-0.5">
-                              Ship to: {[order.deliveryAddress.street, order.deliveryAddress.city, order.deliveryAddress.state].filter(Boolean).join(', ')}
-                            </p>
+                            <div className="text-xs text-neutral-600 mt-2 bg-neutral-50 rounded-lg p-2 space-y-0.5">
+                              <p className="font-semibold text-neutral-800">{order.deliveryAddress.fullName} · {order.deliveryAddress.phone}</p>
+                              <p>{order.deliveryAddress.address}, {order.deliveryAddress.area}</p>
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -2041,25 +1972,15 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
                             'warning'
                           }>{order.status || 'placed'}</Badge>
                           {nextStatus && (
-                            <Button size="sm" onClick={handleAdvanceStatus}>{statusLabel[order.status]}</Button>
+                            <Button size="sm" onClick={(event) => { event.stopPropagation(); handleAdvanceStatus(); }}>{statusLabel[order.status]}</Button>
                           )}
                         </div>
                       </div>
 
-                      {order.items && order.items.length > 0 && (
-                        <div className="border-t border-neutral-100 pt-3 space-y-2">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-neutral-800">{item.name || `Product #${idx + 1}`}</span>
-                              <span className="text-neutral-500">x{item.quantity} · Rs {item.price}</span>
-                            </div>
-                          ))}
-                          <div className="flex justify-between text-sm font-semibold text-neutral-900 border-t border-neutral-100 pt-2 mt-1">
-                            <span>Total</span>
-                            <span>Rs {order.total ?? order.totalAmount ?? 0}</span>
-                          </div>
-                        </div>
-                      )}
+                      <div className="border-t border-neutral-100 pt-3 flex items-center justify-between text-sm text-neutral-500">
+                        <span>{order.items?.length ?? 0} item(s)</span>
+                        <span className="font-semibold text-[#0046CE]">View details</span>
+                      </div>
                     </Card>
                   );
                 })}
@@ -2070,40 +1991,145 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
       </main>
 
-      {/* Cancellation Reason Modal */}
-      {cancellingAppointmentId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-xl font-bold text-neutral-900 mb-2">Cancel Appointment</h3>
-            <p className="text-sm text-neutral-600 mb-4">Please provide a reason for cancelling this appointment.</p>
-            
-            <Textarea
-              label="Cancellation Reason"
-              value={cancellationReason}
-              onChange={(e) => setCancellationReason(e.target.value)}
-              placeholder="Enter the reason for cancellation"
-              rows={3}
-            />
-            
-            <div className="flex gap-3 w-full mt-6">
-              <button 
-                type="button"
-                className="btn btn-secondary w-full"
-                onClick={handleCancelCancellation}
-              >
-                Keep
-              </button>
-              <button 
-                type="button"
-                className="btn btn-danger w-full text-white"
-                onClick={handleConfirmCancellation}
-              >
-                Cancel Now
-              </button>
+      <Modal
+        open={!!selectedSellerOrder}
+        onClose={() => setSelectedSellerOrder(null)}
+        size="lg"
+        title={selectedSellerOrder ? `Order #${selectedSellerOrder.orderNumber || selectedSellerOrder._id?.slice(-6)}` : 'Order details'}
+      >
+        {selectedSellerOrder ? (
+          <div className="px-6 pb-6 space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 space-y-2 text-sm text-[#475569]">
+                <p><span className="font-semibold text-[#1E293B]">Status:</span> {selectedSellerOrder.status || 'placed'}</p>
+                <p><span className="font-semibold text-[#1E293B]">Payment:</span> {String(selectedSellerOrder.paymentMethod || 'cod').toUpperCase()}</p>
+                <p><span className="font-semibold text-[#1E293B]">Created:</span> {formatDate(selectedSellerOrder.createdAt)}</p>
+                <p><span className="font-semibold text-[#1E293B]">Updated:</span> {formatDate(selectedSellerOrder.updatedAt)}</p>
+                <p><span className="font-semibold text-[#1E293B]">Total:</span> Rs {selectedSellerOrder.total ?? selectedSellerOrder.totalAmount ?? 0}</p>
+              </div>
+
+              {/* Buyer Details (derive from deliveryAddress when user fields missing) */}
+              <div className="rounded-2xl border border-[#E2E8F0] bg-[#FAFBFD] p-4 text-sm text-[#475569]">
+                <p className="font-semibold text-[#1E293B]">Buyer Details</p>
+                <div className="grid gap-2 sm:grid-cols-2 mt-3">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Name</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.name || selectedSellerOrder.deliveryAddress?.fullName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Email</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.email || selectedSellerOrder.deliveryAddress?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Phone</p>
+                    <p className="font-medium">{selectedSellerOrder.userId?.phone || selectedSellerOrder.deliveryAddress?.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 mb-1">Delivery Address</p>
+                    {selectedSellerOrder.deliveryAddress ? (
+                      <p className="text-[#475569] leading-relaxed">
+                        {selectedSellerOrder.deliveryAddress.address}
+                        {selectedSellerOrder.deliveryAddress.area ? `, ${selectedSellerOrder.deliveryAddress.area}` : ''}
+                      </p>
+                    ) : (
+                      <p className="font-medium">{selectedSellerOrder.userId?.address || 'N/A'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-[#64748B]">Items</h4>
+              <div className="space-y-3">
+                {selectedSellerOrder.items?.map((item, index) => {
+                  const product = item.productId || {};
+                  const imageSrc = Array.isArray(product.images) && product.images.length > 0 ? getImageUrl(product.images[0]) : null;
+                  const seller = product.sellerId || {};
+
+                  return (
+                    <div key={`${selectedSellerOrder._id}-${index}`} className="flex gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#F1F5F9]">
+                        {imageSrc ? (
+                          <img src={imageSrc} alt={product.name || item.name || 'Product'} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-2xl">📰</div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[#1E293B]">{product.name || item.name || `Product #${index + 1}`}</p>
+                            <p className="text-sm text-[#64748B]">Qty {item.quantity}</p>
+                            {seller.name ? <p className="text-xs text-[#64748B] mt-1">Seller: {seller.name}{seller.phone ? ` · ${seller.phone}` : ''}</p> : null}
+                          </div>
+                          <p className="text-sm font-semibold text-[#0046CE]">Rs {item.price}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              {selectedSellerOrder && (() => {
+                const statusFlow = { placed: 'processing', processing: 'shipped', shipped: 'delivered' };
+                const statusLabel = { placed: 'Confirm', processing: 'Mark Shipped', shipped: 'Mark Delivered' };
+                const nextStatus = statusFlow[selectedSellerOrder.status];
+                return nextStatus ? (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await updateOrderStatus(selectedSellerOrder._id, nextStatus);
+                        addToast(`Order marked as ${nextStatus}`, 'success');
+                        setSelectedSellerOrder(null);
+                        fetchSellerOrders();
+                      } catch (err) {
+                        addToast(getErrorMessage(err), 'danger');
+                      }
+                    }}
+                  >
+                    {statusLabel[selectedSellerOrder.status]}
+                  </Button>
+                ) : null;
+              })()}
             </div>
           </div>
+        ) : null}
+      </Modal>
+
+      {/* Cancellation Reason Modal */}
+      <Modal open={!!cancellingAppointmentId} onClose={handleCancelCancellation} size="sm" title="Cancel Appointment">
+        <div className="px-6 pb-6">
+          <p className="mb-4 text-sm text-neutral-600">Please provide a reason for cancelling this appointment.</p>
+          <Textarea
+            label="Cancellation Reason"
+            value={cancellationReason}
+            onChange={(e) => setCancellationReason(e.target.value)}
+            placeholder="Enter the reason for cancellation"
+            rows={3}
+          />
+
+          <div className="flex gap-3 w-full mt-6">
+            <button 
+              type="button"
+              className="btn btn-secondary w-full"
+              onClick={handleCancelCancellation}
+            >
+              Keep
+            </button>
+            <button 
+              type="button"
+              className="btn btn-danger w-full text-white"
+              onClick={handleConfirmCancellation}
+            >
+              Cancel Now
+            </button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

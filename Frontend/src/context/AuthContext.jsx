@@ -119,6 +119,10 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateUserLocally = (updatedFields) => {
+    setUser(prev => prev ? { ...prev, ...updatedFields } : null);
+  };
+
   const value = useMemo(
     () => ({
       user,
@@ -133,6 +137,7 @@ export function AuthProvider({ children }) {
       clearSession,
       getLoginPathForRole,
       refreshUser,
+      updateUserLocally,
     }),
     [language, loading, role, token, user],
   );

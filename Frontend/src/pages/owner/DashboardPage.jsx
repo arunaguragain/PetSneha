@@ -1,20 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Card, Skeleton } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
-import { getAppointments, getPets } from '../../api/pet.api';
+import { getAppointments, getPets, getPetReminders } from '../../api/pet.api';
+import { getArticles } from '../../api/content.api';
 import { getErrorMessage, getPetEmoji, unwrapItems } from '../../utils/api';
 import { getSavedVet } from '../../utils/ownerState';
 import { useToast } from '../../context/ToastContext';
-import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight, Clock, Pencil, Plus, MapPin, Phone, Heart, Star, ShoppingCart, MoreHorizontal, Syringe, ClipboardList, Dumbbell, BookOpen, Utensils, PawPrint } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Bell, Calendar, CalendarDays, ChevronRight, Clock, Pencil, Plus, MapPin, Phone, Heart, Star, ShoppingCart, MoreHorizontal, Syringe, ClipboardList, Dumbbell, BookOpen, Utensils, PawPrint, Newspaper } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [pets, setPets] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [seasonalArticle, setSeasonalArticle] = useState(null);
   const [error, setError] = useState('');
   const [savedVet, setSavedVet] = useState(null);
 
@@ -48,7 +54,39 @@ export default function DashboardPage() {
           || (Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : appointmentsResponse || []);
         setAppointments(appointmentsList);
 
+        if (petsList.length > 0) {
+          const remindersPromises = petsList.map(pet => getPetReminders(pet._id || pet.id).catch(() => null));
+          const remindersResponses = await Promise.all(remindersPromises);
+          const allReminders = remindersResponses.flatMap((res, index) => {
+            if (!res) return [];
+            const items = unwrapItems(res);
+            return items.map(item => ({ ...item, petName: petsList[index].name }));
+          });
+          setReminders(allReminders);
+        }
+
         setSavedVet(getSavedVet());
+
+        // Fetch latest 3 published articles for sidebar
+        try {
+          const artRes = await getArticles({ limit: 3, status: 'published' });
+          const artList = artRes?.data?.articles || artRes?.data?.items || artRes?.data || [];
+          setArticles(Array.isArray(artList) ? artList.slice(0, 3) : []);
+        } catch (_) {
+          // non-critical — leave articles empty
+        }
+
+        // Fetch specific Seasonal Alert article
+        try {
+          const seasonRes = await getArticles({ limit: 50 }); // Fetch enough to find it
+          const seasonList = seasonRes?.data?.articles || seasonRes?.data?.items || seasonRes?.data || [];
+          if (Array.isArray(seasonList)) {
+            const monsoonArticle = seasonList.find(a => a.title?.includes('Monsoon-Safe'));
+            if (monsoonArticle) {
+              setSeasonalArticle(monsoonArticle);
+            }
+          }
+        } catch (_) {}
       } catch (apiError) {
         const message = getErrorMessage(apiError);
         setError(message);
@@ -62,21 +100,32 @@ export default function DashboardPage() {
   }, [addToast]);
 
   const upcomingAppointments = useMemo(
-    () =>
-      [...appointments]
-        .filter((appointment) => ['pending', 'confirmed', 'scheduled'].includes(String(appointment.status).toLowerCase()))
+    () => {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      return [...appointments]
+        .filter((appointment) => {
+          const statusOk = ['pending', 'confirmed', 'scheduled'].includes(String(appointment.status).toLowerCase());
+          const apptDate = new Date(appointment.date || appointment.appointmentDate || 0);
+          return statusOk && apptDate >= startOfToday;
+        })
         .sort((left, right) => new Date(left.date || left.appointmentDate || 0) - new Date(right.date || right.appointmentDate || 0))
-        .slice(0, 5),
+        .slice(0, 3);
+    },
     [appointments],
   );
 
+  const upcomingVaccination = useMemo(() => {
+    return reminders
+      .filter(r => r.title?.toLowerCase().includes('vaccin') && new Date(r.dueDate) >= new Date())
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
+  }, [reminders]);
+
+  const pendingAlerts = useMemo(() => {
+    return reminders.filter(r => new Date(r.dueDate) < new Date());
+  }, [reminders]);
+
   const petNames = pets.length > 0 ? pets.map((p) => p.name).join(' and ') : 'your furry friends';
-  
-  // Mock upcoming events for the dashboard
-  const upcomingEvents = [
-    { id: 1, date: '2026-05-24', month: 'MAY', day: '24', title: 'Annual Health Checkup', pet: 'Mimi', clinic: 'Advanced Pet Hospital', subtitle: 'Mimi • Advanced Pet Hospital' },
-    { id: 2, date: '2026-06-02', month: 'JUN', day: '02', title: 'Grooming Session', pet: 'Buddy', clinic: 'Fluffy Tails Grooming', subtitle: 'Buddy • Fluffy Tails Grooming' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -95,10 +144,10 @@ export default function DashboardPage() {
               className="text-3xl font-semibold text-white"
               style={{ fontFamily: 'Literata, serif' }}
             >
-              Welcome back, {user?.name || 'Pet parent'}
+              {t('dashboard.welcomeBack')}, {user?.name || 'Pet parent'}
             </h2>
             <p className="text-sm text-white/70 mt-1.5">
-              Your furry friends {petNames} are doing great today.
+              Here's an overview for {petNames}.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -114,7 +163,7 @@ export default function DashboardPage() {
               className="flex items-center gap-2 bg-transparent text-white border border-white/80 hover:bg-white/10 rounded-xl px-5 py-2.5 text-sm font-semibold transition"
             >
               <Calendar size={15} />
-              Book Vet
+              {t('buttons.bookAppointment')}
             </button>
           </div>
         </div>
@@ -125,43 +174,43 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                NEXT VACCINATION
+                {t('pets.vaccinations')}
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                Buddy: June 15
+                {upcomingVaccination ? `${upcomingVaccination.petName || 'Pet'}: Upcoming` : 'No upcoming'}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">Rabies Booster</p>
+              <p className="text-sm text-[#64748B] mt-1">{upcomingVaccination ? new Date(upcomingVaccination.dueDate).toLocaleDateString() : (pets.length > 0 ? 'All up to date' : 'Add a pet first')}</p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
               <Syringe size={22} />
             </div>
           </div>
 
-          {/* Card 2 — Upcoming Events */}
+          {/* Card 2 — Upcoming Appointments */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div className="flex-1 pr-4">
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
-                Upcoming Events
+                UPCOMING APPOINTMENTS
               </p>
               <p
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                3 events due
+                {upcomingAppointments.length} Upcoming
               </p>
-              <div className="mt-3.5 w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#0046CE] rounded-full w-2/3" />
+              <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full mt-4 overflow-hidden">
+                <div className="h-full bg-[#0046CE] rounded-full" style={{ width: upcomingAppointments.length > 0 ? '100%' : '0%' }}></div>
               </div>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
-              <Dumbbell size={22} className="-rotate-45" />
+              <ClipboardList size={22} />
             </div>
           </div>
 
-          {/* Card 3 — Pending Alerts */}
+          {/* Card 3 — Alerts */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">
@@ -171,9 +220,11 @@ export default function DashboardPage() {
                 className="text-xl font-semibold text-[#1E293B] mt-3"
                 style={{ fontFamily: 'Literata, serif' }}
               >
-                2 Actions
+                {pendingAlerts.length} Alert{pendingAlerts.length !== 1 ? 's' : ''}
               </p>
-              <p className="text-sm text-[#64748B] mt-1">Verify Mimi's diet log</p>
+              <p className="text-sm text-[#64748B] mt-1">
+                {pendingAlerts.length > 0 ? pendingAlerts[0].title : 'All caught up!'}
+              </p>
             </div>
             <div className="text-[#0046CE] flex-shrink-0 mt-1">
               <Bell size={22} />
@@ -190,13 +241,16 @@ export default function DashboardPage() {
             className="text-[#0046CE] font-semibold text-lg mt-3"
             style={{ fontFamily: 'Literata, serif' }}
           >
-            Keep your pets cool during the Kathmandu heatwave.
+            {seasonalArticle?.title || 'Monsoon-Safe Walking Routes and Times'}
           </p>
           <p className="text-sm text-[#475569] mt-1.5 max-w-2xl leading-relaxed">
-            Ensure fresh water is available at all times and avoid walking during peak sun hours (11 AM - 4 PM).
+            {seasonalArticle?.summary || seasonalArticle?.excerpt || 'Reducing infection risk while still exercising your dog in the rain.'}
           </p>
-          <button onClick={() => navigate('/articles')} className="mt-3.5 text-sm text-[#0046CE] font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-            Read more tips <ChevronRight size={14} />
+          <button
+            onClick={() => seasonalArticle ? navigate(`/articles/${seasonalArticle._id || seasonalArticle.id}`) : navigate('/articles')}
+            className="mt-3.5 text-sm text-[#0046CE] font-semibold flex items-center gap-1 hover:gap-2 transition-all"
+          >
+            Read Article <ChevronRight size={14} />
           </button>
         </div>
 
@@ -210,14 +264,14 @@ export default function DashboardPage() {
                   className="text-xl font-semibold text-[#1E293B]"
                   style={{ fontFamily: 'Literata, serif' }}
                 >
-                  My Pets
+                  {t('dashboard.myPets')}
                 </h3>
                 <button
                   onClick={() => navigate('/pets/new')}
                   className="flex items-center gap-1.5 text-sm text-[#0046CE] font-medium hover:bg-[#EFF6FF] px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <Plus size={16} />
-                  Add pet
+                  {t('pets.addPet')}
                 </button>
               </div>
 
@@ -227,12 +281,12 @@ export default function DashboardPage() {
                   <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] flex items-center justify-center text-[#0046CE]">
                     <PawPrint size={28} />
                   </div>
-                  <p className="text-sm font-medium text-[#64748B]">No pets added yet.</p>
+                  <p className="text-sm font-medium text-[#64748B]">{t('pets.noPets')}</p>
                   <button
                     onClick={() => navigate('/pets/new')}
                     className="mt-1 bg-[#0046CE] text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-[#003DA8] transition"
                   >
-                    + Add your first pet
+                    + {t('pets.addPet')}
                   </button>
                 </div>
               ) : (
@@ -275,34 +329,49 @@ export default function DashboardPage() {
 
             {/* Upcoming Events */}
             <div>
-              <h3
-                className="text-xl font-semibold text-[#1E293B] mb-4"
-                style={{ fontFamily: 'Literata, serif' }}
-              >
-                Upcoming Events
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3
+                  className="text-xl font-semibold text-[#1E293B]"
+                  style={{ fontFamily: 'Literata, serif' }}
+                >
+                  {t('appointments.upcomingAppointments')}
+                </h3>
+                <button
+                  onClick={() => navigate('/records')}
+                  className="text-sm text-[#0046CE] font-semibold hover:underline"
+                >
+                  View all
+                </button>
+              </div>
               <div className="space-y-3">
-                {upcomingEvents?.length === 0 || !upcomingEvents ? (
+                {upcomingAppointments?.length === 0 || !upcomingAppointments ? (
                   <div className="bg-white border border-dashed border-[#E2E8F0] rounded-2xl py-10 text-center">
-                    <p className="text-sm text-[#64748B]">No upcoming events.</p>
+                    <p className="text-sm text-[#64748B]">{t('appointments.noAppointments')}</p>
                   </div>
                 ) : (
-                  upcomingEvents.map((event, i) => (
+                  upcomingAppointments.map((apt, i) => {
+                    const dateObj = new Date(apt.date || apt.appointmentDate);
+                    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
+                    const day = dateObj.getDate().toString().padStart(2, '0');
+                    const petName = apt.petId?.name || apt.petName || 'Pet';
+                    const clinicName = apt.vetId?.clinicName || apt.vetId?.name || apt.vetName || 'Clinic';
+                    return (
                     <div
-                      key={i}
-                      className="bg-white border border-[#E2E8F0] rounded-2xl px-5 py-4 flex items-center gap-5 shadow-sm hover:shadow-md transition"
+                      key={apt._id || i}
+                      onClick={() => navigate(`/appointments/${apt._id || apt.id}`)}
+                      className="bg-white border border-[#E2E8F0] rounded-2xl px-5 py-4 flex items-center gap-5 shadow-sm hover:shadow-md transition cursor-pointer"
                     >
                       <div className="bg-[#EFF6FF] rounded-xl px-3 py-2 text-center min-w-[56px] flex-shrink-0">
                         <p className="text-[10px] font-bold text-[#0046CE] uppercase tracking-wide">
-                          {event.month}
+                          {month}
                         </p>
                         <p className="text-2xl font-bold text-[#0046CE] leading-tight">
-                          {event.day}
+                          {day}
                         </p>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#1E293B] truncate">{event.title}</p>
-                        <p className="text-xs text-[#64748B] mt-0.5 truncate">{event.subtitle}</p>
+                        <p className="font-semibold text-[#1E293B] truncate">{apt.reason || 'Appointment'}</p>
+                        <p className="text-xs text-[#64748B] mt-0.5 truncate">{petName} • {clinicName}</p>
                       </div>
                       <div className="flex gap-1.5 flex-shrink-0">
                         <span className="w-2 h-2 rounded-full bg-[#0046CE]" />
@@ -310,7 +379,7 @@ export default function DashboardPage() {
                         <span className="w-2 h-2 rounded-full bg-[#E2E8F0]" />
                       </div>
                     </div>
-                  ))
+                  )})
                 )}
               </div>
             </div>
@@ -325,26 +394,32 @@ export default function DashboardPage() {
               </p>
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#F1F5F9] overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#0046CE] font-bold text-lg relative">
                     <img
-                      src={savedVet?.photo || savedVet?.imageUrl ? getPhotoUrl(savedVet.photo || savedVet.imageUrl) : '/vet-anita.png'}
-                      className="w-full h-full object-cover"
-                      alt={savedVet?.name || 'Dr. Anita Rai'}
+                      src={savedVet?.profilePhoto || savedVet?.imageUrl ? getPhotoUrl(savedVet.profilePhoto || savedVet.imageUrl) : `/${savedVet?.name}.png`}
+                      className="w-full h-full object-cover absolute inset-0"
+                      alt={savedVet?.name}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
                     />
+                    <span>{(savedVet?.name ? savedVet.name.replace('Dr. ', '') : 'V')[0].toUpperCase()}</span>
                   </div>
                   <div>
                     <p className="font-semibold text-[#1E293B] text-sm">
-                      {savedVet?.name || 'Dr. Anita Rai'}
+                      {savedVet?.name || 'No saved vet'}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {savedVet?.clinicName || savedVet?.clinic || 'Happy paws Clinic , Lalitpur'}
+                      {savedVet?.clinicName || savedVet?.clinic || 'Save a vet from directory'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-4 text-xs text-[#64748B]">
-                  <Clock size={13} />
-                  <span>Next Available: Today, 4:00 PM</span>
-                </div>
+                {savedVet?.nextAvailable && (
+                  <div className="flex items-center gap-2 mt-4 text-xs text-[#64748B]">
+                    <Clock size={13} />
+                    <span>Next Available: {savedVet.nextAvailable}</span>
+                  </div>
+                )}
                 <button className="w-full mt-4 bg-[#0046CE] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#003DA8] transition">
                   Call Now
                 </button>
@@ -366,26 +441,43 @@ export default function DashboardPage() {
 
             {/* Articles */}
             <div>
-              <p className="text-sm font-bold text-[#1E293B] mb-3">Articles</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-[#1E293B]">Articles</p>
+                <button onClick={() => navigate('/articles')} className="text-xs text-[#0046CE] font-medium hover:underline">View all</button>
+              </div>
               <div className="space-y-2.5">
-                {[
-                  { icon: <BookOpen size={18} />, title: 'Puppy Training 101', time: '5 min read', iconBg: 'bg-[#475569]' },
-                  { icon: <Utensils size={18} />, title: 'Healthy Diet for Cats', time: '3 min read', iconBg: 'bg-[#0046CE]' },
-                ].map((a, i) => (
+                {articles.length > 0 ? articles.map((article, i) => (
                   <div
-                    key={i}
-                    onClick={() => navigate('/articles')}
-                    className="bg-white border border-[#E2E8F0] rounded-xl p-3.5 flex items-center gap-3 hover:shadow-sm transition cursor-pointer"
+                    key={article._id || article.id || i}
+                    onClick={() => navigate(`/articles/${article._id || article.id}`)}
+                    className="bg-white border border-[#E2E8F0] rounded-xl p-3.5 flex items-center gap-3 hover:shadow-sm hover:border-[#BFDBFE] transition cursor-pointer"
                   >
-                    <div className={`w-10 h-10 ${a.iconBg} text-white rounded-xl flex items-center justify-center flex-shrink-0`}>
-                      {a.icon}
+                    <div className={`w-10 h-10 ${i === 0 ? 'bg-[#475569]' : 'bg-[#0046CE]'} text-white rounded-xl flex items-center justify-center flex-shrink-0`}>
+                      <BookOpen size={18} />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[#1E293B]">{a.title}</p>
-                      <p className="text-xs text-[#64748B] mt-0.5">{a.time}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#1E293B] truncate">{article.title}</p>
+                      <p className="text-xs text-[#64748B] mt-0.5">{article.readTime ? `${article.readTime} min read` : 'Read now'}</p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  // Fallback placeholders while loading / if no articles yet
+                  [{ title: 'Puppy Training 101', time: '5 min read', bg: 'bg-[#475569]' }, { title: 'Healthy Diet for Cats', time: '3 min read', bg: 'bg-[#0046CE]' }].map((a, i) => (
+                    <div
+                      key={i}
+                      onClick={() => navigate('/articles')}
+                      className="bg-white border border-[#E2E8F0] rounded-xl p-3.5 flex items-center gap-3 hover:shadow-sm transition cursor-pointer"
+                    >
+                      <div className={`w-10 h-10 ${a.bg} text-white rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <BookOpen size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1E293B]">{a.title}</p>
+                        <p className="text-xs text-[#64748B] mt-0.5">{a.time}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import VetLayout from './components/VetLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useAuth } from './hooks/useAuth';
 import { Card, PageHeader } from './components/ui';
 import { getPets } from './api/pet.api';
 import HomePage from './pages/HomePage';
@@ -15,6 +16,7 @@ import DashboardPage from './pages/owner/DashboardPage';
 import AddPetPage from './pages/owner/AddPetPage';
 import EditPetPage from './pages/owner/EditPetPage';
 import PetProfilePage from './pages/owner/PetProfilePage';
+import AddHealthRecordPage from './pages/owner/AddHealthRecordPage';
 import SetReminderPage from './pages/owner/SetReminderPage';
 import ReminderSuccessPage from './pages/owner/ReminderSuccessPage';
 import VetDirectoryPage from './pages/owner/VetDirectoryPage';
@@ -30,16 +32,32 @@ import ForumCreatePage from './pages/owner/ForumCreatePage';
 import ShopPage from './pages/owner/ShopPage';
 import ProductPage from './pages/owner/ProductPage';
 import CheckoutPage from './pages/owner/CheckoutPage';
+import OrdersPage from './pages/owner/OrdersPage';
+import UserProfilePage from './pages/owner/UserProfilePage';
 import VetDashboardPage from './pages/vet/VetDashboardPage';
 import VetAppointmentsPage from './pages/vet/VetAppointmentsPage';
 import VetArticlesPage from './pages/vet/VetArticlesPage';
 import VetLandingPage from './pages/vet/VetLandingPage';
 import VetRegisterPage from './pages/vet/VetRegisterPage';
 import VetProductsPage from './pages/vet/VetProductsPage';
+import VetForumPage from './pages/vet/VetForumPage';
 import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import OnboardingPage from './pages/owner/OnboardingPage';
 
 function AuthenticatedLayout() {
+  const { user } = useAuth();
+  
+  if (user?.role === 'admin') {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
+        <main className="flex-1">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -114,7 +132,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['petOwner', 'vet', 'admin']} />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
       </Route>
 
@@ -126,18 +144,25 @@ export default function App() {
         </Route>
       </Route>
 
+      <Route element={<ProtectedRoute allowedRoles={['petOwner', 'admin']} />}>
+        <Route element={<AuthenticatedLayout />}>
+          <Route path="/vets" element={<VetDirectoryPage />} />
+          <Route path="/vets/:vetId" element={<VetProfilePage />} />
+        </Route>
+      </Route>
+
       <Route element={<ProtectedRoute allowedRoles={['petOwner']} />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
           <Route path="/records" element={<RecordsGateway />} />
           <Route path="/pets/new" element={<AddPetPage />} />
           <Route path="/pets/:petId" element={<PetProfilePage />} />
+          <Route path="/pets/:petId/records/new" element={<AddHealthRecordPage />} />
           <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
           <Route path="/pets/:petId/edit" element={<EditPetPage />} />
           <Route path="/reminders/new" element={<SetReminderPage />} />
           <Route path="/reminders/success" element={<ReminderSuccessPage />} />
-          <Route path="/vets" element={<VetDirectoryPage />} />
-          <Route path="/vets/:vetId" element={<VetProfilePage />} />
           <Route path="/vets/:vetId/book" element={<BookingPage />} />
           <Route path="/emergency" element={<EmergencyPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
@@ -146,6 +171,7 @@ export default function App() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/products/:productId" element={<ProductPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Route>
       </Route>
 
@@ -154,6 +180,7 @@ export default function App() {
           <Route path="/vet/dashboard" element={<VetDashboardPage />} />
           <Route path="/vet/appointments" element={<VetAppointmentsPage />} />
           <Route path="/vet/articles" element={<VetArticlesPage />} />
+          <Route path="/vet/forum" element={<VetForumPage />} />
           <Route path="/vet/products" element={<VetProductsPage />} />
         </Route>
       </Route>

@@ -26,6 +26,9 @@ const getMe = catchAsync(async (req, res) => {
  * @returns {Promise<void>}
  */
 const updateMe = catchAsync(async (req, res) => {
+  if (req.file) {
+    req.body.profilePhoto = '/uploads/users/' + req.file.filename;
+  }
   const user = await userService.updateProfile(req.user.id, req.body);
   sendItem(res, 'user', user);
 });
@@ -42,6 +45,28 @@ const toggleLanguage = catchAsync(async (req, res) => {
 });
 
 /**
+ * Gets the current user's onboarding checklist.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+const getChecklist = catchAsync(async (req, res) => {
+  const checklist = await userService.getChecklist(req.user.id);
+  sendItem(res, 'checklist', checklist);
+});
+
+/**
+ * Updates the current user's onboarding checklist.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+const updateChecklist = catchAsync(async (req, res) => {
+  const checklist = await userService.updateChecklist(req.user.id, req.body);
+  sendItem(res, 'checklist', checklist);
+});
+
+/**
  * Deletes the current user account.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -52,4 +77,4 @@ const deleteMe = catchAsync(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { getMe, updateMe, toggleLanguage, deleteMe };
+module.exports = { getMe, updateMe, toggleLanguage, getChecklist, updateChecklist, deleteMe };

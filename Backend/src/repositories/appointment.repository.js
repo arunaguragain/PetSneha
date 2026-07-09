@@ -1,5 +1,15 @@
 const Appointment = require('../models/appointment.model');
 
+const POPULATE_FIELDS = [
+  { path: 'petId', select: 'name species breed profilePhoto' },
+  { path: 'vetId', select: 'name clinicName clinicAddress consultationFee profilePhoto' },
+  { path: 'petOwnerId', select: 'name email phone profilePhoto' },
+];
+
+function withPopulate(query) {
+  return query.populate(POPULATE_FIELDS);
+}
+
 /**
  * Creates an appointment.
  * @param {object} payload
@@ -15,7 +25,7 @@ async function create(payload) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findByUserId(userId) {
-  return Appointment.find({ petOwnerId: userId }).sort('-date');
+  return withPopulate(Appointment.find({ petOwnerId: userId }).sort('-date'));
 }
 
 /**
@@ -23,7 +33,7 @@ async function findByUserId(userId) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findAll() {
-  return Appointment.find().sort('-date');
+  return withPopulate(Appointment.find().sort('-date'));
 }
 
 /**
@@ -32,7 +42,7 @@ async function findAll() {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findByVetId(vetId) {
-  return Appointment.find({ vetId }).sort('-date');
+  return withPopulate(Appointment.find({ vetId }).sort('-date'));
 }
 
 /**
@@ -41,7 +51,7 @@ async function findByVetId(vetId) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findByPetOwnerId(petOwnerId) {
-  return Appointment.find({ petOwnerId }).sort('-date');
+  return withPopulate(Appointment.find({ petOwnerId }).sort('-date'));
 }
 
 /**
@@ -71,6 +81,15 @@ async function findById(id) {
 }
 
 /**
+ * Finds an appointment by ID, populated with pet, vet, and owner details.
+ * @param {string} id
+ * @returns {Promise<import('mongoose').Document|null>}
+ */
+async function findByIdPopulated(id) {
+  return withPopulate(Appointment.findById(id));
+}
+
+/**
  * Updates an appointment by ID.
  * @param {string} id
  * @param {object} payload
@@ -89,4 +108,4 @@ async function deleteManyByUserId(userId) {
   return Appointment.deleteMany({ petOwnerId: userId });
 }
 
-module.exports = { create, findByUserId, findAll, findByVetId, findByPetOwnerId, findByVetIdAndDate, findById, updateById, deleteManyByUserId };
+module.exports = { create, findByUserId, findAll, findByVetId, findByPetOwnerId, findByVetIdAndDate, findById, findByIdPopulated, updateById, deleteManyByUserId };

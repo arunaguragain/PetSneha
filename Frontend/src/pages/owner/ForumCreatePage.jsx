@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, Input, Textarea } from '../../components/ui';
+import { Button, Input, Modal, Select, Textarea } from '../../components/ui';
 import { createForumPost } from '../../api/content.api';
 import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
@@ -9,7 +9,7 @@ export default function ForumCreatePage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '' });
+  const [form, setForm] = useState({ title: '', content: '', group: 'all', isAnonymous: false });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -26,20 +26,42 @@ export default function ForumCreatePage() {
   };
 
   return (
-    <div className="w-full bg-white min-h-full">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <Link to="/forum" className="font-semibold text-neutral-600 hover:text-primary-600">← Back to forum</Link>
-        <Card className="mt-4 p-6">
-          <h1 className="font-display text-4xl text-neutral-900">Create forum post</h1>
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <Input label="Title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
-            <Textarea label="Content" value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} rows={8} />
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => navigate('/forum')}>Cancel</Button>
-              <Button type="submit" loading={loading}>Post</Button>
-            </div>
-          </form>
-        </Card>
+    <div className="w-full bg-white min-h-screen">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
+        <Link to="/forum" className="font-semibold text-[#64748B] hover:text-[#0046CE] mb-6 inline-block">← Back to forum</Link>
+        <div className="max-w-4xl">
+          <Modal open onClose={() => navigate('/forum')} size="lg" title="Create forum post">
+            <form className="px-6 pb-6 space-y-5" onSubmit={handleSubmit}>
+              <Input label="Title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} required />
+              <Textarea label="Content" value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} rows={8} required />
+              <Select
+                label="Group"
+                value={form.group}
+                onChange={(event) => setForm((current) => ({ ...current, group: event.target.value }))}
+              >
+                <option value="all">All</option>
+                <option value="dogs">Dogs</option>
+                <option value="cats">Cats</option>
+                <option value="newOwners">New Owners</option>
+                <option value="emergency">Emergency</option>
+              </Select>
+              <label className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-sm text-[#475569]">
+                <input
+                  id="anonymous"
+                  type="checkbox"
+                  checked={form.isAnonymous}
+                  onChange={(event) => setForm((current) => ({ ...current, isAnonymous: event.target.checked }))}
+                  className="h-4 w-4 rounded border border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                Post anonymously
+              </label>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="secondary" onClick={() => navigate('/forum')}>Cancel</Button>
+                <Button type="submit" loading={loading}>Post</Button>
+              </div>
+            </form>
+          </Modal>
+        </div>
       </div>
     </div>
   );

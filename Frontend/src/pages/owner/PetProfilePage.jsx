@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Divider, Input, Select, Skeleton, StarRating, Tabs, Textarea, VerifiedBadge } from '../../components/ui';
-import { cancelAppointment, deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord } from '../../api/pet.api';
+import { cancelAppointment, deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord, deleteReminder } from '../../api/pet.api';
+import { getArticles } from '../../api/content.api';
 import { getErrorMessage, formatCurrency, formatDate, unwrapItems, unwrapItem, getPetEmoji, getStatusTone } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { Download, Plus, Calendar as CalendarIcon, Mail, Bell, Edit2, Trash2, ArrowRight, Check } from 'lucide-react';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const infoFields = [
   { key: 'breed', label: 'Breed' },
@@ -27,9 +29,7 @@ export default function PetProfilePage() {
   const [reminders, setReminders] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [activeTab, setActiveTab] = useState('health');
-  const [recordModalOpen, setRecordModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [recordForm, setRecordForm] = useState({ title: '', type: '', date: '', nextDueDate: '', status: 'done', description: '' });
+  const [tipArticle, setTipArticle] = useState(null);
 
   // Guard first — BEFORE any fetch
   useEffect(() => {
@@ -52,7 +52,10 @@ export default function PetProfilePage() {
       const appointmentsList = appointmentsRes.data?.appointments
         || appointmentsRes.data?.items
         || (Array.isArray(appointmentsRes.data) ? appointmentsRes.data : appointmentsRes || []);
-      setAppointments(appointmentsList.filter((appointment) => String(appointment.petId || appointment.pet?._id || appointment.pet?.id) === String(petId)));
+      setAppointments(appointmentsList.filter((appointment) => {
+        const apptPetId = appointment.petId?._id || appointment.petId || appointment.pet?._id || appointment.pet?.id;
+        return String(apptPetId) === String(petId);
+      }));
     } catch (error) {
       addToast(getErrorMessage(error) || 'Unable to refresh appointments', 'danger');
     }
@@ -108,7 +111,10 @@ export default function PetProfilePage() {
         const appointmentsList = appointmentsRes.data?.appointments
           || appointmentsRes.data?.items
           || (Array.isArray(appointmentsRes.data) ? appointmentsRes.data : appointmentsRes || []);
-        setAppointments(appointmentsList.filter((appointment) => String(appointment.petId || appointment.pet?._id || appointment.pet?.id) === String(petId)));
+        setAppointments(appointmentsList.filter((appointment) => {
+          const apptPetId = appointment.petId?._id || appointment.petId || appointment.pet?._id || appointment.pet?.id;
+          return String(apptPetId) === String(petId);
+        }));
       } catch (error) {
         addToast(getErrorMessage(error) || 'Failed to load pet profile', 'danger');
         navigate('/dashboard');
@@ -119,6 +125,35 @@ export default function PetProfilePage() {
 
     fetchAll();
   }, [petId, navigate, addToast]);
+
+  // Fetch a relevant article whenever pet loads
+  useEffect(() => {
+    if (!pet) return;
+    const rawSpecies = (pet.species || pet.type || '').toLowerCase().trim();
+    // Map species to search keywords that will match article titles/content
+    const keywordMap = {
+      dog: 'dog',
+      puppy: 'dog',
+      cat: 'cat',
+      kitten: 'cat',
+      bird: 'bird',
+      parrot: 'parrot',
+      rabbit: 'rabbit',
+      fish: 'fish',
+      hamster: 'hamster',
+      turtle: 'turtle',
+      guinea: 'guinea',
+    };
+    // Find the best matching keyword
+    const keyword = Object.entries(keywordMap).find(([k]) => rawSpecies.includes(k))?.[1] || rawSpecies || 'pet';
+
+    getArticles({ petType: keyword, limit: 1, status: 'published' })
+      .then((res) => {
+        const items = res.data?.articles || res.data?.items || [];
+        if (items.length > 0) setTipArticle(items[0]);
+      })
+      .catch(() => {});
+  }, [pet]);
 
   const handleDownloadPDF = async () => {
     try {
@@ -158,19 +193,23 @@ export default function PetProfilePage() {
     }
   };
 
-  const handleAddRecord = async (event) => {
-    event.preventDefault();
+  const handleDeleteReminder = async (reminderId) => {
+    const isConfirmed = await confirm({
+      title: 'Delete Reminder',
+      message: 'Are you sure you want to delete this reminder?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+
+    if (!isConfirmed) return;
+
     try {
-      setSubmitting(true);
-      await createHealthRecord(petId, recordForm);
-      const response = await getHealthRecords(petId);
-      setRecords(unwrapItems(response));
-      addToast('Health record added', 'success');
-      setRecordModalOpen(false);
+      await deleteReminder(reminderId);
+      setReminders(prev => prev.filter(r => (r._id || r.id) !== reminderId));
+      addToast('Reminder deleted', 'success');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -276,12 +315,12 @@ export default function PetProfilePage() {
                   <h2 className="text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
                     Vaccination History
                   </h2>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button 
-                      onClick={() => setRecordModalOpen(true)} 
-                      className="flex items-center gap-1 bg-[#0046CE] hover:bg-[#003DA8] text-white rounded-xl px-4 py-2 text-sm font-semibold transition"
+                      onClick={() => navigate(`/pets/${petId}/records/new`)}
+                      className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition"
                     >
-                      <Plus size={14} /> Add record manually
+                      + Add record manually
                     </button>
                     <button 
                       onClick={handleDownloadPDF} 
@@ -347,10 +386,14 @@ export default function PetProfilePage() {
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
                 <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-3">Primary Vet</p>
                 <div className="flex items-center gap-3">
-                  <img src="/vet-anita.png" alt="Vet" className="w-12 h-12 rounded-full object-cover bg-[#F1F5F9] border-2 border-[#E2E8F0]" />
+                  <Avatar
+                    src={(() => { const p = pet.savedVet?.profilePhoto || pet.savedVet?.imageUrl || pet.primaryVet?.profilePhoto || pet.primaryVet?.imageUrl; return p ? getImageUrl(p) : undefined; })()}
+                    name={pet.savedVet?.name || pet.primaryVet?.name || 'Dr. Anita Rai'}
+                    size="lg"
+                  />
                   <div>
-                    <div className="font-semibold text-[#1E293B] text-sm">Dr. Anita Rai</div>
-                    <div className="text-xs text-[#64748B]">Happy Paws Clinic, Lalitpur</div>
+                    <div className="font-semibold text-[#1E293B] text-sm">{pet.savedVet?.name || pet.primaryVet?.name || 'Dr. Anita Rai'}</div>
+                    <div className="text-xs text-[#64748B]">{pet.savedVet?.clinicName || pet.primaryVet?.clinicName || 'Happy Paws Clinic, Lalitpur'}</div>
                   </div>
                 </div>
                 <button 
@@ -362,19 +405,37 @@ export default function PetProfilePage() {
               </div>
 
               {/* Tip Card */}
-              <div className="bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-3 uppercase tracking-wider">Tip</span>
-                <h3 className="font-bold text-white text-base">Summer Tip</h3>
-                <p className="text-sm text-white/90 mt-1.5 leading-relaxed font-medium">
-                  Labradors like {pet.name || 'your pet'} need extra hydration during Kathmandu summers. Ensure fresh water is always available.
-                </p>
-                <div 
-                  onClick={() => navigate('/articles')} 
-                  className="text-xs text-white hover:text-white/90 mt-4 flex items-center gap-1 cursor-pointer font-semibold underline"
+              {tipArticle ? (
+                <div
+                  className="bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white rounded-2xl p-5 shadow-sm relative overflow-hidden cursor-pointer"
+                  onClick={() => navigate(`/articles/${tipArticle._id}`)}
                 >
-                  Read more articles <ArrowRight className="w-3.5 h-3.5" />
+                  <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
+                    {tipArticle.category || 'Tip'}
+                  </span>
+                  <h3 className="font-bold text-white text-sm line-clamp-2">{tipArticle.title}</h3>
+                  <p className="text-xs text-white/85 mt-1.5 leading-relaxed line-clamp-2">
+                    {tipArticle.summary || tipArticle.excerpt || tipArticle.content?.slice(0, 100)}
+                  </p>
+                  <div className="text-xs text-white hover:text-white/90 mt-3 flex items-center gap-1 font-semibold underline">
+                    Read article <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                  <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-3 uppercase tracking-wider">Tip</span>
+                  <h3 className="font-bold text-white text-base">Care Tip</h3>
+                  <p className="text-sm text-white/90 mt-1.5 leading-relaxed font-medium">
+                    Keep your pet healthy with regular vet check-ups and a balanced diet.
+                  </p>
+                  <div
+                    onClick={() => navigate('/articles')}
+                    className="text-xs text-white hover:text-white/90 mt-4 flex items-center gap-1 cursor-pointer font-semibold underline"
+                  >
+                    Read more articles <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -393,40 +454,35 @@ export default function PetProfilePage() {
             
             <h2 className="text-xl font-bold text-[#1E293B] mt-4" style={{ fontFamily: 'Literata, serif' }}>Active Reminders</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+            <div className="space-y-3 mt-3">
               {activeReminders.length > 0 ? activeReminders.map((reminder) => (
-                <div key={reminder._id || reminder.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition">
-                  <div className="flex justify-between items-start">
-                    <Bell className="w-5 h-5 text-[#0046CE]" />
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => navigate(`/reminders/new?petId=${petId}`)} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
-                      <button className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                <div key={reminder._id || reminder.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <Bell className="w-5 h-5 text-[#0046CE] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-[#1E293B] truncate">{reminder.title}</h3>
+                      <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
+                        <CalendarIcon className="w-3.5 h-3.5" /> {formatDate(reminder.dueDate)}
+                      </div>
+                      {(reminder.notifyVia || []).filter(v => v !== 'push').length > 0 && (
+                        <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
+                          <Mail className="w-3.5 h-3.5" /> Notify via email
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <h3 className="font-semibold text-[#1E293B] mt-3 truncate">{reminder.title}</h3>
-                  <div className="text-sm text-[#64748B] flex items-center gap-1 mt-1 truncate">
-                    <CalendarIcon className="w-4 h-4" /> {formatDate(reminder.dueDate)}
-                  </div>
-                  <div className="text-sm text-[#64748B] flex items-center gap-1 mt-1 truncate">
-                    <Mail className="w-4 h-4" /> Notify via {(reminder.notifyVia || ['Email']).join(', ')}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => navigate(`/reminders/new?petId=${petId}`, { state: { reminder, from: location.pathname } })} className="text-[#64748B] hover:text-[#1E293B]"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteReminder(reminder._id || reminder.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               )) : (
-                <div className="col-span-3 border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
+                <div className="border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
                   No active reminders. Add one to keep track of medications or events.
                 </div>
               )}
             </div>
 
-            <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-4 mt-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-[#0046CE] font-semibold">Never miss a health milestone</h3>
-                <p className="text-sm text-[#64748B] mt-0.5">Enable push notifications to get alerts directly on your device.</p>
-              </div>
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-[#E2E8F0]">
-                <Bell className="w-6 h-6 text-[#0046CE]" />
-              </div>
-            </div>
           </div>
         )}
 
@@ -439,8 +495,16 @@ export default function PetProfilePage() {
                 <Card key={appointment._id || appointment.id} className="p-4 shadow-sm hover:shadow-md transition">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="space-y-2">
-                      <p className="text-sm text-[#64748B]">{appointment.vet?.clinicName || appointment.vet?.name || appointment.vetName || 'Vet clinic'}</p>
-                      <h3 className="font-semibold text-[#1E293B]">{appointment.vet?.name ? `Dr. ${appointment.vet.name}` : appointment.vetName || 'Vet visit'}</h3>
+                      <p className="text-sm text-[#64748B]">
+                        {appointment.vetId?.clinicName || appointment.vet?.clinicName || appointment.vetName || '—'}
+                      </p>
+                      <h3 className="font-semibold text-[#1E293B]">
+                        {appointment.vetId?.name
+                          ? (appointment.vetId.name.startsWith('Dr') ? appointment.vetId.name : `Dr. ${appointment.vetId.name}`)
+                          : appointment.vet?.name
+                          ? (appointment.vet.name.startsWith('Dr') ? appointment.vet.name : `Dr. ${appointment.vet.name}`)
+                          : appointment.vetName || 'Vet visit'}
+                      </h3>
                       <div className="text-sm text-[#475569] flex flex-wrap gap-2 items-center">
                         <span>{formatDate(appointment.date || appointment.appointmentDate)}</span>
                         <span>•</span>
@@ -481,52 +545,7 @@ export default function PetProfilePage() {
 
       </div>
 
-      {/* Record Modal */}
-      {recordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E293B]/60 px-4 backdrop-blur-sm">
-          <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-lg text-[#1E293B] mb-4" style={{ fontFamily: 'Literata, serif' }}>Add health record</h3>
-            <form className="space-y-4" onSubmit={handleAddRecord}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Title</label>
-                  <input type="text" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.title} onChange={(event) => setRecordForm((current) => ({ ...current, title: event.target.value }))} required />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Type</label>
-                  <input type="text" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.type} onChange={(event) => setRecordForm((current) => ({ ...current, type: event.target.value }))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Date</label>
-                  <input type="date" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.date} onChange={(event) => setRecordForm((current) => ({ ...current, date: event.target.value }))} required />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Next due date</label>
-                  <input type="date" className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.nextDueDate} onChange={(event) => setRecordForm((current) => ({ ...current, nextDueDate: event.target.value }))} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Status</label>
-                  <select className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" value={recordForm.status} onChange={(event) => setRecordForm((current) => ({ ...current, status: event.target.value }))}>
-                    <option value="done">Done</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#64748B] uppercase mb-1">Description</label>
-                <textarea className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE] resize-none" rows={4} value={recordForm.description} onChange={(event) => setRecordForm((current) => ({ ...current, description: event.target.value }))} />
-              </div>
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[#E2E8F0]">
-                <button type="button" className="px-4 py-2 text-sm font-medium text-[#64748B] hover:bg-[#F8FAFC] rounded-lg transition" onClick={() => setRecordModalOpen(false)}>Cancel</button>
-                <button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-medium bg-[#0046CE] text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-70">
-                  {submitting ? 'Saving...' : 'Save record'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

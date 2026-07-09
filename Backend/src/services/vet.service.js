@@ -1,6 +1,7 @@
 const vetRepository = require('../repositories/vet.repository');
 const appointmentRepository = require('../repositories/appointment.repository');
 const userRepository = require('../repositories/user.repository');
+const adminService = require('./admin.service');
 const AppError = require('../utils/AppError');
 
 function parseNumber(value) {
@@ -134,7 +135,7 @@ async function updateVetProfile(currentUser, vetId, payload) {
     // Sync profile photo to user model if uploaded
     if (payload.profilePhoto && vet.userId) {
       try {
-        await userRepository.updateById(vet.userId, { photo: payload.profilePhoto });
+        await userRepository.updateById(vet.userId, { profilePhoto: payload.profilePhoto });
       } catch (err) {
         console.error('Failed to sync photo to user model:', err);
         // Don't throw error - profile was updated successfully
@@ -182,12 +183,7 @@ async function verifyVet(currentUser, vetId) {
     throw new AppError('Only admins can verify vets.', 403);
   }
 
-  const vet = await vetRepository.findById(vetId);
-  if (!vet) {
-    throw new AppError('Vet not found.', 404);
-  }
-
-  return vetRepository.updateById(vetId, { isVerified: true });
+  return adminService.approveVet(vetId);
 }
 
 /**

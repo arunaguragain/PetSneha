@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Avatar, Badge, Button, Card, Input, Select, Spinner } from '../../components/ui';
+import { useTranslation } from 'react-i18next';
+import { Avatar, Badge, Button, Card, ConfirmationOverlay, Input, Select, Spinner } from '../../components/ui';
 import { bookAppointment, getVet, getVetSlots } from '../../api/vet.api';
 import { getPets } from '../../api/pet.api';
 import { formatCurrency, formatDate, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
 import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowLeft, CheckCircle2, MapPin, Info, Mail } from 'lucide-react';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const buildCalendarDays = (monthDate) => {
   const year = monthDate.getFullYear();
@@ -31,6 +33,7 @@ const buildCalendarDays = (monthDate) => {
 export default function BookingPage() {
   const { vetId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -105,7 +108,7 @@ export default function BookingPage() {
 
   const handleConfirmBooking = async () => {
     if (!selectedPetId) {
-      addToast('Please select a pet', 'danger');
+      addToast(t('booking.selectPetWarning'), 'danger');
       return;
     }
     setBookingError('');
@@ -128,7 +131,7 @@ export default function BookingPage() {
         response;
 
       if (!appointment || !appointment._id) {
-        throw new Error('Could not read booking confirmation from server response');
+        throw new Error(t('booking.invalidResponse'));
       }
 
       // Show the static info overlay — no auto-navigation, no spinner
@@ -138,7 +141,7 @@ export default function BookingPage() {
       const message =
         typeof error === 'string'
           ? error
-          : error?.response?.data?.message || error?.message || 'Booking failed. Please try again.';
+          : error?.response?.data?.message || error?.message || t('booking.bookingFailed');
       setBookingError(message);
       addToast(message, 'danger');
     } finally {
@@ -152,7 +155,7 @@ export default function BookingPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-[#64748B]">Loading...</div>;
+    return <div className="p-8 text-center text-[#64748B]">{t('common.loading')}</div>;
   }
 
   const fee = vet?.consultationFee || vet?.fee || 800;
@@ -161,44 +164,32 @@ export default function BookingPage() {
 
   return (
     <div className="bg-white min-h-screen relative">
-      {showInfoOverlay && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-[fadeInUp_0.3s_ease]">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-[#EFF6FF] flex items-center justify-center">
-                <Mail className="w-8 h-8 text-[#0046CE]" />
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-neutral-900" style={{ fontFamily: 'Literata, serif' }}>
-              Your appointment request has been sent
-            </h2>
-            <p className="text-neutral-500 text-sm mt-3 leading-relaxed">
-              Dr. {vet?.name} will confirm your appointment shortly. You will
-              receive an email at <strong className="text-neutral-700">{user?.email}</strong> once
-              it is confirmed, along with all the details.
-            </p>
-            <button
-              onClick={handleOverlayContinue}
-              className="mt-6 w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-semibold transition"
-            >
-              Got it →
-            </button>
+      <ConfirmationOverlay
+        open={showInfoOverlay}
+        icon={<Mail className="h-8 w-8" />}
+        title={t('booking.requestSent')}
+        description={t('booking.requestSentBody', { vetName: vet?.name, email: user?.email })}
+        actions={(
+          <Button type="button" onClick={handleOverlayContinue} fullWidth>
+            {t('booking.gotIt')}
+          </Button>
+        )}
+      />
+      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px]">
+        
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#1E293B] mb-1" style={{ fontFamily: 'Literata, serif' }}>{t('booking.title')}</h1>
+            <p className="text-sm text-[#64748B]">{t('booking.subtitle')}</p>
           </div>
+          <button
+            onClick={() => navigate(`/vets/${vetId}`)} 
+            className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('booking.backToProfile')}
+          </button>
         </div>
-      )}
-      <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto">
-        
-        {/* Back link */}
-        <div 
-          onClick={() => navigate(`/vets/${vetId}`)} 
-          className="text-sm text-[#0046CE] cursor-pointer mb-6 flex items-center gap-1 hover:underline w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Profile
-        </div>
-        
-        {/* Header */}
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Book an Appointment</h1>
-        <p className="text-sm text-[#64748B] mt-1">Schedule a visit with your preferred veterinarian.</p>
 
         {/* Stepper */}
         <div className="flex items-center gap-2 my-8">
@@ -207,7 +198,7 @@ export default function BookingPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 1 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               1
             </div>
-            <span className={`font-medium ${step >= 1 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>Select Date</span>
+            <span className={`font-medium ${step >= 1 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('booking.selectDate')}</span>
           </div>
           
           <div className="flex-1 h-px bg-[#E2E8F0]"></div>
@@ -217,7 +208,7 @@ export default function BookingPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 2 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               2
             </div>
-            <span className={`font-medium ${step >= 2 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>Pick Time</span>
+            <span className={`font-medium ${step >= 2 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('booking.selectTime')}</span>
           </div>
           
           <div className="flex-1 h-px bg-[#E2E8F0]"></div>
@@ -227,7 +218,7 @@ export default function BookingPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 3 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               3
             </div>
-            <span className={`font-medium ${step >= 3 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>Confirm</span>
+            <span className={`font-medium ${step >= 3 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('booking.confirm')}</span>
           </div>
         </div>
 
@@ -288,7 +279,7 @@ export default function BookingPage() {
             {selectedDate && (
               <div className="mt-6">
                 <h2 className="text-sm font-semibold text-[#1E293B] flex items-center gap-1">
-                  <Clock className="w-4 h-4 text-[#0046CE]" /> Available Time Slots
+                  <Clock className="w-4 h-4 text-[#0046CE]" /> {t('booking.availableTimeSlots')}
                 </h2>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] mt-3">
@@ -312,7 +303,7 @@ export default function BookingPage() {
                     );
                   }) : (
                     <div className="col-span-3 text-sm text-[#64748B] p-4 bg-[#F8FAFC] rounded-xl text-center border border-[#E2E8F0]">
-                      No slots available for this date.
+                      {t('booking.noSlotsAvailable')}
                     </div>
                   )}
                 </div>
@@ -327,46 +318,46 @@ export default function BookingPage() {
               <img src={getImageUrl(vet?.profilePhoto || vet?.imageUrl)} alt={vet?.name} className="w-full h-20 object-cover rounded-lg bg-[#F1F5F9]" />
               
               <h3 className="font-semibold text-[#1E293B] mt-3">{vet?.name}</h3>
-              <p className="text-sm text-[#64748B]">{vet?.specialisation || 'General Practice'}</p>
+              <p className="text-sm text-[#64748B]">{vet?.specialisation || t('booking.generalPractice')}</p>
               
               <div className="mt-3 space-y-2">
                 <div className="flex items-start gap-2 text-sm text-[#64748B]">
                   <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>{vet?.clinicName || vet?.location || 'Clinic Details Unavailable'}</span>
+                  <span>{vet?.clinicName || vet?.location || t('booking.clinicDetailsUnavailable')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Calendar className="w-4 h-4 flex-shrink-0" />
-                  <span>{selectedDate ? formatDate(selectedDate) : 'Select a date'} {selectedSlot && `• ${selectedSlot}`}</span>
+                  <span>{selectedDate ? formatDate(selectedDate) : t('booking.selectDatePrompt')} {selectedSlot && `• ${selectedSlot}`}</span>
                 </div>
               </div>
 
               {/* Pet Selection */}
               <div className="mt-4 pt-4 border-t border-[#E2E8F0]">
-                <label className="block text-xs font-semibold text-[#64748B] uppercase mb-2">Patient Details</label>
+                <label className="block text-xs font-semibold text-[#64748B] uppercase mb-2">{t('booking.patientDetails')}</label>
                 <select 
                   className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]"
                   value={selectedPetId} 
                   onChange={(e) => setSelectedPetId(e.target.value)}
                 >
-                  <option value="">Select your pet...</option>
+                  <option value="">{t('booking.selectPet')}</option>
                   {pets.map((pet) => <option key={pet._id} value={pet._id}>{pet.name}</option>)}
                 </select>
               </div>
 
               {/* Fee Breakdown */}
-              <h4 className="text-xs font-semibold text-[#64748B] uppercase mt-4">Fee Breakdown</h4>
+              <h4 className="text-xs font-semibold text-[#64748B] uppercase mt-4">{t('booking.feeBreakdown')}</h4>
               <div className="space-y-1 mt-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[#64748B]">Consultation Fee</span>
+                  <span className="text-[#64748B]">{t('booking.consultationFee')}</span>
                   <span className="text-[#1E293B]">NPR {fee}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#64748B]">Service Charge (5%)</span>
+                  <span className="text-[#64748B]">{t('booking.serviceCharge')}</span>
                   <span className="text-[#1E293B]">NPR {serviceCharge}</span>
                 </div>
                 <div className="border-t border-[#E2E8F0] my-2"></div>
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-[#1E293B]">Total Payable</span>
+                  <span className="font-semibold text-[#1E293B]">{t('booking.totalPayable')}</span>
                   <span className="font-bold text-[#0046CE] text-base">NPR {total}</span>
                 </div>
               </div>
@@ -376,15 +367,15 @@ export default function BookingPage() {
                 disabled={!selectedDate || !selectedSlot || !selectedPetId || submitting}
                 className="w-full bg-[#0046CE] text-white rounded-lg py-3 text-sm font-semibold mt-4 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {submitting ? 'Sending...' : (
+                {submitting ? t('booking.sending') : (
                   <span className="flex items-center justify-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" /> Confirm booking
+                    <CheckCircle2 className="w-4 h-4" /> {t('booking.confirmBooking')}
                   </span>
                 )}
               </button>
               
               <div className="text-xs text-[#64748B] text-center mt-2">
-                By confirming, you agree to PetSneha's terms of service.
+                {t('booking.termsNotice')}
               </div>
             </div>
           </div>

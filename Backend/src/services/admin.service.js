@@ -80,6 +80,15 @@ async function reactivateUser(targetUserId) {
 }
 
 /**
+ * Get all pets with pagination and search.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllPets(filters) {
+  return adminRepository.getAllPets(filters);
+}
+
+/**
  * Get all pending vet verifications.
  * @returns {Promise}
  */
@@ -97,12 +106,40 @@ async function getAllVets(filters) {
 }
 
 /**
+ * Get all articles.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllArticles(filters) {
+  return adminRepository.getAllArticles(filters);
+}
+
+/**
+ * Get all products.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllProducts(filters) {
+  return adminRepository.getAllProducts(filters);
+}
+
+/**
+ * Get all forum posts.
+ * @param {object} filters
+ * @returns {Promise}
+ */
+async function getAllForumPosts(filters) {
+  return adminRepository.getAllForumPosts(filters);
+}
+
+/**
  * Approve a vet.
  * @param {string} vetId
  * @returns {Promise}
  */
 async function approveVet(vetId) {
-  const vet = (await adminRepository.getAllVets({})).find((item) => item._id.toString() === vetId);
+  const vets = await adminRepository.getAllVets({});
+  const vet = vets.items.find((item) => item._id.toString() === vetId);
   if (!vet) {
     throw new AppError('Vet not found.', 404);
   }
@@ -121,7 +158,8 @@ async function approveVet(vetId) {
  * @returns {Promise}
  */
 async function rejectVet(vetId, reason) {
-  const vet = (await adminRepository.getAllVets({})).find((item) => item._id.toString() === vetId);
+  const vets = await adminRepository.getAllVets({});
+  const vet = vets.items.find((item) => item._id.toString() === vetId);
   if (!vet) {
     throw new AppError('Vet not found.', 404);
   }
@@ -262,8 +300,12 @@ module.exports = {
   getUserById,
   deactivateUser,
   reactivateUser,
+  getAllPets,
   getPendingVets,
   getAllVets,
+  getAllArticles,
+  getAllProducts,
+  getAllForumPosts,
   approveVet,
   rejectVet,
   getPendingArticles,

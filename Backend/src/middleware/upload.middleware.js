@@ -8,6 +8,7 @@ const uploadFolders = {
   products: path.join(uploadsRoot, 'products'),
   articles: path.join(uploadsRoot, 'articles'),
   vets: path.join(uploadsRoot, 'vets'),
+  users: path.join(uploadsRoot, 'users'),
 };
 
 Object.values(uploadFolders).forEach((folder) => {

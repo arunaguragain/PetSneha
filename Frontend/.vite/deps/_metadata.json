@@ -1,64 +1,73 @@
 {
-  "hash": "b9b0a279",
+  "hash": "fe1e8541",
   "configHash": "234bdc79",
-  "lockfileHash": "e99ae732",
-  "browserHash": "9221285e",
+  "lockfileHash": "eee0b7b2",
+  "browserHash": "9f79bd6b",
   "optimized": {
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "e61c8c5e",
+      "fileHash": "5019c043",
       "needsInterop": true
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "7440f1fe",
+      "fileHash": "38761a8a",
       "needsInterop": true
     },
     "react-router-dom": {
       "src": "../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "cefd193c",
+      "fileHash": "aa5c7690",
       "needsInterop": false
     },
     "i18next": {
       "src": "../../node_modules/i18next/dist/esm/i18next.js",
       "file": "i18next.js",
-      "fileHash": "e281114f",
+      "fileHash": "6d5d805b",
       "needsInterop": false
     },
     "react-i18next": {
       "src": "../../node_modules/react-i18next/dist/es/index.js",
       "file": "react-i18next.js",
-      "fileHash": "bb2c05e9",
+      "fileHash": "2070aab2",
       "needsInterop": false
     },
     "lucide-react": {
       "src": "../../node_modules/lucide-react/dist/esm/lucide-react.mjs",
       "file": "lucide-react.js",
-      "fileHash": "e5f66963",
+      "fileHash": "0ac93f68",
       "needsInterop": false
     },
     "axios": {
       "src": "../../node_modules/axios/index.js",
       "file": "axios.js",
-      "fileHash": "222d33a4",
+      "fileHash": "ee281fc1",
+      "needsInterop": false
+    },
+    "recharts": {
+      "src": "../../node_modules/recharts/es6/index.js",
+      "file": "recharts.js",
+      "fileHash": "c8eb186a",
       "needsInterop": false
     }
   },
   "chunks": {
-    "chunk-TNTPHDQH": {
-      "file": "chunk-TNTPHDQH.js"
-    },
     "chunk-5POZ67ZZ": {
       "file": "chunk-5POZ67ZZ.js"
     },
-    "chunk-32E4H3EV": {
-      "file": "chunk-32E4H3EV.js"
+    "chunk-JMVEG3FK": {
+      "file": "chunk-JMVEG3FK.js"
     },
-    "chunk-G3PMV62Z": {
-      "file": "chunk-G3PMV62Z.js"
+    "chunk-RGC4LH2H": {
+      "file": "chunk-RGC4LH2H.js"
+    },
+    "chunk-TWJRYSII": {
+      "file": "chunk-TWJRYSII.js"
+    },
+    "chunk-DC5AMYBS": {
+      "file": "chunk-DC5AMYBS.js"
     }
   }
 }
