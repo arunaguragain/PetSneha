@@ -556,6 +556,13 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     { id: 'forum', label: 'Community Forum', icon: Users },
   ];
 
+  const resetProductForm = () => {
+    setProductForm({
+      name: '', description: '', price: '', category: 'food', petType: '', stock: '', images: []
+    });
+    setCurrentProduct(null);
+  };
+
   const handleProductFormChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'images') {
@@ -590,7 +597,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductAddOpen(false);
       resetProductForm();
       addToast('Product submitted for approval!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -623,7 +630,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
       setProductEditOpen(false);
       resetProductForm();
       addToast('Product updated successfully!', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     } finally {
@@ -637,7 +644,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
     try {
       await removeProduct(product._id);
       addToast('Product deleted', 'success');
-      fetchVetProducts();
+      await fetchVetProducts();
     } catch (err) {
       addToast(getErrorMessage(err), 'danger');
     }
