@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const userController = require('../controllers/user.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validate.middleware');
+const { createUploader, parseFormFields } = require('../middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -24,7 +25,14 @@ router.patch(
 	userController.updateChecklist
 );
 
-router.patch('/me', [body('name').optional().trim().notEmpty().withMessage('Name cannot be empty.')], validateRequest, userController.updateMe);
+router.patch(
+	'/me',
+	createUploader('users').single('profilePhoto'),
+	parseFormFields,
+	[body('name').optional().trim().notEmpty().withMessage('Name cannot be empty.')],
+	validateRequest,
+	userController.updateMe
+);
 
 router.patch('/me/language', userController.toggleLanguage);
 
