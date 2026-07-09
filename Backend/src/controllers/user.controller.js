@@ -26,6 +26,9 @@ const getMe = catchAsync(async (req, res) => {
  * @returns {Promise<void>}
  */
 const updateMe = catchAsync(async (req, res) => {
+  if (req.file) {
+    req.body.profilePhoto = '/uploads/users/' + req.file.filename;
+  }
   const user = await userService.updateProfile(req.user.id, req.body);
   sendItem(res, 'user', user);
 });
