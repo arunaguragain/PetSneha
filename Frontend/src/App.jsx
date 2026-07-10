@@ -44,6 +44,11 @@ import VetForumPage from './pages/vet/VetForumPage';
 import AppointmentDetailPage from './pages/owner/AppointmentDetailPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import OnboardingPage from './pages/owner/OnboardingPage';
+import AboutUsPage from './pages/AboutUsPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import HelpCenterPage from './pages/HelpCenterPage';
 
 function AuthenticatedLayout() {
   const { user } = useAuth();
@@ -129,6 +134,16 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/about-us" element={<AboutUsPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/help-center" element={<HelpCenterPage />} />
+      <Route path="/vet/about-us" element={<AboutUsPage />} />
+      <Route path="/vet/contact" element={<ContactPage />} />
+      <Route path="/vet/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/vet/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/vet/help-center" element={<HelpCenterPage />} />
 
       <Route element={<ProtectedRoute allowedRoles={['petOwner', 'vet', 'admin']} />}>
         <Route element={<AuthenticatedLayout />}>

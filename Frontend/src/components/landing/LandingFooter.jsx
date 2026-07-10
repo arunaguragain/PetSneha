@@ -1,7 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const footerLinks = ['Privacy Policy', 'Terms of Service', 'Contact Us', 'About Us'];
+const footerLinks = [
+  { name: 'Privacy Policy', path: '/privacy-policy' },
+  { name: 'Terms of Service', path: '/terms-of-service' },
+  { name: 'Contact Us', path: '/contact' },
+  { name: 'About Us', path: '/about-us' }
+];
 
 export default function LandingFooter({ logoSrc }) {
   return (
@@ -15,9 +20,9 @@ export default function LandingFooter({ logoSrc }) {
 
           <nav className="flex flex-wrap gap-6 text-sm text-white/70 items-center">
             {footerLinks.map((link) => (
-              <a key={link} href="#top" className="transition hover:text-white">
-                {link}
-              </a>
+              <Link key={link.name} to={link.path} className="transition hover:text-white">
+                {link.name}
+              </Link>
             ))}
             <span className="text-white/30 hidden md:inline">|</span>
             <Link to="/vets-landing" className="transition text-primary-400 hover:text-primary-300 font-semibold">
