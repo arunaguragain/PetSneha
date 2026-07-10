@@ -67,7 +67,7 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
   const progressLabel = `${completedCount} of ${checklistItems.length} done`;
 
   return (
-    <div className={variant === 'full' ? 'bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm' : 'mt-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm'}>
+    <div className={variant === 'full' ? 'bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm h-full flex flex-col' : 'rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm h-full flex flex-col'}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-wide text-[#64748B]">ESSENTIALS</div>
@@ -78,7 +78,7 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
       </div>
 
       <div className="mt-4 space-y-2">
-        {checklistItems.map((item) => {
+        {checklistItems.slice(0, variant === 'compact' ? 2 : 4).map((item) => {
           const checked = Boolean(checklist[item.key]);
           return (
             <button
@@ -105,7 +105,7 @@ export default function OwnerChecklistPanel({ variant = 'compact' }) {
         <button
           type="button"
           onClick={() => navigate('/onboarding')}
-          className="mt-4 flex items-center gap-1 text-sm font-medium text-[#0046CE] hover:underline"
+          className="mt-auto pt-4 flex items-center gap-1 text-sm font-medium text-[#0046CE] hover:underline"
         >
           View Full Checklist <ArrowRight className="h-4 w-4" />
         </button>

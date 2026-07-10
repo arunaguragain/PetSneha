@@ -59,8 +59,8 @@ export default function ArticlesPage() {
     const loadForumPosts = async () => {
       try {
         setForumLoading(true);
-        const response = await getForumPosts({ limit: 3 });
-        setForumPosts(unwrapItems(response).slice(0, 3));
+        const response = await getForumPosts({ limit: 2 });
+        setForumPosts(unwrapItems(response).slice(0, 2));
       } catch (apiError) {
         addToast(getErrorMessage(apiError), 'danger');
       } finally {
@@ -72,7 +72,7 @@ export default function ArticlesPage() {
   }, [addToast]);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-slate-50 min-h-screen">
       <div className="max-w-[1440px] mx-auto px-8 py-10">
         
         {/* Hero banner */}
@@ -103,45 +103,48 @@ export default function ArticlesPage() {
         </div>
 
         {/* Three column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        <div className="flex flex-col md:flex-row gap-6 mt-8 items-stretch">
           
           {/* Left (col-span-1) - Checklist */}
-          <div>
+          <div className="w-full md:flex-1 flex flex-col">
             <OwnerChecklistPanel variant="compact" />
           </div>
 
           {/* Centre (col-span-1) - Seasonal */}
-          <div>
-            <div className="text-xs text-amber-600 uppercase tracking-wide flex items-center gap-1 mb-2">
-              <AlertTriangle className="w-3.5 h-3.5" /> {t('articles.seasonalAlert', 'SEASONAL ALERT')}
-            </div>
+          <div className="w-full md:flex-1 flex flex-col">
             {seasonalArticle ? (
               <div
-                className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
+                className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer flex-1 flex flex-col relative"
                 onClick={() => navigate(`/articles/${seasonalArticle._id}`)}
               >
-                <div className="w-full h-32 bg-[#F1F5F9] relative">
+                <div className="w-full h-36 bg-[#F1F5F9] relative">
                   {seasonalArticle.imageUrl ? (
                     <img src={seasonalArticle.imageUrl} alt={seasonalArticle.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 bg-blue-100 flex items-center justify-center text-4xl">📰</div>
                   )}
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] text-amber-600 uppercase tracking-wider flex items-center gap-1 font-bold shadow-sm">
+                    <AlertTriangle className="w-3 h-3" /> {t('articles.seasonalAlert', 'SEASONAL ALERT')}
+                  </div>
                 </div>
-                <div className="p-4">
+                <div className="p-4 flex-1 flex flex-col">
                   <h3 className="font-semibold text-[#1E293B] line-clamp-1">{translateDynamic(seasonalArticle.title, i18n.language)}</h3>
                   <p className="text-sm text-[#64748B] mt-1 line-clamp-2">{translateDynamic(seasonalArticle.summary || seasonalArticle.excerpt || seasonalArticle.content, i18n.language)}</p>
-                  <div className="text-sm text-[#0046CE] mt-3 font-medium">{t('articles.readArticle', 'Read Article')}</div>
+                  <div className="text-sm text-[#0046CE] mt-auto pt-4 font-medium">{t('articles.readArticle', 'Read Article')}</div>
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-[#E2E8F0] p-5 text-sm text-[#64748B]">
+              <div className="rounded-2xl border border-dashed border-[#E2E8F0] bg-white p-5 text-sm text-[#64748B]">
+                <div className="text-xs text-amber-600 uppercase tracking-wide flex items-center gap-1 mb-2 font-semibold">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {t('articles.seasonalAlert', 'SEASONAL ALERT')}
+                </div>
                 {t('articles.noSeasonal', 'No seasonal article available for this time of year yet.')}
               </div>
             )}
           </div>
 
           {/* Right (col-span-1) - Forum */}
-          <div>
+          <div className="w-full md:flex-1 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm h-full flex flex-col">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-base font-semibold text-[#1E293B] cursor-pointer hover:text-[#0046CE]" onClick={() => navigate('/forum')}>{t('forum.communityTitle', 'Community Forum')}</h2>
               <button 
@@ -164,7 +167,7 @@ export default function ArticlesPage() {
                   const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name || 'Member';
                   
                   return (
-                    <div key={post._id} onClick={() => navigate(`/forum/${post._id}`)} className="bg-[#F8FAFC] rounded-xl p-3 cursor-pointer hover:bg-[#F1F5F9] transition">
+                    <div key={post._id} onClick={() => navigate(`/forum/${post._id}`)} className="group rounded-xl p-3 -mx-3 cursor-pointer hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
                       <div className="flex items-center gap-2 text-xs text-[#64748B] mb-1">
                         <span className="font-medium text-[#1E293B]">{authorName}</span>
                         <span>•</span>
@@ -182,7 +185,7 @@ export default function ArticlesPage() {
                     </div>
                   );
               }) : (
-                <div className="bg-[#F8FAFC] rounded-xl p-3 text-xs text-[#64748B]">
+                <div className="rounded-xl p-3 text-xs text-[#64748B] bg-slate-50">
                   {t('forum.noRecent', 'No recent forum posts.')}
                 </div>
               )}
@@ -190,7 +193,7 @@ export default function ArticlesPage() {
             
             <button 
               onClick={() => navigate('/forum')}
-              className="w-full mt-4 text-center text-sm font-medium text-[#0046CE] hover:underline"
+              className="w-full mt-auto pt-4 text-center text-sm font-medium text-[#0046CE] hover:underline"
             >
               {t('articles.browseDiscussions', 'Browse all discussions →')}
             </button>
