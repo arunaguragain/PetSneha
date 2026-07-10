@@ -52,15 +52,16 @@ export default function ForumPostPage() {
   }
 
   return (
-    <div className="container-app max-w-4xl px-10 py-8">
-      <div className="flex items-center justify-end mb-4">
-        <Link 
-          to={backLink} 
-          className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
-        >
-          <ArrowLeft className="w-4 h-4" /> {t('forum.backToForum', 'Back to forum')}
-        </Link>
-      </div>
+    <div className="bg-slate-50 min-h-screen">
+      <div className="max-w-[1440px] mx-auto px-8 py-10">
+        <div className="flex items-center justify-end mb-4">
+          <Link 
+            to={backLink} 
+            className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('forum.backToForum', 'Back to forum')}
+          </Link>
+        </div>
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -99,6 +100,7 @@ export default function ForumPostPage() {
           <div className="flex justify-end"><Button type="submit">{t('forum.postAnswer', 'Post answer')}</Button></div>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

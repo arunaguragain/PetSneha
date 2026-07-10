@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { MessageSquare, ShieldCheck, CheckCircle2, Check, X, BookOpen } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
-export default function ForumPage() {
+export default function ForumPage({ isEmbedded = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -95,12 +95,21 @@ export default function ForumPage() {
   const ctaLabel = t('forum.createPost', 'Create new post');
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-[1440px] mx-auto px-8 py-10">
+    <div className={isEmbedded ? "" : "bg-white min-h-screen"}>
+      <div className={isEmbedded ? "" : "max-w-[1440px] mx-auto px-8 py-10"}>
         
         {/* Header */}
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('forum.communityTitle', 'PetSneha Community')}</h1>
-        <p className="text-sm text-[#64748B] mt-1">{t('forum.communitySubtitle', 'Connect with pet parents and veterinary experts across Nepal.')}</p>
+        {!isEmbedded ? (
+          <>
+            <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('forum.communityTitle', 'PetSneha Community')}</h1>
+            <p className="text-sm text-[#64748B] mt-1">{t('forum.communitySubtitle', 'Connect with pet parents and veterinary experts across Nepal.')}</p>
+          </>
+        ) : (
+          <div>
+            <h1 className="font-display text-4xl text-neutral-900 font-bold">{t('forum.communityTitle', 'PetSneha Community')}</h1>
+            <p className="text-neutral-500 mt-2">{t('forum.communitySubtitle', 'Connect with pet parents and veterinary experts across Nepal.')}</p>
+          </div>
+        )}
 
         {/* Two column layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">

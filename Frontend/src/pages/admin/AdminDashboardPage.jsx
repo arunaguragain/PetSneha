@@ -57,6 +57,7 @@ import {
   rejectProduct,
   rejectVet,
   removePost,
+  dismissPostReport,
 } from '../../api/admin.api';
 import { Badge, Button, Card, Input, Select, Skeleton, Textarea } from '../../components/ui';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -1186,7 +1187,7 @@ function ForumTab() {
 
   async function handlePin(post) {
     setActionLoading(uid(post) + '-pin');
-    try { await pinPost(uid(post)); addToast('Post pinned', 'success'); fetchPosts(); fetchAllPosts(search); }
+    try { await pinPost(uid(post)); addToast(post.isPinned ? 'Post unpinned' : 'Post pinned', 'success'); fetchPosts(); fetchAllPosts(search); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -1195,6 +1196,14 @@ function ForumTab() {
     if (!await confirm({ title: 'Remove post?', message: `"${post.title || 'This post'}" will be permanently deleted.`, confirmText: 'Remove', variant: 'danger' })) return;
     setActionLoading(uid(post) + '-remove');
     try { await removePost(uid(post)); addToast('Post removed', 'success'); fetchPosts(); fetchAllPosts(search); }
+    catch (e) { addToast(getErrorMessage(e), 'danger'); }
+    finally { setActionLoading(null); }
+  }
+
+  async function handleDismissReport(post) {
+    if (!await confirm({ title: 'Approve post?', message: `This will dismiss the reports and leave the post up.`, confirmText: 'Approve' })) return;
+    setActionLoading(uid(post) + '-dismiss');
+    try { await dismissPostReport(uid(post)); addToast('Report dismissed', 'success'); fetchPosts(); fetchAllPosts(search); }
     catch (e) { addToast(getErrorMessage(e), 'danger'); }
     finally { setActionLoading(null); }
   }
@@ -1227,6 +1236,7 @@ function ForumTab() {
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" variant="secondary" loading={actionLoading === uid(post) + '-pin'} onClick={() => handlePin(post)}>{post.isPinned ? 'Unpin' : 'Pin'}</Button>
+                    <Button size="sm" variant="success" loading={actionLoading === uid(post) + '-dismiss'} onClick={() => handleDismissReport(post)}>Approve</Button>
                     <Button size="sm" variant="danger" loading={actionLoading === uid(post) + '-remove'} onClick={() => handleRemove(post)}>Remove</Button>
                     <Button size="sm" variant="ghost" onClick={() => setPostModal(post)}>View</Button>
                   </div>

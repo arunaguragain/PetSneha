@@ -40,9 +40,11 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-8 pb-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button onClick={() => navigate('/shop')} className="flex items-center gap-2 text-sm font-semibold text-[#64748B] hover:text-[#1E293B] mb-6 transition">
-          <ArrowLeft className="w-4 h-4" /> {t('buttons.backToShop', 'Back to Shop')}
-        </button>
+        <div className="flex items-center justify-end mb-4">
+          <button onClick={() => navigate('/shop')} className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition">
+            <ArrowLeft className="w-4 h-4" /> {t('buttons.backToShop', 'Back to Shop')}
+          </button>
+        </div>
 
         <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-10 shadow-sm flex flex-col md:flex-row gap-10">
           

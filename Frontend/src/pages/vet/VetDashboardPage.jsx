@@ -1721,7 +1721,7 @@ export default function VetDashboardPage({ defaultTab = 'dashboard' }) {
 
         {/* Tab 8: Community Forum (embedded with sidebar) */}
         {activeTab === 'forum' && (
-          <ForumPage />
+          <ForumPage isEmbedded={true} />
         )}
 
         {/* Tab: Products */}
