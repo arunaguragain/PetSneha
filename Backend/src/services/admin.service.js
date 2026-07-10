@@ -236,12 +236,33 @@ async function removePost(postId) {
 }
 
 /**
+ * Dismiss a report on a forum post.
+ * @param {string} postId
+ * @returns {Promise}
+ */
+async function dismissPostReport(postId) {
+  const ForumPost = require('../models/forumPost.model');
+  const post = await ForumPost.findById(postId);
+  if (!post) {
+    throw new AppError('Post not found.', 404);
+  }
+  return adminRepository.dismissForumPostReport(postId);
+}
+
+/**
  * Pin a forum post.
  * @param {string} postId
  * @returns {Promise}
  */
 async function pinPost(postId) {
-  const updated = await adminRepository.setPinnedStatus(postId, true);
+  const ForumPost = require('../models/forumPost.model');
+  const post = await ForumPost.findById(postId);
+  if (!post) {
+    throw new AppError('Post not found.', 404);
+  }
+
+  const newStatus = !post.isPinned;
+  const updated = await adminRepository.setPinnedStatus(postId, newStatus);
   if (!updated) {
     throw new AppError('Post not found.', 404);
   }
@@ -313,6 +334,7 @@ module.exports = {
   rejectArticle,
   getReportedPosts,
   removePost,
+  dismissPostReport,
   pinPost,
   getPendingProducts,
   approveProduct,
