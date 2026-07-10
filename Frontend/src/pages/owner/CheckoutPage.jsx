@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
 import { Banknote, Minus, Plus, Trash2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { getImageUrl } from '../../utils/imageUrl';
 import { ConfirmationOverlay, Button } from '../../components/ui';
 
 export default function CheckoutPage() {
@@ -98,7 +99,7 @@ export default function CheckoutPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 1 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               1
             </div>
-            <span className={`font-medium ${step >= 1 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.cart')}</span>
+            <span className={`font-medium ${step >= 1 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.cart', 'Cart')}</span>
           </div>
 
           <div className="flex-1 h-px bg-[#E2E8F0]" />
@@ -107,7 +108,7 @@ export default function CheckoutPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 2 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               2
             </div>
-            <span className={`font-medium ${step >= 2 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.delivery')}</span>
+            <span className={`font-medium ${step >= 2 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.delivery', 'Delivery')}</span>
           </div>
 
           <div className="flex-1 h-px bg-[#E2E8F0]" />
@@ -116,7 +117,7 @@ export default function CheckoutPage() {
             <div className={`w-6 h-6 rounded-full flex items-center justify-center font-medium ${step >= 3 ? 'bg-[#0046CE] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
               3
             </div>
-            <span className={`font-medium ${step >= 3 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.confirm')}</span>
+            <span className={`font-medium ${step >= 3 ? 'text-[#1E293B]' : 'text-[#64748B]'}`}>{t('checkout.confirm', 'Confirm')}</span>
           </div>
         </div>
 
@@ -131,7 +132,7 @@ export default function CheckoutPage() {
                 <div key={item.productId} className="flex items-center gap-3 bg-white border border-[#E2E8F0] rounded-xl p-3">
                   {item.image ? (
                     <img
-                      src={`${import.meta.env.VITE_SERVER_URL || 'http://localhost:5050'}${item.image}`}
+                      src={getImageUrl(item.image)}
                       alt={item.name}
                       className="w-10 h-10 rounded-lg object-cover bg-[#F1F5F9]"
                     />
@@ -201,8 +202,8 @@ export default function CheckoutPage() {
           <div>
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-base font-semibold text-[#1E293B]">{t('checkout.deliveryDetails')}</h2>
-                <span className="text-xs text-[#0046CE] cursor-pointer hover:underline">{t('checkout.edit')}</span>
+                <h2 className="text-base font-semibold text-[#1E293B]">{t('checkout.deliveryDetails', 'Delivery Details')}</h2>
+                <span className="text-xs text-[#0046CE] cursor-pointer hover:underline">{t('checkout.edit', 'Edit')}</span>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
@@ -267,14 +268,14 @@ export default function CheckoutPage() {
                     disabled={loading || orderPlaced}
                     className="w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-semibold mt-6 transition disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    {loading ? t('checkout.processing') : t('checkout.placeOrder')}
+                    {loading ? t('checkout.processing', 'Processing...') : t('checkout.placeOrder', 'Place Order')}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => navigate('/shop')}
                     disabled={loading || orderPlaced}
-                    className="w-full border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] rounded-lg py-3 text-sm transition disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full border-2 border-[#CBD5E1] hover:bg-[#F8FAFC] text-[#64748B] rounded-lg py-3 text-sm transition disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {t('common.cancel')}
                   </button>

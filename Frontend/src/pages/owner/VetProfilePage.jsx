@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Input, StarRating, Textarea, VerifiedBadge } from '../../components/ui';
 import { getVet, submitReview } from '../../api/vet.api';
 import { formatCurrency, getErrorMessage, unwrapItem, unwrapItems } from '../../utils/api';
+import { translateDynamic } from '../../utils/mappings';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
 import { ArrowLeft, Check, Calendar as CalendarIcon, MapPin, Clock, Star, Award, FileBadge, GraduationCap, Zap } from 'lucide-react';
 import { openGoogleMapsDirections } from '../../utils/helpers';
@@ -13,6 +15,7 @@ import { AdminTopBar, AdminSidebar } from '../admin/AdminDashboardPage';
 export default function VetProfilePage() {
   const { vetId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -55,7 +58,7 @@ export default function VetProfilePage() {
     try {
       setReviewLoading(true);
       await submitReview(vetId, { appointmentId: reviewForm.appointmentId || undefined, rating: reviewForm.rating, comment: reviewForm.content });
-      addToast('✓ Review published!', 'success');
+      addToast(t('vetProfile.reviewPublishedSuccess', '✓ Review published!'), 'success');
       setReviewOpen(false);
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
@@ -65,11 +68,11 @@ export default function VetProfilePage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-[#64748B]">Loading...</div>;
+    return <div className="p-8 text-center text-[#64748B]">{t('common.loading', 'Loading...')}</div>;
   }
 
   if (!vet) {
-    return <div className="p-8 text-center text-[#64748B]">Vet not found.</div>;
+    return <div className="p-8 text-center text-[#64748B]">{t('vetProfile.notFound', 'Vet not found.')}</div>;
   }
 
   const mapEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
@@ -103,11 +106,11 @@ export default function VetProfilePage() {
                     onError={(e) => { e.currentTarget.src = '/profile.png'; }}
                   />
                   {vet.isVerified ? (
-                    <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title="Verified Vet">
+                    <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title={t('vetProfile.verifiedVet', 'Verified Vet')}>
                       <Check className="w-3 h-3 text-white" />
                     </div>
                   ) : (
-                    <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title="Pending Verification">
+                    <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title={t('vetProfile.pendingVerification', 'Pending Verification')}>
                       <span className="text-white text-[10px] font-bold">⏱</span>
                     </div>
                   )}
@@ -119,71 +122,68 @@ export default function VetProfilePage() {
                     {vet.isVerified ? (
                       <VerifiedBadge />
                     ) : (
-                      <Badge variant="warning">Pending Verification</Badge>
+                      <Badge variant="warning">{t('vetProfile.pendingVerification', 'Pending Verification')}</Badge>
                     )}
                   </div>
                   <div className="inline-flex gap-2 mt-1">
                     <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">DVM</span>
                     <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">MVSc</span>
                   </div>
-                  <div className="text-[#0046CE] font-medium text-sm mt-1">{vet.specialisation || 'General Practice'}</div>
+                  <div className="text-[#0046CE] font-medium text-sm mt-1">{translateDynamic(vet.specialisation || t('vetProfile.generalPractice', 'General Practice'), i18n.language)}</div>
                   <div className="flex items-center gap-4 text-sm text-[#64748B] mt-2 flex-wrap">
                     <div className="flex items-center gap-1 whitespace-nowrap">
-                      <CalendarIcon className="w-4 h-4" /> {vet.yearsExperience || 0} Years Experience
+                      <CalendarIcon className="w-4 h-4" /> {vet.yearsExperience || 0} {t('vetProfile.yearsExperience', 'Years Experience')}
                     </div>
                     <div className="flex items-center gap-1 whitespace-nowrap">
-                      <MapPin className="w-4 h-4" /> {vet.clinicName || vet.location || 'Clinic details unavailable'}
+                      <MapPin className="w-4 h-4" /> {translateDynamic(vet.clinicName || vet.location || t('vetProfile.clinicUnavailable', 'Clinic details unavailable'), i18n.language)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Stats row */}
               <div className="flex gap-6 mt-6 pt-6 border-t border-[#E2E8F0]">
                 <div>
-                  <div className="text-xs text-[#64748B] uppercase tracking-wide">PATIENTS SERVED</div>
+                  <div className="text-xs text-[#64748B] uppercase tracking-wide">{t('vetProfile.patientsServed', 'PATIENTS SERVED')}</div>
                   <div className="text-xl font-bold text-[#1E293B] mt-1">2,500+</div>
                 </div>
                 <div>
-                  <div className="text-xs text-[#64748B] uppercase tracking-wide">RATING</div>
+                  <div className="text-xs text-[#64748B] uppercase tracking-wide">{t('vetProfile.rating', 'RATING')}</div>
                   {vet?.reviewCount > 0 ? (
                     <div className="text-xl font-bold text-[#1E293B] mt-1 flex items-center gap-1">
                       {vet.rating} <Star className="w-5 h-5 text-yellow-400 fill-current" />
                     </div>
                   ) : (
-                    <div className="text-sm text-[#64748B] mt-1.5 font-medium">No reviews yet — be the first to book and review</div>
+                    <div className="text-sm text-[#64748B] mt-1.5 font-medium">{t('vetProfile.noReviewsYet', 'No reviews yet — be the first to book and review')}</div>
                   )}
                 </div>
               </div>
 
-              {/* Two column info grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                 <div className="bg-[#F8FAFC] rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">About Me</h3>
+                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">{t('vetProfile.aboutMe', 'About Me')}</h3>
                   <p className="text-sm text-[#1E293B] leading-relaxed">
-                    {vet.bio || "Dedicated veterinary professional with extensive experience in small animal care. Committed to providing compassionate and comprehensive medical treatment to ensure the health and well-being of your beloved pets."}
+                    {translateDynamic(vet.bio || t('vetProfile.defaultBio', 'Dedicated veterinary professional with extensive experience in small animal care. Committed to providing compassionate and comprehensive medical treatment to ensure the health and well-being of your beloved pets.'), i18n.language)}
                   </p>
                 </div>
                 
                 <div className="bg-[#F8FAFC] rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">Licensing & Credentials</h3>
+                  <h3 className="text-sm font-semibold text-[#1E293B] mb-2">{t('vetProfile.licensing', 'Licensing & Credentials')}</h3>
                   <div className="space-y-2">
                     <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                      <Award className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Nepal Veterinary Council (NVC)
+                      <Award className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.nvc', 'Nepal Veterinary Council (NVC)')}
                     </div>
                     <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                      <FileBadge className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> License: {vet.licenseNumber || 'NVC-1234'}
+                      <FileBadge className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.license', 'License:')} {vet.licenseNumber || 'NVC-1234'}
                     </div>
                     <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                      <GraduationCap className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Tribhuvan University Graduate
+                      <GraduationCap className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.tuGrad', 'Tribhuvan University Graduate')}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Clinic Location card */}
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm mt-4">
-                <h3 className="text-base font-semibold text-[#1E293B]">Clinic Location</h3>
+                <h3 className="text-base font-semibold text-[#1E293B]">{t('vetProfile.clinicLocation', 'Clinic Location')}</h3>
                 
                 <div className="w-full h-48 bg-[#F1F5F9] rounded-lg mt-3 overflow-hidden border border-[#E2E8F0] relative">
                   {vet?.location ? (
@@ -198,7 +198,7 @@ export default function VetProfilePage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-[#64748B]">
                       <MapPin className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="text-sm">Location map unavailable</span>
+                      <span className="text-sm">{t('vetProfile.mapUnavailable', 'Location map unavailable')}</span>
                     </div>
                   )}
                   {vet?.location && (
@@ -209,7 +209,7 @@ export default function VetProfilePage() {
                         rel="noopener noreferrer"
                         className="bg-white px-2 py-1.5 rounded shadow-sm text-xs font-medium text-[#0046CE] flex items-center gap-1 hover:bg-gray-50"
                       >
-                        Maps <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        {t('vetProfile.maps', 'Maps')} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                       </a>
                     </div>
                   )}
@@ -238,7 +238,7 @@ export default function VetProfilePage() {
               onClick={() => navigate('/vets')} 
               className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Vet Listings
+              <ArrowLeft className="w-4 h-4" /> {t('vetProfile.backToVets', 'Back to Vet Listings')}
             </button>
           </div>
         )}
@@ -259,11 +259,11 @@ export default function VetProfilePage() {
                   onError={(e) => { e.currentTarget.src = '/profile.png'; }}
                 />
                 {vet.isVerified ? (
-                  <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title="Verified Vet">
+                  <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-[#0046CE] rounded-full flex items-center justify-center border-2 border-white" title={t('vetProfile.verifiedVet', 'Verified Vet')}>
                     <Check className="w-3 h-3 text-white" />
                   </div>
                 ) : (
-                  <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title="Pending Verification">
+                  <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full w-6 h-6 flex items-center justify-center border-2 border-white animate-pulse" title={t('vetProfile.pendingVerification', 'Pending Verification')}>
                     <span className="text-white text-[10px] font-bold">⏱</span>
                   </div>
                 )}
@@ -275,63 +275,61 @@ export default function VetProfilePage() {
                   {vet.isVerified ? (
                     <VerifiedBadge />
                   ) : (
-                    <Badge variant="warning">Pending Verification</Badge>
+                    <Badge variant="warning">{t('vetProfile.pendingVerification', 'Pending Verification')}</Badge>
                   )}
                 </div>
                 <div className="inline-flex gap-2 mt-1">
                   <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">DVM</span>
                   <span className="bg-[#EFF6FF] text-[#0046CE] text-xs px-2 py-0.5 rounded-full whitespace-nowrap">MVSc</span>
                 </div>
-                <div className="text-[#0046CE] font-medium text-sm mt-1">{vet.specialisation || 'General Practice'}</div>
+                <div className="text-[#0046CE] font-medium text-sm mt-1">{translateDynamic(vet.specialisation || t('vetProfile.generalPractice', 'General Practice'), i18n.language)}</div>
                 <div className="flex items-center gap-4 text-sm text-[#64748B] mt-2 flex-wrap">
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <CalendarIcon className="w-4 h-4" /> {vet.yearsExperience || 0} Years Experience
+                    <CalendarIcon className="w-4 h-4" /> {vet.yearsExperience || 0} {t('vetProfile.yearsExperience', 'Years Experience')}
                   </div>
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <MapPin className="w-4 h-4" /> {vet.clinicName || vet.location || 'Clinic details unavailable'}
+                    <MapPin className="w-4 h-4" /> {translateDynamic(vet.clinicName || vet.location || t('vetProfile.clinicUnavailable', 'Clinic details unavailable'), i18n.language)}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Stats row */}
             <div className="flex gap-6 mt-6 pt-6 border-t border-[#E2E8F0]">
               <div>
-                <div className="text-xs text-[#64748B] uppercase tracking-wide">PATIENTS SERVED</div>
+                <div className="text-xs text-[#64748B] uppercase tracking-wide">{t('vetProfile.patientsServed', 'PATIENTS SERVED')}</div>
                 <div className="text-xl font-bold text-[#1E293B] mt-1">2,500+</div>
               </div>
               <div>
-                <div className="text-xs text-[#64748B] uppercase tracking-wide">RATING</div>
+                <div className="text-xs text-[#64748B] uppercase tracking-wide">{t('vetProfile.rating', 'RATING')}</div>
                 {vet?.reviewCount > 0 ? (
                   <div className="text-xl font-bold text-[#1E293B] mt-1 flex items-center gap-1">
                     {vet.rating} <Star className="w-5 h-5 text-yellow-400 fill-current" />
                   </div>
                 ) : (
-                  <div className="text-sm text-[#64748B] mt-1.5 font-medium">No reviews yet — be the first to book and review</div>
+                  <div className="text-sm text-[#64748B] mt-1.5 font-medium">{t('vetProfile.noReviewsYet', 'No reviews yet — be the first to book and review')}</div>
                 )}
               </div>
             </div>
 
-            {/* Two column info grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
               <div className="bg-[#F8FAFC] rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-[#1E293B] mb-2">About Me</h3>
+                <h3 className="text-sm font-semibold text-[#1E293B] mb-2">{t('vetProfile.aboutMe', 'About Me')}</h3>
                 <p className="text-sm text-[#1E293B] leading-relaxed">
-                  {vet.bio || "Dedicated veterinary professional with extensive experience in small animal care. Committed to providing compassionate and comprehensive medical treatment to ensure the health and well-being of your beloved pets."}
+                  {translateDynamic(vet.bio || t('vetProfile.defaultBio', 'Dedicated veterinary professional with extensive experience in small animal care. Committed to providing compassionate and comprehensive medical treatment to ensure the health and well-being of your beloved pets.'), i18n.language)}
                 </p>
               </div>
               
               <div className="bg-[#F8FAFC] rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-[#1E293B] mb-2">Licensing & Credentials</h3>
+                <h3 className="text-sm font-semibold text-[#1E293B] mb-2">{t('vetProfile.licensing', 'Licensing & Credentials')}</h3>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                    <Award className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Nepal Veterinary Council (NVC)
+                    <Award className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.nvc', 'Nepal Veterinary Council (NVC)')}
                   </div>
                   <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                    <FileBadge className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> License: {vet.licenseNumber || 'NVC-1234'}
+                    <FileBadge className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.license', 'License:')} {vet.licenseNumber || 'NVC-1234'}
                   </div>
                   <div className="flex items-start gap-2 text-sm text-[#1E293B]">
-                    <GraduationCap className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> Tribhuvan University Graduate
+                    <GraduationCap className="w-4 h-4 text-[#0046CE] mt-0.5 flex-shrink-0" /> {t('vetProfile.tuGrad', 'Tribhuvan University Graduate')}
                   </div>
                 </div>
               </div>
@@ -341,8 +339,8 @@ export default function VetProfilePage() {
             {vet?.reviewCount > 0 ? (
               <>
                 <div className="flex justify-between items-center mt-8">
-                  <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Recent Reviews</h2>
-                  <span className="text-[#0046CE] text-sm hover:underline cursor-pointer">View All {reviews.length || vet.reviewsCount || 0} Reviews</span>
+                  <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('vetProfile.recentReviews', 'Recent Reviews')}</h2>
+                  <span className="text-[#0046CE] text-sm hover:underline cursor-pointer">{t('vetProfile.viewAllReviews', 'View All {{count}} Reviews', { count: reviews.length || vet.reviewsCount || 0 })}</span>
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -368,13 +366,13 @@ export default function VetProfilePage() {
                       
                       {review.reply && (
                         <div className="bg-white border border-[#E2E8F0] p-3 rounded-lg mt-3 ml-4 space-y-1">
-                          <p className="text-xs font-bold text-[#0046CE]">Response from Vet:</p>
-                          <p className="text-sm text-[#1E293B] font-medium">"{review.reply}"</p>
+                          <p className="text-xs font-bold text-[#0046CE]">{t('vetProfile.responseFromVet', 'Response from Vet:')}</p>
+                          <p className="text-sm text-[#1E293B] font-medium">"{translateDynamic(review.reply, i18n.language)}"</p>
                         </div>
                       )}
                       
                       <div className="bg-white border border-[#E2E8F0] text-xs px-2 py-1 rounded-full mt-3 inline-flex items-center gap-1 text-[#64748B]">
-                        Treat for: Dog
+                        {t('vetProfile.treatForDog', 'Treat for: Dog')}
                       </div>
                     </div>
                   ))}
@@ -382,7 +380,7 @@ export default function VetProfilePage() {
               </>
             ) : (
               <div className="bg-[#F8FAFC] border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] mt-8">
-                This vet has no reviews yet. Be the first to book an appointment and share your experience.
+                {t('vetProfile.noReviewsMsg', 'This vet has no reviews yet. Be the first to book an appointment and share your experience.')}
               </div>
             )}
 
@@ -391,7 +389,7 @@ export default function VetProfilePage() {
                 onClick={() => setReviewOpen(true)}
                 className="w-full bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-3 text-sm font-medium mt-4 transition"
               >
-                Add Review
+                {t('vetProfile.addReview', 'Add Review')}
               </button>
             )}
 
@@ -404,21 +402,21 @@ export default function VetProfilePage() {
               {/* Booking card */}
               {user?.role !== 'admin' && (
                 <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                  <h3 className="text-base font-semibold text-[#1E293B]">Book Appointment</h3>
+                  <h3 className="text-base font-semibold text-[#1E293B]">{t('vetProfile.bookAppointment', 'Book Appointment')}</h3>
                   
                   <div className="flex justify-between text-sm mt-4">
-                    <span className="text-[#64748B]">Consultation Fee</span>
+                    <span className="text-[#64748B]">{t('vetProfile.consultationFee', 'Consultation Fee')}</span>
                     <span className="font-semibold text-[#1E293B]">{formatCurrency(vet.consultationFee || vet.fee || 800)}</span>
                   </div>
                   
                   <div className="flex justify-between text-sm mt-3">
-                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Next Availability</span>
-                    <span className="text-[#0046CE] font-medium">Today, 4:30 PM</span>
+                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> {t('vetProfile.nextAvailability', 'Next Availability')}</span>
+                    <span className="text-[#0046CE] font-medium">{t('vetProfile.todayAvailability', 'Today, 4:30 PM')}</span>
                   </div>
                   
                   <div className="flex justify-between text-sm mt-3">
-                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> Working Hours</span>
-                    <span className="text-[#1E293B] font-medium">9:00 AM - 6:00 PM</span>
+                    <span className="text-[#64748B] flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#64748B]" /> {t('vetProfile.workingHours', 'Working Hours')}</span>
+                    <span className="text-[#1E293B] font-medium">{t('vetProfile.defaultHours', '9:00 AM - 6:00 PM')}</span>
                   </div>
                   
                   <div className="mt-4 border-t border-[#E2E8F0]"></div>
@@ -432,18 +430,18 @@ export default function VetProfilePage() {
                         : 'bg-[#F1F5F9] text-[#94A3B8] cursor-not-allowed'
                     }`}
                   >
-                    {vet?.isVerified ? 'Schedule Visit' : 'Booking unavailable — pending verification'}
+                    {vet?.isVerified ? t('vetProfile.scheduleVisit', 'Schedule Visit') : t('vetProfile.bookingUnavailable', 'Booking unavailable — pending verification')}
                   </button>
                   
                   <div className="text-xs text-[#64748B] text-center mt-3 flex items-center justify-center gap-1">
-                    <Zap className="w-4 h-4" /> Instant confirmation within 15 mins
+                    <Zap className="w-4 h-4" /> {t('vetProfile.instantConfirmation', 'Instant confirmation within 15 mins')}
                   </div>
                 </div>
               )}
 
               {/* Clinic Location card */}
               <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm">
-                <h3 className="text-base font-semibold text-[#1E293B]">Clinic Location</h3>
+                <h3 className="text-base font-semibold text-[#1E293B]">{t('vetProfile.clinicLocation', 'Clinic Location')}</h3>
                 
                 <div className="w-full h-48 bg-[#F1F5F9] rounded-lg mt-3 overflow-hidden border border-[#E2E8F0] relative">
                   {vet?.location ? (
@@ -458,19 +456,19 @@ export default function VetProfilePage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-[#64748B] text-xs">
                       <MapPin className="w-6 h-6 mb-1 text-[#CBD5E1]" />
-                      Location not available
+                      {t('vetProfile.locationUnavailable', 'Location not available')}
                     </div>
                   )}
                 </div>
                 
-                <div className="text-sm font-semibold text-[#1E293B] mt-3">{vet.clinicName || 'Happy Paws Clinic'}</div>
-                <div className="text-xs text-[#64748B] mt-1">{vet.location || 'Lazimpat, Kathmandu'}</div>
+                <div className="text-sm font-semibold text-[#1E293B] mt-3">{translateDynamic(vet.clinicName || 'Happy Paws Clinic', i18n.language)}</div>
+                <div className="text-xs text-[#64748B] mt-1">{translateDynamic(vet.location || 'Lazimpat, Kathmandu', i18n.language)}</div>
                 
                 <button 
                   onClick={() => openGoogleMapsDirections(`${vet.clinicName || vet.name}, ${vet.location || ''}, Kathmandu, Nepal`)}
                   className="w-full border border-[#0046CE] hover:bg-blue-50 text-[#0046CE] rounded-lg py-2 text-sm font-medium mt-4 transition flex items-center justify-center gap-1.5"
                 >
-                  Get Directions
+                  {t('vetProfile.getDirections', 'Get Directions')}
                 </button>
               </div>
 
@@ -483,7 +481,7 @@ export default function VetProfilePage() {
       {reviewOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1E293B]/60 px-4 backdrop-blur-sm">
           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-[#1E293B] mb-4">Write a Review</h2>
+            <h2 className="text-lg font-semibold text-[#1E293B] mb-4">{t('vetProfile.writeReview', 'Write a Review')}</h2>
             <form className="space-y-4" onSubmit={handleSubmitReview}>
               <div className="flex items-center gap-3 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">
                 <img
@@ -494,12 +492,12 @@ export default function VetProfilePage() {
                 />
                 <div>
                   <p className="font-semibold text-sm text-[#1E293B]">{vet.name}</p>
-                  <p className="text-xs text-[#64748B]">{vet.clinicName || vet.location}</p>
+                  <p className="text-xs text-[#64748B]">{translateDynamic(vet.clinicName || vet.location, i18n.language)}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-[#1E293B]">Your rating</span>
+                <span className="text-sm font-medium text-[#1E293B]">{t('vetProfile.yourRating', 'Your rating')}</span>
                 <div className="flex gap-1">
                   {[1,2,3,4,5].map((star) => (
                     <Star 
@@ -512,7 +510,7 @@ export default function VetProfilePage() {
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-[#64748B] mb-1">Appointment ID (Optional)</label>
+                <label className="block text-xs font-medium text-[#64748B] mb-1">{t('vetProfile.appointmentIdLabel', 'Appointment ID (Optional)')}</label>
                 <input 
                   type="text" 
                   className="w-full bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE]" 
@@ -522,22 +520,22 @@ export default function VetProfilePage() {
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-[#64748B] mb-1">Describe your experience</label>
+                <label className="block text-xs font-medium text-[#64748B] mb-1">{t('vetProfile.describeExperience', 'Describe your experience')}</label>
                 <textarea 
                   className="w-full bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0046CE] resize-none" 
                   rows={4}
                   value={reviewForm.content} 
                   onChange={(event) => setReviewForm((current) => ({ ...current, content: event.target.value }))} 
-                  placeholder="How was your visit?"
+                  placeholder={t('vetProfile.howWasVisit', 'How was your visit?')}
                 />
               </div>
               
-              <p className="text-xs text-[#64748B]">Your review will be posted publicly.</p>
+              <p className="text-xs text-[#64748B]">{t('vetProfile.reviewPublic', 'Your review will be posted publicly.')}</p>
               
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[#E2E8F0]">
-                <button type="button" className="px-4 py-2 text-sm font-medium text-[#64748B] hover:bg-[#F8FAFC] rounded-lg transition" onClick={() => setReviewOpen(false)}>Cancel</button>
+                <button type="button" className="px-4 py-2 text-sm font-medium text-[#64748B] hover:bg-[#F8FAFC] rounded-lg transition" onClick={() => setReviewOpen(false)}>{t('common.cancel', 'Cancel')}</button>
                 <button type="submit" disabled={reviewLoading} className="px-4 py-2 text-sm font-medium bg-[#0046CE] text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-70">
-                  {reviewLoading ? 'Publishing...' : 'Publish review'}
+                  {reviewLoading ? t('vetProfile.publishing', 'Publishing...') : t('vetProfile.publishReview', 'Publish review')}
                 </button>
               </div>
             </form>

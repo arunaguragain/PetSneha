@@ -4,6 +4,8 @@ import { Avatar, Badge, Button, Card, Divider, Input, Select, Skeleton, StarRati
 import { cancelAppointment, deletePet, downloadHealthRecordPDF, getAppointments, getHealthRecords, getPet, getPetReminders, createHealthRecord, deleteReminder } from '../../api/pet.api';
 import { getArticles } from '../../api/content.api';
 import { getErrorMessage, formatCurrency, formatDate, unwrapItems, unwrapItem, getPetEmoji, getStatusTone } from '../../utils/api';
+import { translateDynamic } from '../../utils/mappings';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { Download, Plus, Calendar as CalendarIcon, Mail, Bell, Edit2, Trash2, ArrowRight, Check } from 'lucide-react';
@@ -21,6 +23,7 @@ const infoFields = [
 export default function PetProfilePage() {
   const { petId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
@@ -57,16 +60,16 @@ export default function PetProfilePage() {
         return String(apptPetId) === String(petId);
       }));
     } catch (error) {
-      addToast(getErrorMessage(error) || 'Unable to refresh appointments', 'danger');
+      addToast(getErrorMessage(error) || t('petProfile.refreshError', 'Unable to refresh appointments'), 'danger');
     }
   };
 
   const handleAppointmentCancel = async (appointmentId) => {
     const confirmed = await confirm({
-      title: 'Cancel appointment',
-      message: 'Are you sure you want to cancel this appointment? This cannot be undone.',
-      confirmText: 'Yes, cancel',
-      cancelText: 'Keep appointment',
+      title: t('petProfile.cancelAptTitle', 'Cancel appointment'),
+      message: t('petProfile.cancelAptMsg', 'Are you sure you want to cancel this appointment? This cannot be undone.'),
+      confirmText: t('petProfile.cancelAptConfirm', 'Yes, cancel'),
+      cancelText: t('petProfile.cancelAptKeep', 'Keep appointment'),
       variant: 'danger',
     });
 
@@ -76,7 +79,7 @@ export default function PetProfilePage() {
 
     try {
       await cancelAppointment(appointmentId);
-      addToast('Appointment cancelled successfully', 'success');
+      addToast(t('petProfile.aptCancelledSuccess', 'Appointment cancelled successfully'), 'success');
       await refreshAppointments();
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
@@ -116,7 +119,7 @@ export default function PetProfilePage() {
           return String(apptPetId) === String(petId);
         }));
       } catch (error) {
-        addToast(getErrorMessage(error) || 'Failed to load pet profile', 'danger');
+        addToast(getErrorMessage(error) || t('petProfile.loadError', 'Failed to load pet profile'), 'danger');
         navigate('/dashboard');
       } finally {
         setLoading(false);
@@ -165,7 +168,7 @@ export default function PetProfilePage() {
       link.download = `${pet?.name || 'pet'}-health-records.pdf`;
       link.click();
       URL.revokeObjectURL(url);
-      addToast('PDF download started', 'success');
+      addToast(t('petProfile.pdfStarted', 'PDF download started'), 'success');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     }
@@ -173,10 +176,10 @@ export default function PetProfilePage() {
 
   const handleDelete = async () => {
     const isConfirmed = await confirm({
-      title: 'Delete Pet Profile',
-      message: `Are you sure you want to delete ${pet?.name || 'this pet'}? This action cannot be undone and all health records, reminders, and appointments will be permanently lost.`,
-      confirmText: 'Delete pet',
-      cancelText: 'Cancel',
+      title: t('petProfile.deletePetTitle', 'Delete Pet Profile'),
+      message: t('petProfile.deletePetMsg', 'Are you sure you want to delete {{name}}? This action cannot be undone and all health records, reminders, and appointments will be permanently lost.', { name: pet?.name || 'this pet' }),
+      confirmText: t('petProfile.deletePetConfirm', 'Delete pet'),
+      cancelText: t('common.cancel', 'Cancel'),
       variant: 'danger'
     });
 
@@ -186,7 +189,7 @@ export default function PetProfilePage() {
 
     try {
       await deletePet(petId);
-      addToast('Pet deleted', 'success');
+      addToast(t('petProfile.petDeleted', 'Pet deleted'), 'success');
       navigate('/dashboard');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
@@ -195,10 +198,10 @@ export default function PetProfilePage() {
 
   const handleDeleteReminder = async (reminderId) => {
     const isConfirmed = await confirm({
-      title: 'Delete Reminder',
-      message: 'Are you sure you want to delete this reminder?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('petProfile.deleteReminderTitle', 'Delete Reminder'),
+      message: t('petProfile.deleteReminderMsg', 'Are you sure you want to delete this reminder?'),
+      confirmText: t('common.delete', 'Delete'),
+      cancelText: t('common.cancel', 'Cancel'),
       variant: 'danger'
     });
 
@@ -207,7 +210,7 @@ export default function PetProfilePage() {
     try {
       await deleteReminder(reminderId);
       setReminders(prev => prev.filter(r => (r._id || r.id) !== reminderId));
-      addToast('Reminder deleted', 'success');
+      addToast(t('petProfile.reminderDeleted', 'Reminder deleted'), 'success');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     }
@@ -216,11 +219,11 @@ export default function PetProfilePage() {
   const activeReminders = useMemo(() => reminders, [reminders]);
 
   if (loading) {
-    return <div className="p-8 text-center text-[#64748B]">Loading...</div>;
+    return <div className="p-8 text-center text-[#64748B]">{t('common.loading', 'Loading...')}</div>;
   }
 
   if (!pet) {
-    return <div className="p-8 text-center text-[#64748B]">Pet not found.</div>;
+    return <div className="p-8 text-center text-[#64748B]">{t('petProfile.notFound', 'Pet not found.')}</div>;
   }
 
   return (
@@ -246,7 +249,7 @@ export default function PetProfilePage() {
                 </span>
               </div>
               <div className="text-sm text-[#64748B] mt-2 font-medium">
-                {pet.gender ? pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1) : 'Unknown'} • {pet.age ? `${pet.age} Years Old` : 'Age N/A'} • {pet.weight ? `${pet.weight} kg` : 'Weight N/A'}
+                {pet.gender ? pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1) : t('common.unknown', 'Unknown')} • {pet.age ? `${pet.age} ${t('petProfile.yearsOld', 'Years Old')}` : t('petProfile.ageNA', 'Age N/A')} • {pet.weight ? `${pet.weight} kg` : t('petProfile.weightNA', 'Weight N/A')}
               </div>
             </div>
           </div>
@@ -257,14 +260,14 @@ export default function PetProfilePage() {
               className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#0046CE] hover:bg-[#003DA8] text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition shadow-sm"
             >
               <Edit2 size={15} />
-              Edit Profile
+              {t('petProfile.editProfile', 'Edit Profile')}
             </button>
             <button 
               onClick={handleDelete} 
               className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 rounded-xl px-5 py-2.5 text-sm font-semibold transition"
             >
               <Trash2 size={15} />
-              Delete Pet
+              {t('petProfile.deletePet', 'Delete Pet')}
             </button>
           </div>
         </div>
@@ -279,7 +282,7 @@ export default function PetProfilePage() {
                 : 'border-transparent text-[#64748B] hover:text-[#1E293B]'
             }`}
           >
-            Health records
+            {t('petProfile.healthRecords', 'Health records')}
           </button>
           <button 
             onClick={() => setActiveTab('reminders')} 
@@ -289,7 +292,7 @@ export default function PetProfilePage() {
                 : 'border-transparent text-[#64748B] hover:text-[#1E293B]'
             }`}
           >
-            Reminders
+            {t('petProfile.reminders', 'Reminders')}
           </button>
           <button 
             onClick={() => setActiveTab('appointments')} 
@@ -299,7 +302,7 @@ export default function PetProfilePage() {
                 : 'border-transparent text-[#64748B] hover:text-[#1E293B]'
             }`}
           >
-            Appointments
+            {t('petProfile.appointments', 'Appointments')}
           </button>
         </div>
 
@@ -313,20 +316,20 @@ export default function PetProfilePage() {
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1F5F9] pb-4 mb-6">
                   <h2 className="text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
-                    Vaccination History
+                    {t('petProfile.vaccinationHistory', 'Vaccination History')}
                   </h2>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button 
                       onClick={() => navigate(`/pets/${petId}/records/new`)}
                       className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition"
                     >
-                      + Add record manually
+                      {t('petProfile.addRecord', '+ Add record manually')}
                     </button>
                     <button 
                       onClick={handleDownloadPDF} 
                       className="flex items-center gap-1.5 border border-[#0046CE] text-[#0046CE] hover:bg-blue-50 rounded-xl px-4 py-2 text-sm font-semibold transition"
                     >
-                      <Download size={14} /> Download PDF
+                      <Download size={14} /> {t('petProfile.downloadPDF', 'Download PDF')}
                     </button>
                   </div>
                 </div>
@@ -344,25 +347,25 @@ export default function PetProfilePage() {
                         {/* Record item card */}
                         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition">
                           <div>
-                            <h3 className="font-semibold text-[#1E293B] text-base">{record.title}</h3>
-                            <p className="text-xs text-[#64748B] mt-0.5">{record.description || record.vetName || 'Administered at PetCare Clinic'}</p>
+                            <h3 className="font-semibold text-[#1E293B] text-base">{translateDynamic(record.title, i18n.language)}</h3>
+                            <p className="text-xs text-[#64748B] mt-0.5">{record.description || record.vetName || t('petProfile.defaultVet', 'Administered at PetCare Clinic')}</p>
                             <p className="text-xs text-[#64748B] mt-1">{formatDate(record.date)}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {isDone ? (
                               <span className="bg-[#E6F4EA] text-[#137333] text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-                                ✓ Done
+                                ✓ {t('petProfile.done', 'Done')}
                               </span>
                             ) : (
                               <div className="flex items-center gap-2">
                                 <span className="bg-[#FEF7E0] text-[#B06000] text-xs font-semibold px-3 py-1 rounded-full">
-                                  Due soon
+                                  {t('petProfile.dueSoon', 'Due soon')}
                                 </span>
                                 <button 
                                   onClick={() => navigate('/vets')} 
                                   className="bg-[#0046CE] hover:bg-[#003DA8] text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
                                 >
-                                  Book now
+                                  {t('petProfile.bookNow', 'Book now')}
                                 </button>
                               </div>
                             )}
@@ -372,7 +375,7 @@ export default function PetProfilePage() {
                     );
                   }) : (
                     <div className="border border-dashed border-[#E2E8F0] rounded-xl p-10 text-center text-sm text-[#64748B] bg-white">
-                      No health records found. Add one manually or consult your vet.
+                      {t('petProfile.noRecords', 'No health records found. Add one manually or consult your vet.')}
                     </div>
                   )}
                 </div>
@@ -384,7 +387,7 @@ export default function PetProfilePage() {
             <div className="lg:col-span-1 space-y-4">
               {/* Primary Vet card */}
               <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
-                <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-3">Primary Vet</p>
+                <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest mb-3">{t('petProfile.primaryVet', 'Primary Vet')}</p>
                 <div className="flex items-center gap-3">
                   <Avatar
                     src={(() => { const p = pet.savedVet?.profilePhoto || pet.savedVet?.imageUrl || pet.primaryVet?.profilePhoto || pet.primaryVet?.imageUrl; return p ? getImageUrl(p) : undefined; })()}
@@ -400,7 +403,7 @@ export default function PetProfilePage() {
                   onClick={() => navigate('/vets')} 
                   className="w-full mt-4 border border-[#0046CE] text-[#0046CE] hover:bg-blue-50 rounded-xl py-2.5 text-sm font-semibold transition bg-transparent"
                 >
-                  Book Appointment
+                  {t('petProfile.bookAppointment', 'Book Appointment')}
                 </button>
               </div>
 
@@ -411,28 +414,28 @@ export default function PetProfilePage() {
                   onClick={() => navigate(`/articles/${tipArticle._id}`)}
                 >
                   <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-2 uppercase tracking-wider">
-                    {tipArticle.category || 'Tip'}
+                    {translateDynamic(tipArticle.category, i18n.language) || t('petProfile.tipLabel', 'Tip')}
                   </span>
-                  <h3 className="font-bold text-white text-sm line-clamp-2">{tipArticle.title}</h3>
+                  <h3 className="font-bold text-white text-sm line-clamp-2">{translateDynamic(tipArticle.title, i18n.language)}</h3>
                   <p className="text-xs text-white/85 mt-1.5 leading-relaxed line-clamp-2">
-                    {tipArticle.summary || tipArticle.excerpt || tipArticle.content?.slice(0, 100)}
+                    {translateDynamic(tipArticle.summary || tipArticle.excerpt || tipArticle.content?.slice(0, 100), i18n.language)}
                   </p>
                   <div className="text-xs text-white hover:text-white/90 mt-3 flex items-center gap-1 font-semibold underline">
-                    Read article <ArrowRight className="w-3.5 h-3.5" />
+                    {t('petProfile.readArticle', 'Read article')} <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                  <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-3 uppercase tracking-wider">Tip</span>
-                  <h3 className="font-bold text-white text-base">Care Tip</h3>
+                  <span className="inline-block bg-white text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded-full mb-3 uppercase tracking-wider">{t('petProfile.tipLabel', 'Tip')}</span>
+                  <h3 className="font-bold text-white text-base">{t('petProfile.careTip', 'Care Tip')}</h3>
                   <p className="text-sm text-white/90 mt-1.5 leading-relaxed font-medium">
-                    Keep your pet healthy with regular vet check-ups and a balanced diet.
+                    {t('petProfile.careTipDesc', 'Keep your pet healthy with regular vet check-ups and a balanced diet.')}
                   </p>
                   <div
                     onClick={() => navigate('/articles')}
                     className="text-xs text-white hover:text-white/90 mt-4 flex items-center gap-1 cursor-pointer font-semibold underline"
                   >
-                    Read more articles <ArrowRight className="w-3.5 h-3.5" />
+                    {t('petProfile.readMoreArticles', 'Read more articles')} <ArrowRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
               )}
@@ -448,11 +451,11 @@ export default function PetProfilePage() {
                 onClick={() => navigate(`/reminders/new?petId=${petId}`)}
                 className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition"
               >
-                + Set new reminder
+                {t('petProfile.setNewReminder', '+ Set new reminder')}
               </button>
             </div>
             
-            <h2 className="text-xl font-bold text-[#1E293B] mt-4" style={{ fontFamily: 'Literata, serif' }}>Active Reminders</h2>
+            <h2 className="text-xl font-bold text-[#1E293B] mt-4" style={{ fontFamily: 'Literata, serif' }}>{t('petProfile.activeReminders', 'Active Reminders')}</h2>
             
             <div className="space-y-3 mt-3">
               {activeReminders.length > 0 ? activeReminders.map((reminder) => (
@@ -460,13 +463,13 @@ export default function PetProfilePage() {
                   <div className="flex items-center gap-4 min-w-0">
                     <Bell className="w-5 h-5 text-[#0046CE] shrink-0" />
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-[#1E293B] truncate">{reminder.title}</h3>
+                      <h3 className="font-semibold text-[#1E293B] truncate">{translateDynamic(reminder.title, i18n.language)}</h3>
                       <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
                         <CalendarIcon className="w-3.5 h-3.5" /> {formatDate(reminder.dueDate)}
                       </div>
                       {(reminder.notifyVia || []).filter(v => v !== 'push').length > 0 && (
                         <div className="text-sm text-[#64748B] flex items-center gap-1 mt-0.5">
-                          <Mail className="w-3.5 h-3.5" /> Notify via email
+                          <Mail className="w-3.5 h-3.5" /> {t('petProfile.notifyViaEmail', 'Notify via email')}
                         </div>
                       )}
                     </div>
@@ -478,7 +481,7 @@ export default function PetProfilePage() {
                 </div>
               )) : (
                 <div className="border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
-                  No active reminders. Add one to keep track of medications or events.
+                  {t('petProfile.noReminders', 'No active reminders. Add one to keep track of medications or events.')}
                 </div>
               )}
             </div>
@@ -489,26 +492,26 @@ export default function PetProfilePage() {
         {/* APPOINTMENTS TAB */}
         {activeTab === 'appointments' && (
           <div className="mt-6">
-            <h2 className="text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Appointments</h2>
+            <h2 className="text-xl font-bold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('petProfile.appointmentsTitle', 'Appointments')}</h2>
             <div className="mt-4 space-y-4">
               {appointments.length > 0 ? appointments.map((appointment) => (
                 <Card key={appointment._id || appointment.id} className="p-4 shadow-sm hover:shadow-md transition">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="space-y-2">
                       <p className="text-sm text-[#64748B]">
-                        {appointment.vetId?.clinicName || appointment.vet?.clinicName || appointment.vetName || '—'}
+                        {translateDynamic(appointment.vetId?.clinicName || appointment.vet?.clinicName || appointment.vetName, i18n.language) || '—'}
                       </p>
                       <h3 className="font-semibold text-[#1E293B]">
                         {appointment.vetId?.name
                           ? (appointment.vetId.name.startsWith('Dr') ? appointment.vetId.name : `Dr. ${appointment.vetId.name}`)
                           : appointment.vet?.name
                           ? (appointment.vet.name.startsWith('Dr') ? appointment.vet.name : `Dr. ${appointment.vet.name}`)
-                          : appointment.vetName || 'Vet visit'}
+                          : appointment.vetName || t('petProfile.vetVisit', 'Vet visit')}
                       </h3>
                       <div className="text-sm text-[#475569] flex flex-wrap gap-2 items-center">
                         <span>{formatDate(appointment.date || appointment.appointmentDate)}</span>
                         <span>•</span>
-                        <span>{appointment.timeSlot || appointment.time || 'Time pending'}</span>
+                        <span>{appointment.timeSlot || appointment.time || t('petProfile.timePending', 'Time pending')}</span>
                       </div>
                     </div>
 
@@ -518,16 +521,16 @@ export default function PetProfilePage() {
                         getStatusTone(appointment.status) === 'warning' ? 'bg-[#FFFBEB] text-[#92400E]' : 
                         'bg-[#FEF2F2] text-[#B91C1C]'
                       }`}>
-                        {appointment.status || 'Pending'}
+                        {appointment.status || t('petProfile.pending', 'Pending')}
                       </span>
-                      <p className="text-sm text-[#475569]">Fee: {formatCurrency(appointment.fee)}</p>
+                      <p className="text-sm text-[#475569]">{t('petProfile.fee', 'Fee:')} {formatCurrency(appointment.fee)}</p>
                       <div className="flex flex-wrap gap-2">
                         <Button variant="secondary" size="sm" onClick={() => navigate(`/appointments/${appointment._id || appointment.id}`)}>
-                          View details
+                          {t('petProfile.viewDetails', 'View details')}
                         </Button>
                         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                           <Button variant="danger" size="sm" onClick={() => handleAppointmentCancel(appointment._id || appointment.id)}>
-                            Cancel
+                            {t('common.cancel', 'Cancel')}
                           </Button>
                         )}
                       </div>
@@ -536,7 +539,7 @@ export default function PetProfilePage() {
                 </Card>
               )) : (
                 <div className="border border-dashed border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-[#64748B] bg-white">
-                  No past or upcoming appointments found.
+                  {t('petProfile.noAppointments', 'No past or upcoming appointments found.')}
                 </div>
               )}
             </div>

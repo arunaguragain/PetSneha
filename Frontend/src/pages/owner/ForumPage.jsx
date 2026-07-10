@@ -232,7 +232,9 @@ export default function ForumPage() {
                 </div>
               </div>
               
-              <button className="w-full border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] rounded-lg py-2 text-xs font-medium mt-3 transition">
+              <button
+                onClick={() => setShowRules(true)}
+                className="w-full border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] rounded-lg py-2 text-xs font-medium mt-3 transition">
                 {t('forum.readFullRules', 'Read Full Rules')}
               </button>
             </div>
@@ -254,27 +256,7 @@ export default function ForumPage() {
           
         </div>
       </div>
-      <Modal open={showRules} onClose={() => setShowRules(false)} size="lg" title="Community Guidelines">
-        <div className="px-6 pb-6 space-y-4 text-sm text-[#475569]">
-          <p>A friendly, helpful forum keeps the community safe and useful.</p>
-          <div>
-            <p className="font-semibold text-[#1E293B]">1. Be respectful.</p>
-            <p>Share your questions and advice kindly. Do not harass other members.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1E293B]">2. Keep medical advice general.</p>
-            <p>Use the forum for guidance, but always consult a vet for diagnoses or emergencies.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1E293B]">3. Post in the right group.</p>
-            <p>Choose the correct category so vets and owners can find your question fast.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1E293B]">4. Respect privacy.</p>
-            <p>Do not share private details or personal health information on the forum.</p>
-          </div>
-        </div>
-      </Modal>
+
 
       <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} size="lg" title={t('forum.createPost', 'Create forum post')}>
         <form className="px-6 pb-6 space-y-5" onSubmit={handleCreateSubmit}>
@@ -316,6 +298,29 @@ export default function ForumPage() {
             <Button type="submit" loading={creatingPost}>{t('forum.post', 'Post')}</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Community Rules Modal */}
+      <Modal open={showRules} onClose={() => setShowRules(false)} title={t('forum.communityRules', 'Community Guidelines')} className="!overflow-hidden !max-h-none">
+        <div className="px-6 pb-6 space-y-3 text-sm text-[#475569]">
+          {[
+            { title: t('forum.ruleRespect', 'Be respectful'), desc: t('forum.ruleRespectDesc', 'Treat all members with kindness. No harassment, hate speech, or personal attacks.') },
+            { title: t('forum.ruleMedical', 'No unverified medical advice'), desc: t('forum.ruleMedicalDesc', 'Do not share unverified medical advice. Always recommend consulting a licensed veterinarian for health concerns.') },
+            { title: t('forum.ruleEmergency', 'Emergencies'), desc: t('forum.ruleEmergencyDesc', 'In case of a pet emergency, always contact a vet directly. Do not rely solely on the forum for urgent medical guidance.') },
+            { title: t('forum.ruleSpam', 'No spam or self-promotion'), desc: t('forum.ruleSpamDesc', 'Avoid posting repetitive content, unsolicited advertisements, or irrelevant links.') },
+            { title: t('forum.rulePrivacy', 'Protect privacy'), desc: t('forum.rulePrivacyDesc', 'Do not share personal information of others without their consent.') },
+            { title: t('forum.ruleRelevant', 'Stay on topic'), desc: t('forum.ruleRelevantDesc', 'Keep discussions relevant to pets and animal care. Off-topic posts may be removed.') },
+          ].map((rule, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+              <div className="w-6 h-6 rounded-full bg-[#0046CE] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</div>
+              <div>
+                <p className="font-semibold text-[#0F172A]">{rule.title}</p>
+                <p className="text-xs text-[#64748B] mt-0.5">{rule.desc}</p>
+              </div>
+            </div>
+          ))}
+          <p className="text-xs text-[#94A3B8] pt-2">{t('forum.rulesFooter', 'Violations may result in post removal or account suspension. Thank you for keeping PetSneha safe and welcoming!')}</p>
+        </div>
       </Modal>
     </div>
   );

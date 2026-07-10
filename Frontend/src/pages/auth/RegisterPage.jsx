@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
 import { isValidEmail, validatePassword } from '../../utils/helpers';
 import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
@@ -21,27 +22,28 @@ function FieldIcon({ src, alt }) {
   return <img src={src} alt={alt} className="h-5 w-5 object-contain" />;
 }
 
-const featureItems = [
+const getFeatureItems = (t) => [
   {
     icon: '/icon_register.png',
-    title: 'Expert Vet Network',
-    description: "Connect with Nepal's top licensed veterinarians instantly.",
+    title: t('auth.regFeat1Title', 'Expert Vet Network'),
+    description: t('auth.regFeat1Desc', "Connect with Nepal's top licensed veterinarians instantly."),
   },
   {
     icon: '/icon_register1.png',
-    title: 'Digital Health Records',
-    description: 'Keep all vaccinations, prescriptions, and history in one secure place.',
+    title: t('auth.regFeat2Title', 'Digital Health Records'),
+    description: t('auth.regFeat2Desc', 'Keep all vaccinations, prescriptions, and history in one secure place.'),
   },
   {
     icon: '/icon_register2.png',
-    title: 'Smart Reminders',
-    description: 'Never miss a deworming or a check-up ever again.',
+    title: t('auth.regFeat3Title', 'Smart Reminders'),
+    description: t('auth.regFeat3Desc', 'Never miss a deworming or a check-up ever again.'),
   },
 ];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const auth = useAuth();
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -58,11 +60,11 @@ export default function RegisterPage() {
     const nextErrors = {};
 
     if (!name || name.trim().length < 2) {
-      nextErrors.name = 'Name must be at least 2 characters.';
+      nextErrors.name = t('auth.nameMin2', 'Name must be at least 2 characters.');
     }
 
     if (!email || !isValidEmail(email)) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = t('auth.validEmail', 'Enter a valid email address.');
     }
 
     const passwordValidation = validatePassword(password);
@@ -71,11 +73,11 @@ export default function RegisterPage() {
     }
 
     if (confirmPassword !== password) {
-      nextErrors.confirmPassword = 'Passwords do not match.';
+      nextErrors.confirmPassword = t('auth.passwordsNotMatch', 'Passwords do not match.');
     }
 
     if (!agree) {
-      nextErrors.agree = 'You must agree to continue.';
+      nextErrors.agree = t('auth.mustAgree', 'You must agree to continue.');
     }
 
     setFieldErrors(nextErrors);
@@ -98,7 +100,7 @@ export default function RegisterPage() {
       auth.clearSession();
       navigate('/login', { replace: true, state: { email: email.trim() } });
     } catch (apiError) {
-      const message = apiError?.response?.data?.message || apiError?.message || 'Registration failed. Please try again.';
+      const message = apiError?.response?.data?.message || apiError?.message || t('auth.regFailed', 'Registration failed. Please try again.');
       setError(message);
       addToast(message, 'danger');
     } finally {
@@ -127,7 +129,7 @@ export default function RegisterPage() {
                     fontVariationSettings: '"opsz" 48',      
                   }}
                 >
-                  Care for your pet,
+                  {t('auth.regHeadline1', 'Care for your pet,')}
                   <span 
                     className="block italic"
                     style={{
@@ -135,14 +137,14 @@ export default function RegisterPage() {
                       fontVariationSettings: '"opsz" 48',
                     }}
                   >
-                    the right way.</span>
+                    {t('auth.regHeadline2', 'the right way.')}</span>
                 </h1>
               </div>
 
               
 
               <div className="space-y-5">
-                {featureItems.map((item) => (
+                {getFeatureItems(t).map((item) => (
                   <div key={item.title} className="flex items-start gap-4">
                     <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/14">
                       <FieldIcon src={item.icon} alt={item.title} />
@@ -161,35 +163,35 @@ export default function RegisterPage() {
         <section className="flex h-full items-center justify-center overflow-hidden bg-neutral-50 px-5 py-6 sm:px-8 lg:px-12 lg:py-0">
           <div className="w-full max-w-[520px] space-y-6">
             <div className="space-y-1">
-              <h2 className="text-heading-lg font-display text-neutral-900">Create your account</h2>
-              <p className="text-sm text-neutral-500">Join the community of dedicated pet parents in Nepal.</p>
+              <h2 className="text-heading-lg font-display text-neutral-900">{t('auth.createAccountTitle', 'Create your account')}</h2>
+              <p className="text-sm text-neutral-500">{t('auth.joinCommunity', 'Join the community of dedicated pet parents in Nepal.')}</p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input
-                label="Full Name"
+                label={t('forms.fullName', 'Full Name')}
                 required
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 error={fieldErrors.name}
-                placeholder="Aruna Guragain"
+                placeholder={t('forms.placeholderName', 'Aruna Guragain')}
                 leftIcon={<img src="/profile.png" alt="profile icon" className="w-4 h-4"/>}
               />
 
               <Input
-                label="Email Address"
+                label={t('forms.email', 'Email Address')}
                 required
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 error={fieldErrors.email}
-                placeholder="guragain@gmail.com"
+                placeholder={t('forms.placeholderEmail', 'guragain@gmail.com')}
                 leftIcon={<img src="/mail.png" alt="mail icon" className="w-4 h-3"/>}
               />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Password"
+                  label={t('forms.password', 'Password')}
                   required
                   type={showPassword ? 'text' : 'password'}
                   minLength={8}
@@ -210,7 +212,7 @@ export default function RegisterPage() {
                   }
                 />
                 <Input
-                  label="Confirm"
+                  label={t('forms.confirmPassword', 'Confirm')}
                   required
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
@@ -235,13 +237,13 @@ export default function RegisterPage() {
                 <label className="flex items-start gap-2 text-sm text-neutral-600">
                   <input type="checkbox" checked={agree} onChange={(event) => setAgree(event.target.checked)} className="mt-1 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-600/15" />
                   <span>
-                    I agree to the{' '}
+                    {t('auth.agreeTo', 'I agree to the ')}
                     <a href="#" className="text-primary-600">
-                      Terms of Service
-                    </a>{' '}
-                    and{' '}
+                      {t('auth.termsOfService', 'Terms of Service')}
+                    </a>
+                    {t('auth.and', ' and ')}
                     <a href="#" className="text-primary-600">
-                      Privacy Policy
+                      {t('auth.privacyPolicy', 'Privacy Policy')}
                     </a>
                   </span>
                 </label>
@@ -251,26 +253,26 @@ export default function RegisterPage() {
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
 
               <Button type="submit" fullWidth loading={loading} className="justify-center bg-primary-600 text-white hover:bg-primary-700">
-                Create Account →
+                {t('auth.createAccountBtn', 'Create Account →')}
               </Button>
 
               <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
                 <div className="h-px flex-1 bg-neutral-200" />
-                <span>or continue with</span>
+                <span>{t('auth.orContinueWith', 'or continue with')}</span>
                 <div className="h-px flex-1 bg-neutral-200" />
               </div>
 
               <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
                 <span className="flex items-center gap-2">
                   <GoogleMark />
-                  Continue with Google
+                  {t('auth.continueWithGoogle', 'Continue with Google')}
                 </span>
               </Button>
 
               <p className="pt-2 text-center text-sm text-neutral-500">
-                Already have an account?{' '}
+                {t('auth.alreadyHaveAccount', 'Already have an account? ')}
                 <Link to="/login" className="font-semibold text-primary-600">
-                  Sign In
+                  {t('auth.signIn', 'Sign In')}
                 </Link>
               </p>
             </form>
