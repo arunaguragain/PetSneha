@@ -307,6 +307,15 @@ async function setPinnedStatus(postId, isPinned) {
 }
 
 /**
+ * Dismiss a report on a forum post (Approve it).
+ * @param {string} postId
+ * @returns {Promise}
+ */
+async function dismissForumPostReport(postId) {
+  return ForumPost.findByIdAndUpdate(postId, { isReported: false, reportCount: 0 }, { new: true });
+}
+
+/**
  * Get all products pending seller verification.
  * @returns {Promise}
  */
@@ -371,6 +380,7 @@ module.exports = {
   setArticlePublishedStatus,
   getReportedPosts,
   deleteForumPost,
+  dismissForumPostReport,
   setPinnedStatus,
   getPendingProducts,
   setProductVerifiedStatus,

@@ -3,12 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getPet, updatePet } from '../../api/pet.api';
 import { getErrorMessage } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from 'react-i18next';
 import { Camera, CheckCircle2 } from 'lucide-react';
 
 export default function EditPetPage() {
   const { petId } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   const fileRef = useRef(null);
 
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,7 @@ export default function EditPetPage() {
           }
         }
       } catch (err) {
-        addToast('Failed to load pet details', 'danger');
+        addToast(t('petProfile.loadFailed', 'Failed to load pet details'), 'danger');
       }
     };
     fetchPet();
@@ -77,16 +79,16 @@ export default function EditPetPage() {
     event.preventDefault();
 
     const newErrors = {};
-    if (!name.trim()) newErrors.name = 'Name is required';
-    if (!species.trim()) newErrors.species = 'Species is required';
-    if (!breed.trim()) newErrors.breed = 'Breed is required';
-    if (!gender) newErrors.gender = 'Gender selection is required';
+    if (!name.trim()) newErrors.name = t('forms.nameRequired', 'Name is required');
+    if (!species.trim()) newErrors.species = t('forms.speciesRequired', 'Species is required');
+    if (!breed.trim()) newErrors.breed = t('forms.breedRequired', 'Breed is required');
+    if (!gender) newErrors.gender = t('forms.genderRequired', 'Gender selection is required');
 
     if (age !== '' && parseInt(age) < 0) {
-      newErrors.age = 'Cannot be negative';
+      newErrors.age = t('forms.cannotBeNegative', 'Cannot be negative');
     }
     if (weight !== '' && parseFloat(weight) < 0) {
-      newErrors.weight = 'Cannot be negative';
+      newErrors.weight = t('forms.cannotBeNegative', 'Cannot be negative');
     }
 
     if (ownedSince) {
@@ -94,7 +96,7 @@ export default function EditPetPage() {
       const today = new Date();
       today.setHours(23, 59, 59, 999);
       if (selectedDate > today) {
-        newErrors.ownedSince = 'Cannot be in future';
+        newErrors.ownedSince = t('forms.cannotBeFuture', 'Cannot be in future');
       }
     }
 
@@ -127,10 +129,10 @@ export default function EditPetPage() {
 
       await updatePet(petId, formData);
 
-      addToast(`✓ ${name} updated successfully!`, 'success');
+      addToast(t('petProfile.updateSuccess', '✓ {{name}} updated successfully!', { name }), 'success');
       navigate(`/pets/${petId}`);
     } catch (error) {
-      addToast(getErrorMessage(error) || 'Failed to update pet. Please try again.', 'danger');
+      addToast(getErrorMessage(error) || t('petProfile.updateFailed', 'Failed to update pet. Please try again.'), 'danger');
     } finally {
       setLoading(false);
     }
@@ -145,10 +147,10 @@ export default function EditPetPage() {
         {/* Header */}
         <div className="p-5 pb-3 border-b border-[#F1F5F9]">
           <h2 className="text-xl font-bold text-[#0046CE] leading-tight" style={{ fontFamily: 'Literata, serif' }}>
-            Edit Companion Profile
+            {t('petProfile.editCompanionProfile', 'Edit Companion Profile')}
           </h2>
           <p className="text-[#64748B] text-[11px] mt-0.5">
-            Update the details below for your pet's clinical health records.
+            {t('petProfile.editPetDesc', "Update the details below for your pet's clinical health records.")}
           </p>
         </div>
 
@@ -167,26 +169,26 @@ export default function EditPetPage() {
               )}
             </div>
             <div className="flex-1 text-left">
-              <p className="text-xs font-semibold text-[#1E293B]">Pet Photo</p>
-              <p className="text-[10px] text-[#64748B] mt-0.5">High quality JPG or PNG (Max 5MB)</p>
+              <p className="text-xs font-semibold text-[#1E293B]">{t('petProfile.petPhoto', 'Pet Photo')}</p>
+              <p className="text-[10px] text-[#64748B] mt-0.5">{t('petProfile.photoHint', 'High quality JPG or PNG (Max 5MB)')}</p>
               <button 
                 type="button" 
                 onClick={() => fileRef.current?.click()}
                 className="mt-1.5 text-xs text-[#0046CE] font-bold hover:underline text-left block"
               >
-                {preview ? 'Change Photo' : 'Upload Photo'}
+                {preview ? t('petProfile.changePhoto', 'Change Photo') : t('petProfile.uploadPhotoText', 'Upload Photo')}
               </button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
             </div>
           </div>          <div className="space-y-3">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Pet Name</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.petName', 'Pet Name')}</label>
                 {errors.name && <span className="text-[10px] text-red-500 font-semibold">{errors.name}</span>}
               </div>
               <input 
                 type="text" 
-                placeholder="Enter name"
+                placeholder={t('forms.enterName', 'Enter name')}
                 className={`w-full bg-white border ${errors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#0046CE] focus:ring-[#0046CE]'} rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 transition-all placeholder:text-[#94A3B8]`}
                 value={name}
                 onChange={(e) => {
@@ -199,12 +201,12 @@ export default function EditPetPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Species</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.species', 'Species')}</label>
                   {errors.species && <span className="text-[10px] text-red-500 font-semibold">{errors.species}</span>}
                 </div>
                 <input 
                   type="text" 
-                  placeholder="e.g. Dog"
+                  placeholder={t('forms.egDog', 'e.g. Dog')}
                   className={`w-full bg-white border ${errors.species ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#0046CE] focus:ring-[#0046CE]'} rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 transition-all placeholder:text-[#94A3B8]`}
                   value={species}
                   onChange={(e) => {
@@ -215,12 +217,12 @@ export default function EditPetPage() {
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Breed</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.breed', 'Breed')}</label>
                   {errors.breed && <span className="text-[10px] text-red-500 font-semibold">{errors.breed}</span>}
                 </div>
                 <input 
                   type="text" 
-                  placeholder="e.g. Golden Retriever"
+                  placeholder={t('forms.egGolden', 'e.g. Golden Retriever')}
                   className={`w-full bg-white border ${errors.breed ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-[#E2E8F0] focus:border-[#0046CE] focus:ring-[#0046CE]'} rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 transition-all placeholder:text-[#94A3B8]`}
                   value={breed}
                   onChange={(e) => {
@@ -234,7 +236,7 @@ export default function EditPetPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Owned Since</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.ownedSince', 'Owned Since')}</label>
                   {errors.ownedSince && <span className="text-[10px] text-red-500 font-semibold">{errors.ownedSince}</span>}
                 </div>
                 <input 
@@ -250,7 +252,7 @@ export default function EditPetPage() {
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Age (Years)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.ageYears', 'Age (Years)')}</label>
                   {errors.age && <span className="text-[10px] text-red-500 font-semibold">{errors.age}</span>}
                 </div>
                 <input 
@@ -270,7 +272,7 @@ export default function EditPetPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Weight (kg)</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.weightKg', 'Weight (kg)')}</label>
                   {errors.weight && <span className="text-[10px] text-red-500 font-semibold">{errors.weight}</span>}
                 </div>
                 <input 
@@ -287,10 +289,10 @@ export default function EditPetPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569] mb-1">Colour</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569] mb-1">{t('forms.colour', 'Colour')}</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Golden, Brindle"
+                  placeholder={t('forms.egColour', 'e.g. Golden, Brindle')}
                   className="w-full bg-white border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-xs outline-none focus:border-[#0046CE] focus:ring-1 focus:ring-[#0046CE] transition-all placeholder:text-[#94A3B8]"
                   value={colour}
                   onChange={(e) => setColour(e.target.value)}
@@ -300,7 +302,7 @@ export default function EditPetPage() {
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">Gender</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#475569]">{t('forms.gender', 'Gender')}</label>
                 {errors.gender && <span className="text-[10px] text-red-500 font-semibold">{errors.gender}</span>}
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -316,7 +318,7 @@ export default function EditPetPage() {
                       : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'
                   } ${errors.gender && !gender ? 'border-red-500' : ''}`}
                 >
-                  <span className="text-base leading-none">♂</span> Male
+                  <span className="text-base leading-none">♂</span> {t('forms.male', 'Male')}
                 </button>
                 <button 
                   type="button"
@@ -330,7 +332,7 @@ export default function EditPetPage() {
                       : 'border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]'
                   } ${errors.gender && !gender ? 'border-red-500' : ''}`}
                 >
-                  <span className="text-base leading-none">♀</span> Female
+                  <span className="text-base leading-none">♀</span> {t('forms.female', 'Female')}
                 </button>
               </div>
             </div>
@@ -342,24 +344,24 @@ export default function EditPetPage() {
               onClick={() => navigate(-1)}
               className="flex-[0.4] py-2 rounded-lg border border-[#0046CE] text-[#0046CE] font-semibold text-xs hover:bg-[#EFF6FF] transition-colors"
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             <button 
               type="submit" 
               disabled={loading}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#0046CE] hover:bg-[#003DA8] text-white font-semibold text-xs transition-colors disabled:opacity-70 shadow-[0_4px_10px_rgba(0,70,206,0.2)]"
             >
-              {loading ? 'Saving...' : (
+              {loading ? t('common.saving', 'Saving...') : (
                 <>
                   <CheckCircle2 size={15} />
-                  Save Changes
+                  {t('common.saveChanges', 'Save Changes')}
                 </>
               )}
             </button>
           </div>
 
           <p className="text-center text-[10px] text-[#94A3B8] italic pt-1">
-            By editing, you agree to PetSneha's clinical data privacy policy.
+            {t('petProfile.editPetAgree', "By editing, you agree to PetSneha's clinical data privacy policy.")}
           </p>
         </form>
       </div>

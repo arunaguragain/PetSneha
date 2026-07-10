@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getCurrentUser, loginUser, logoutUser, registerUser } from '../api/auth.api';
+import { getCurrentUser, loginUser, logoutUser, registerUser, googleLogin as googleLoginApi } from '../api/auth.api';
 
 export const AuthContext = React.createContext();
 
@@ -56,6 +56,27 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const response = await loginUser({ email, password });
+    const currentUser = response?.data?.user || null;
+    const authToken = response?.data?.token || null;
+
+    if (authToken) {
+      localStorage.setItem(TOKEN_KEY, authToken);
+    }
+
+    if (currentUser?.role) {
+      localStorage.setItem(ROLE_KEY, currentUser.role);
+    }
+
+    setUser(currentUser);
+    setToken(authToken);
+    setRole(currentUser?.role || null);
+    setLanguage(currentUser?.language || localStorage.getItem('petsneha_lang') || 'en');
+
+    return currentUser;
+  };
+
+  const googleLogin = async (credential, isRegistering = false) => {
+    const response = await googleLoginApi({ credential, isRegistering });
     const currentUser = response?.data?.user || null;
     const authToken = response?.data?.token || null;
 
@@ -132,6 +153,7 @@ export function AuthProvider({ children }) {
       language,
       setLanguage,
       login,
+      googleLogin,
       register,
       logout,
       clearSession,

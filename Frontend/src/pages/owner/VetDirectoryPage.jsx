@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, Badge, Button, Card, Input, Skeleton, VerifiedBadge } from '../../components/ui';
 import { getVets, saveVet } from '../../api/vet.api';
 import { getErrorMessage, formatCurrency, unwrapItems } from '../../utils/api';
+import { translateDynamic } from '../../utils/mappings';
+import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '../../utils/imageUrl';
 import { useToast } from '../../context/ToastContext';
 import { setSavedVet } from '../../utils/ownerState';
@@ -11,6 +13,7 @@ import { Search, MapPin, Receipt, PawPrint, Heart, Star, Check, CheckCircle2, Wa
 
 export default function VetDirectoryPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [vets, setVets] = useState([]);
@@ -51,7 +54,7 @@ export default function VetDirectoryPage() {
       await saveVet(vet._id);
       setSavedVet(vet);
       localStorage.setItem('petsneha_saved_vet_id', vet._id);
-      addToast('✓ Saved as your vet!', 'success');
+      addToast(t('vetDirectory.savedSuccess', '✓ Saved as your vet!'), 'success');
     } catch (apiError) {
       addToast(getErrorMessage(apiError), 'danger');
     }
@@ -60,7 +63,7 @@ export default function VetDirectoryPage() {
   return (
     <div className="bg-white min-h-screen">
       <div className="w-full px-[24px] lg:px-[64px] pt-[32px] pb-[48px] max-w-[1600px] mx-auto relative">
-        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>Find Verified Vets</h1>
+        <h1 className="text-2xl font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>{t('vetDirectory.title', 'Find Verified Vets')}</h1>
         
         {/* Filter bar */}
         <div className="flex items-center gap-[12px] mt-4 relative">
@@ -68,7 +71,7 @@ export default function VetDirectoryPage() {
             <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search by name, clinic, or specialization..." 
+              placeholder={t('vetDirectory.searchPlaceholder', 'Search by name, clinic, or specialization...')} 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-[#0046CE] transition"
@@ -81,7 +84,7 @@ export default function VetDirectoryPage() {
             className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${verifiedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            Verified only
+            {t('vetDirectory.verifiedOnly', 'Verified only')}
           </button>
           
           <div ref={feeMenuRef}>
@@ -91,12 +94,12 @@ export default function VetDirectoryPage() {
               className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${maxFee ? 'bg-[#0046CE] text-white border-[#0046CE]' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
             >
               <Wallet className="w-4 h-4" />
-              Fee range ▾
+              {t('vetDirectory.feeRangeBtn', 'Fee range ▾')}
             </button>
             
             {feeMenuOpen && (
               <div className="absolute top-14 left-0 md:left-auto right-auto md:right-32 bg-white border border-[#E2E8F0] rounded-xl shadow-md p-4 w-72 z-10">
-                <p className="text-sm font-medium text-[#1E293B]">Fee Range</p>
+                <p className="text-sm font-medium text-[#1E293B]">{t('vetDirectory.feeRangeLabel', 'Fee Range')}</p>
                 <div className="mt-4 px-2">
                   <input 
                     type="range" 
@@ -123,7 +126,7 @@ export default function VetDirectoryPage() {
             className={`rounded-full px-4 py-2 text-sm transition flex items-center gap-1.5 ${savedOnly ? 'bg-[#0046CE] text-white font-medium' : 'bg-white border border-[#E2E8F0] text-[#1E293B]'}`}
           >
             <Heart className={`w-4 h-4 ${savedOnly ? 'fill-current' : 'text-[#64748B]'}`} />
-            Saved vets
+            {t('vetDirectory.savedVets', 'Saved vets')}
           </button>
         </div>
 
@@ -153,7 +156,7 @@ export default function VetDirectoryPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-[#1E293B] text-base truncate">{vet.name}</h3>
                           <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${isVerified ? 'bg-[#EFF6FF] text-[#0046CE]' : 'bg-[#FEF3C7] text-[#B45309]'}`}>
-                            {isVerified ? <><Check className="w-3 h-3" /> Verified</> : 'Under review'}
+                            {isVerified ? <><Check className="w-3 h-3" /> {t('vetDirectory.verified', 'Verified')}</> : t('vetDirectory.underReview', 'Under review')}
                           </span>
                         </div>
                         {isVerified ? (
@@ -162,11 +165,11 @@ export default function VetDirectoryPage() {
                               <Star className="w-4 h-4 text-yellow-400 fill-current" /> {vet.rating} ({vet.reviewCount})
                             </div>
                           ) : (
-                            <div className="text-xs text-[#94A3B8] font-medium flex-shrink-0">No reviews yet</div>
+                            <div className="text-xs text-[#94A3B8] font-medium flex-shrink-0">{t('vetDirectory.noReviews', 'No reviews yet')}</div>
                           )
                         ) : null}
                       </div>
-                      <div className="text-sm text-[#64748B] mt-1 truncate">{vet.specialisation || 'General Practice'}</div>
+                      <div className="text-sm text-[#64748B] mt-1 truncate">{translateDynamic(vet.specialisation || t('vetDirectory.generalPractice', 'General Practice'), i18n.language)}</div>
                     </div>
                   </div>
                 </div>
@@ -174,13 +177,13 @@ export default function VetDirectoryPage() {
                 {/* Location row */}
                 <div className="flex items-center gap-4 mt-3 text-xs text-[#64748B] flex-wrap">
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <MapPin className="w-3.5 h-3.5" /> {vet.location || vet.clinicName || 'Kathmandu'}
+                    <MapPin className="w-3.5 h-3.5" /> {translateDynamic(vet.location || vet.clinicName || t('vetDirectory.defaultLocation', 'Kathmandu'), i18n.language)}
                   </div>
                   <div className="flex items-center gap-1 whitespace-nowrap">
                     <Receipt className="w-3.5 h-3.5" /> {formatCurrency(vet.consultationFee || vet.fee || 800)}
                   </div>
                   <div className="flex items-center gap-1 whitespace-nowrap">
-                    <PawPrint className="w-3.5 h-3.5" /> Animal Care
+                    <PawPrint className="w-3.5 h-3.5" /> {t('vetDirectory.animalCare', 'Animal Care')}
                   </div>
                 </div>
 
@@ -190,12 +193,12 @@ export default function VetDirectoryPage() {
                     onClick={() => navigate(`/vets/${vet._id}/book`)}
                     className="flex-1 bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-medium transition"
                   >
-                    Book Now
+                    {t('vetDirectory.bookNow', 'Book Now')}
                   </button>
                   <button 
                     onClick={() => handleSaveVet(vet)}
                     className="w-10 h-10 border border-[#E2E8F0] hover:border-red-500 rounded-lg flex items-center justify-center text-[#64748B] hover:text-red-500 transition flex-shrink-0"
-                    title="Save Vet"
+                    title={t('vetDirectory.saveVetTitle', 'Save Vet')}
                   >
                     <Heart className="w-5 h-5" />
                   </button>
