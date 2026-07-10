@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const userRepository = require('../repositories/user.repository');
 const notificationService = require('./notification.service');
 const generateToken = require('../utils/generateToken');
@@ -105,4 +107,71 @@ async function resetPassword(payload) {
   return { message: 'Password reset successful.' };
 }
 
-module.exports = { register, login, forgotPassword, resetPassword };
+/**
+ * Authenticates a user using a Google Identity token.
+ * If the user doesn't exist, it creates a new petOwner account.
+ * @param {{ credential: string }} payload
+ * @returns {Promise<{ token: string, user: object }>}
+ */
+async function googleLogin(payload) {
+  const { credential } = payload;
+  
+  if (!credential) {
+    throw new AppError('Google token is required.', 400);
+  }
+
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${credential}` }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info from Google');
+    }
+
+    const googleData = await response.json();
+    const { email, name, sub: googleId, picture } = googleData;
+
+    // Check if user exists by googleId OR email
+    let user = await userRepository.findByEmail(email);
+
+    if (payload.isRegistering && user) {
+      throw new AppError('An account with this email already exists. Please sign in instead.', 409);
+    }
+
+    if (user) {
+      // If user exists but doesn't have googleId linked, update it
+      if (!user.googleId) {
+        user = await userRepository.updateById(user._id, { 
+          googleId, 
+          authProvider: 'google',
+          profilePhoto: user.profilePhoto || picture 
+        });
+      }
+    } else {
+      if (!payload.isRegistering) {
+        throw new AppError('No account found with this email. Please sign up first.', 404);
+      }
+      
+      // Create new user (no password)
+      user = await userRepository.create({
+        name,
+        email,
+        role: 'petOwner',
+        googleId,
+        authProvider: 'google',
+        profilePhoto: picture,
+      });
+    }
+
+    return { token: generateToken(user), user: toPublicUser(user) };
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('Failed to authenticate with Google.', 401);
+  }
+}
+
+module.exports = { register, login, forgotPassword, resetPassword, googleLogin };

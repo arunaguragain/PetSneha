@@ -14,8 +14,10 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 8, select: false },
+    password: { type: String, minlength: 8, select: false },
     role: { type: String, enum: ['petOwner', 'vet', 'admin'], default: 'petOwner' },
+    googleId: { type: String, unique: true, sparse: true },
+    authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
     profilePhoto: { type: String },
     phone: { type: String },
     isActive: { type: Boolean, default: true },
