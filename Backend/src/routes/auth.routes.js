@@ -32,6 +32,13 @@ router.post(
   authController.login
 );
 
+router.post(
+  '/google',
+  [body('credential').notEmpty().withMessage('Google credential is required.')],
+  validateRequest,
+  authController.googleLogin
+);
+
 router.post('/logout', authController.logout);
 
 router.post('/forgot-password', [body('email').isEmail().withMessage('Valid email is required.')], validateRequest, authController.forgotPassword);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, Modal, Select, Textarea } from '../../components/ui';
 import { createForumPost } from '../../api/content.api';
@@ -28,7 +29,11 @@ export default function ForumCreatePage() {
   return (
     <div className="w-full bg-white min-h-screen">
       <div className="max-w-[1440px] mx-auto px-8 py-10">
-        <Link to="/forum" className="font-semibold text-[#64748B] hover:text-[#0046CE] mb-6 inline-block">← Back to forum</Link>
+        <div className="flex items-center justify-end mb-4">
+          <Link to="/forum" className="flex items-center gap-1.5 text-sm text-[#64748B] border border-[#E2E8F0] rounded-lg px-4 py-2 hover:bg-[#F8FAFC] transition">
+            <ArrowLeft className="w-4 h-4" /> Back to forum
+          </Link>
+        </div>
         <div className="max-w-4xl">
           <Modal open onClose={() => navigate('/forum')} size="lg" title="Create forum post">
             <form className="px-6 pb-6 space-y-5" onSubmit={handleSubmit}>

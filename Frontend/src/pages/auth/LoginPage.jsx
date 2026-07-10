@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
+import { useGoogleLogin } from '@react-oauth/google';
 import { isValidEmail } from '../../utils/helpers';
 import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
 
@@ -19,6 +21,7 @@ function GoogleMark() {
 export default function LoginPage({ variant = 'owner' }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const auth = useAuth();
   
   const isVetLogin = variant === 'vet';
@@ -38,14 +41,14 @@ export default function LoginPage({ variant = 'owner' }) {
       linkClass: 'text-success hover:text-success-600',
       homePath: '/vets-landing',
       signupPath: '/vet/register',
-      headline: 'Grow your veterinary practice across Nepal.',
-      copy: 'Access your verified clinic profile, appointments, and patient care tools in one professional workspace.',
-      eyebrow: 'VERIFIED CARE, SIMPLE PRACTICE MANAGEMENT',
-      title: 'Vet Login',
-      subtitle: 'Login to manage appointments, credentials, and your public vet profile.',
-      signupText: 'Register as a vet',
+      headline: t('auth.vetHeadline', 'Grow your veterinary practice across Nepal.'),
+      copy: t('auth.vetCopy', 'Access your verified clinic profile, appointments, and patient care tools in one professional workspace.'),
+      eyebrow: t('auth.vetEyebrow', 'VERIFIED CARE, SIMPLE PRACTICE MANAGEMENT'),
+      title: t('auth.vetTitle', 'Vet Login'),
+      subtitle: t('auth.vetSubtitle', 'Login to manage appointments, credentials, and your public vet profile.'),
+      signupText: t('auth.vetSignupText', 'Register as a vet'),
       showSignup: true,
-      showSocial: true,
+      showSocial: false,
     },
     admin: {
       panelClass: 'bg-[linear-gradient(135deg,#2E1065_0%,#6D28D9_55%,#4C1D95_100%)]',
@@ -53,11 +56,11 @@ export default function LoginPage({ variant = 'owner' }) {
       linkClass: 'text-violet-700 hover:text-violet-600',
       homePath: '/',
       signupPath: null,
-      headline: 'Platform oversight for PetSneha.',
-      copy: 'Verify vets and products, moderate community content, and manage accounts from a single control panel.',
-      eyebrow: 'RESTRICTED ACCESS · ADMIN ONLY',
-      title: 'Admin Login',
-      subtitle: 'Sign in with an authorized administrator account.',
+      headline: t('auth.adminHeadline', 'Platform oversight for PetSneha.'),
+      copy: t('auth.adminCopy', 'Verify vets and products, moderate community content, and manage accounts from a single control panel.'),
+      eyebrow: t('auth.adminEyebrow', 'RESTRICTED ACCESS · ADMIN ONLY'),
+      title: t('auth.adminTitle', 'Admin Login'),
+      subtitle: t('auth.adminSubtitle', 'Sign in with an authorized administrator account.'),
       signupText: null,
       showSignup: false,
       showSocial: false,
@@ -68,12 +71,12 @@ export default function LoginPage({ variant = 'owner' }) {
       linkClass: 'text-primary-600 hover:text-primary-700',
       homePath: '/',
       signupPath: '/register',
-      headline: 'Advancing Pet Care Across Nepal.',
-      copy: 'Access elite veterinary experts, digital health records, and premium pet supplies in one professional ecosystem.',
-      eyebrow: 'TRUST & PRECISION IN EVERY INTERACTION',
-      title: 'Welcome Back',
-      subtitle: "Login to manage your pet's health records and appointments.",
-      signupText: 'Create an account',
+      headline: t('auth.ownerHeadline', 'Advancing Pet Care Across Nepal.'),
+      copy: t('auth.ownerCopy', 'Access elite veterinary experts, digital health records, and premium pet supplies in one professional ecosystem.'),
+      eyebrow: t('auth.ownerEyebrow', 'TRUST & PRECISION IN EVERY INTERACTION'),
+      title: t('auth.ownerTitle', 'Welcome Back'),
+      subtitle: t('auth.ownerSubtitle', "Login to manage your pet's health records and appointments."),
+      signupText: t('auth.ownerSignupText', 'Create an account'),
       showSignup: true,
       showSocial: true,
     }
@@ -85,11 +88,11 @@ export default function LoginPage({ variant = 'owner' }) {
     const nextErrors = {};
 
     if (!email || !isValidEmail(email)) {
-      nextErrors.email = 'Enter a valid email address.';
+      nextErrors.email = t('auth.validEmail', 'Enter a valid email address.');
     }
 
     if (!password) {
-      nextErrors.password = 'Password is required.';
+      nextErrors.password = t('auth.passwordRequired', 'Password is required.');
     }
 
     setFieldErrors(nextErrors);
@@ -119,11 +122,53 @@ export default function LoginPage({ variant = 'owner' }) {
 
       navigate(targetPath, { replace: true });
     } catch (apiError) {
-      setError(typeof apiError === 'string' ? apiError : 'Could not connect to server. Please try again.');
+      setError(typeof apiError === 'string' ? apiError : t('auth.connectionError', 'Could not connect to server. Please try again.'));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+      // `useGoogleLogin` with standard flow returns an access_token.
+      // But we need an id_token to verify on backend securely.
+      // Wait, useGoogleLogin defaults to implicit flow which returns access_token.
+      // To get id_token, we can use `google.accounts.oauth2` or just use the `credential` from `GoogleLogin` component.
+      // Let's use `GoogleLogin` component or `useGoogleOneTapLogin` or `useGoogleLogin({ flow: 'auth-code' })`.
+      // The easiest way for custom button is `useGoogleLogin` but backend expects `idToken`.
+      // Actually, `@react-oauth/google` `useGoogleLogin` can do `flow: 'implicit'` (default) which does not return id_token.
+      // If we need a custom button and an id_token, there is no direct hook for id_token. The `useGoogleLogin` docs say: "For id_token use <GoogleLogin /> component".
+      // Let's just use `useGoogleLogin` and pass the access_token? No, backend expects id_token.
+      // Let's just render the official <GoogleLogin /> button inside the Button div and make it invisible or something? No, that's ugly.
+      // Actually, `client.verifyIdToken` expects an ID token.
+      // Let's fetch Google user info manually using the access_token in the frontend, OR better, let the backend do it.
+      // If we want backend to verify, it's safer. Let's change backend to accept access_token?
+      // Wait, `google-auth-library` has `client.getTokenInfo(access_token)` which verifies access tokens!
+      // Let's just pass `access_token` as `credential` to backend, and backend can use `getTokenInfo`.
+      
+      const user = await auth.googleLogin(tokenResponse.access_token);
+      const savedRedirect = location.state?.redirect;
+      const targetPath = savedRedirect
+        || {
+          petOwner: '/dashboard',
+          vet: '/vet/dashboard',
+          admin: '/admin/dashboard',
+        }[user?.role || auth.role]
+        || '/dashboard';
+
+      navigate(targetPath, { replace: true });
+    } catch (apiError) {
+      setError(typeof apiError === 'string' ? apiError : 'Google login failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google login was cancelled or failed.'),
+  });
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-neutral-50">
@@ -158,7 +203,7 @@ export default function LoginPage({ variant = 'owner' }) {
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <Input
-                label="Email address"
+                label={t('forms.email', 'Email address')}
                 required
                 type="email"
                 value={email}
@@ -170,7 +215,7 @@ export default function LoginPage({ variant = 'owner' }) {
 
               <div className="space-y-2">
                 <Input
-                  label="Password"
+                  label={t('forms.password', 'Password')}
                   required
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -192,7 +237,7 @@ export default function LoginPage({ variant = 'owner' }) {
                 {!isAdminLogin && (
                   <div className="flex justify-end">
                     <Link to={isVetLogin ? '/forgot-password?role=vet' : '/forgot-password'} className={`text-xs font-semibold ${theme.linkClass}`}>
-                      Forgot password?
+                      {t('auth.forgotPassword', 'Forgot password?')}
                     </Link>
                   </div>
                 )}
@@ -201,21 +246,21 @@ export default function LoginPage({ variant = 'owner' }) {
               {error ? <InfoBox type="error">{error}</InfoBox> : null}
 
               <Button type="submit" fullWidth loading={loading} className={`justify-center ${theme.buttonClass}`}>
-                Login to account
+                {t('auth.loginToAccount', 'Login to account')}
               </Button>
 
               {theme.showSocial && (
                 <>
                   <div className="flex items-center gap-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
                     <div className="h-px flex-1 bg-neutral-200" />
-                    <span>or continue with</span>
+                    <span>{t('auth.orContinueWith', 'or continue with')}</span>
                     <div className="h-px flex-1 bg-neutral-200" />
                   </div>
 
-                  <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
+                  <Button type="button" onClick={() => loginWithGoogle()} variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
                     <span className="flex items-center gap-2">
                       <GoogleMark />
-                      Continue with Google
+                      {t('auth.continueWithGoogle', 'Continue with Google')}
                     </span>
                   </Button>
                 </>
@@ -224,13 +269,13 @@ export default function LoginPage({ variant = 'owner' }) {
               <div className="pt-2 text-center text-sm text-neutral-500">
                 {theme.showSignup ? (
                   <>
-                    Don't have an account?{' '}
+                    {t('auth.noAccount', "Don't have an account?")}{' '}
                     <Link to={theme.signupPath} className={`font-semibold ${theme.linkClass}`}>
                       {theme.signupText}
                     </Link>
                   </>
                 ) : (
-                  <p>Admin accounts are provisioned internally and cannot be self-registered.</p>
+                  <p>{t('auth.adminProvision', 'Admin accounts are provisioned internally and cannot be self-registered.')}</p>
                 )}
               </div>
             </form>

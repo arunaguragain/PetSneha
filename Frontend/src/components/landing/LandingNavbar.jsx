@@ -3,19 +3,21 @@ import { Link } from 'react-router-dom';
 
 export default function LandingNavbar() {
   return (
-    <header className="navbar">
-      <div className="w-full h-full flex items-center px-4 lg:px-10">
+    <header className="navbar bg-white sticky top-0 z-40 border-b border-neutral-100">
+      <div className="max-w-[1440px] mx-auto w-full h-full flex items-center px-6 sm:px-12 lg:px-20 justify-between py-4">
         {/* Logo — left */}
-        <a href="#top" className="flex flex-1 items-center gap-3">
-          <img src="/logo.png" alt="PetSneha logo" className="h-8 w-8 object-contain" />
-          <span className="text-label-lg font-display text-primary-600">PetSneha</span>
-        </a>
+        <div className="flex flex-1 items-center">
+          <Link to="/" className="cursor-pointer hover:opacity-80 flex items-center gap-3">
+            <img src="/logo.png" alt="PetSneha logo" className="h-8 w-8 object-contain" />
+            <span className="text-label-lg font-display text-primary-600 text-lg font-bold">PetSneha</span>
+          </Link>
+        </div>
 
         {/* Nav links — absolutely centered */}
-        <nav className="hidden items-center gap-10 md:flex" aria-label="Primary navigation">
-          <a href="#top" className="text-sm text-neutral-600 transition hover:text-primary-600">Home</a>
-          <a href="#features" className="text-sm text-neutral-600 transition hover:text-primary-600">Features</a>
-          <a href="#about" className="text-sm text-neutral-600 transition hover:text-primary-600">About</a>
+        <nav className="hidden md:flex items-center gap-10" aria-label="Primary navigation">
+          <Link to="/" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">Home</Link>
+          <a href="/#features" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">Features</a>
+          <Link to="/about-us" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">About</Link>
         </nav>
 
         {/* Buttons — right */}

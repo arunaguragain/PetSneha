@@ -17,6 +17,7 @@ export const rejectArticle = (id, reason) => axiosInstance.patch(`/admin/article
 export const getReportedPosts = () => axiosInstance.get('/admin/forum/reported');
 export const getAllForumPosts = (params) => axiosInstance.get('/admin/forum', { params });
 export const removePost = (id) => axiosInstance.delete(`/admin/forum/${id}`);
+export const dismissPostReport = (id) => axiosInstance.patch(`/admin/forum/${id}/dismiss-report`);
 export const pinPost = (id) => axiosInstance.patch(`/admin/forum/${id}/pin`);
 export const getPendingProducts = () => axiosInstance.get('/admin/products/pending');
 export const getAllProducts = (params) => axiosInstance.get('/admin/products', { params });

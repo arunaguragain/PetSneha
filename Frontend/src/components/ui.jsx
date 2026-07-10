@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect, useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const cn = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -296,12 +297,15 @@ export const IconBox = ({ size = 'md', className = '', children }) => (
   <span className={cn('icon-box', size === 'lg' ? 'icon-box-lg' : 'icon-box-sm', className)}>{children}</span>
 );
 
-export const VerifiedBadge = ({ className = '' }) => (
-  <span className={cn('verified-badge', className)}>
-    <CheckIcon className="h-3.5 w-3.5" />
-    Verified
-  </span>
-);
+export const VerifiedBadge = ({ className = '' }) => {
+  const { t } = useTranslation();
+  return (
+    <span className={cn('verified-badge', className)}>
+      <CheckIcon className="h-3.5 w-3.5" />
+      {t('status.verified', 'Verified')}
+    </span>
+  );
+};
 
 export const StarRating = ({ rating = 0, onChange, className = '' }) => (
   <div className={cn('inline-flex items-center gap-1', className)}>

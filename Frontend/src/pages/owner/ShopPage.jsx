@@ -9,10 +9,11 @@ import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart, ArrowRight, ChevronDown, X } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
+import { translateDynamic } from '../../utils/mappings';
 
 export default function ShopPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const { addItem, itemCount } = useCart();
   const [loading, setLoading] = useState(true);
@@ -61,25 +62,25 @@ export default function ShopPage() {
             {myPets.length > 0 ? (
               <>
                 <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">
-                  {myPets.map(p => p.name).join(' & ')}'S CHOICE
+                  {myPets.map(p => p.name).join(' & ')}{t('shop.choice', "'S CHOICE")}
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
-                  Perfectly curated for your {myPets.map(p => p.breed || p.species || 'Pet').join(' & ')}
+                  {t('shop.curatedFor', 'Perfectly curated for your')} {myPets.map(p => p.breed || p.species || 'Pet').join(' & ')}
                 </h1>
-                <p className="text-sm text-[#475569] mt-2">Based on {myPets.map(p => p.name).join(' & ')}'s age, breed, and weight...</p>
+                <p className="text-sm text-[#475569] mt-2">{t('shop.basedOn', "Based on")} {myPets.map(p => p.name).join(' & ')}{t('shop.ageBreedWeight', "'s age, breed, and weight...")}</p>
                 <button className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
-                  Explore {myPets[0].name}'s Picks
+                  {t('shop.explorePicks', 'Explore')} {myPets[0].name}{t('shop.picks', "'s Picks")}
                 </button>
               </>
             ) : (
               <>
-                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">YOUR PET'S CHOICE</span>
+                <span className="inline-block bg-[#0046CE] text-white text-xs px-2 py-0.5 rounded-full font-medium tracking-wide uppercase">{t('shop.yourPetsChoice', "YOUR PET'S CHOICE")}</span>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#1E293B] mt-3" style={{ fontFamily: 'Literata, serif' }}>
-                  Perfectly curated for your pet
+                  {t('shop.curatedForPet', 'Perfectly curated for your pet')}
                 </h1>
-                <p className="text-sm text-[#475569] mt-2">Add your pet to get personalised picks</p>
+                <p className="text-sm text-[#475569] mt-2">{t('shop.addPetForPicks', 'Add your pet to get personalised picks')}</p>
                 <button onClick={() => navigate('/pets/new')} className="bg-[#0046CE] hover:bg-blue-700 text-white rounded-lg px-5 py-2.5 text-sm mt-4 font-semibold transition">
-                  Add a pet
+                  {t('pets.addPet', 'Add a pet')}
                 </button>
               </>
             )}
@@ -136,7 +137,7 @@ export default function ShopPage() {
             <h2 className="text-lg font-semibold text-[#1E293B]" style={{ fontFamily: 'Literata, serif' }}>
               {t('shop.browseAllSupplies')}
             </h2>
-            <p className="text-sm text-[#64748B] mt-0.5">Premium quality products sourced for Nepalese pet owners.</p>
+            <p className="text-sm text-[#64748B] mt-0.5">{t('shop.premiumQuality', 'Premium quality products sourced for Nepalese pet owners.')}</p>
           </div>
           <button 
             onClick={() => navigate('/checkout')}
@@ -179,10 +180,10 @@ export default function ShopPage() {
                 {/* Content */}
                 <div className="p-3 flex flex-col flex-1">
                   <div className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wide">
-                    {product.category || 'Pet Supplies'}
+                    {translateDynamic(product.category ? product.category.toUpperCase() : 'Pet Supplies', i18n.language)}
                   </div>
-                  <h3 className="text-sm font-semibold text-[#1E293B] mt-1 line-clamp-1">{product.name}</h3>
-                  <p className="text-xs text-[#64748B] mt-0.5 line-clamp-2 min-h-[32px]">{product.description}</p>
+                  <h3 className="text-sm font-semibold text-[#1E293B] mt-1 line-clamp-1">{translateDynamic(product.name, i18n.language)}</h3>
+                  <p className="text-xs text-[#64748B] mt-0.5 line-clamp-2 min-h-[32px]">{translateDynamic(product.description, i18n.language)}</p>
                   
                   <div className="flex items-center justify-between mt-auto pt-3">
                     <div className="text-sm font-bold text-[#0046CE]">{formatCurrency(product.price)}</div>
@@ -247,17 +248,17 @@ export default function ShopPage() {
                 </div>
                 <div className="w-full md:w-7/12 flex flex-col justify-center">
                   <div className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest mb-1.5">
-                    {selectedProduct.category || 'Pet Supplies'}
+                    {translateDynamic(selectedProduct.category ? selectedProduct.category.toUpperCase() : 'Pet Supplies', i18n.language)}
                   </div>
                   <h2 className="text-2xl font-bold text-[#1E293B] mb-3 leading-tight" style={{ fontFamily: 'Literata, serif' }}>
-                    {selectedProduct.name}
+                    {translateDynamic(selectedProduct.name, i18n.language)}
                   </h2>
                   <div className="text-xl font-bold text-[#0046CE] mb-4">
                     {formatCurrency(selectedProduct.price)}
                   </div>
                   <div className="h-px w-full bg-[#E2E8F0] mb-4"></div>
                   <p className="text-sm text-[#475569] leading-relaxed mb-6">
-                    {selectedProduct.description}
+                    {translateDynamic(selectedProduct.description, i18n.language)}
                   </p>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-3 mt-auto">
