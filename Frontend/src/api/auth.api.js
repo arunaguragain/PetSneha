@@ -15,6 +15,13 @@ export const registerUser = (data) => axiosInstance.post('/auth/register', data)
 export const loginUser = (data) => axiosInstance.post('/auth/login', data);
 
 /**
+ * Login or Register user with Google
+ * @param {{ credential }} data
+ * @returns {Promise<{ token, data: { user } }>}
+ */
+export const googleLogin = (data) => axiosInstance.post('/auth/google', data);
+
+/**
  * Logout user
  * @returns {Promise}
  */

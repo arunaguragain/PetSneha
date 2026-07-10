@@ -21,6 +21,15 @@ export default function VetLandingNavbar() {
           <Link to="/vets-landing" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">
             Home
           </Link>
+          <Link to="/vets-landing#how-it-works" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">
+            How it works
+          </Link>
+          <Link to="/vets-landing#benefits" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">
+            Benefits
+          </Link>
+          <Link to="/vets-landing#faq" className="text-sm font-semibold text-neutral-600 transition hover:text-primary-600">
+            FAQ
+          </Link>
         </nav>
 
         {/* Right: Actions */}

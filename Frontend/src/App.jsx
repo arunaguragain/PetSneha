@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import VetLayout from './components/VetLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './hooks/useAuth';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { Card, PageHeader } from './components/ui';
 import { getPets } from './api/pet.api';
 import HomePage from './pages/HomePage';

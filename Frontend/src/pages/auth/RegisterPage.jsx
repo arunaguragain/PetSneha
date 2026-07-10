@@ -4,6 +4,7 @@ import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
+import { useGoogleLogin } from '@react-oauth/google';
 import { isValidEmail, validatePassword } from '../../utils/helpers';
 import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
 
@@ -107,6 +108,29 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const user = await auth.googleLogin(tokenResponse.access_token, true);
+      
+      // Clear the auto-login session to match standard registration flow
+      auth.clearSession();
+      
+      addToast(t('auth.regSuccess', 'Registration successful! Please sign in.'), 'success');
+      navigate('/login', { replace: true, state: { email: user?.email } });
+    } catch (apiError) {
+      setError(typeof apiError === 'string' ? apiError : 'Google registration failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google registration was cancelled or failed.'),
+  });
 
   return (
     <div className="min-h-screen overflow-hidden bg-neutral-50 lg:h-screen">
@@ -262,7 +286,7 @@ export default function RegisterPage() {
                 <div className="h-px flex-1 bg-neutral-200" />
               </div>
 
-              <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
+              <Button type="button" onClick={() => loginWithGoogle()} variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
                 <span className="flex items-center gap-2">
                   <GoogleMark />
                   {t('auth.continueWithGoogle', 'Continue with Google')}

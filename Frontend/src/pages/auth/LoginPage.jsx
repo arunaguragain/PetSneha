@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, InfoBox } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
+import { useGoogleLogin } from '@react-oauth/google';
 import { isValidEmail } from '../../utils/helpers';
 import { EyeIcon, EyeOffIcon, PasswordToggleButton } from '../../components/PasswordToggle';
 
@@ -47,7 +48,7 @@ export default function LoginPage({ variant = 'owner' }) {
       subtitle: t('auth.vetSubtitle', 'Login to manage appointments, credentials, and your public vet profile.'),
       signupText: t('auth.vetSignupText', 'Register as a vet'),
       showSignup: true,
-      showSocial: true,
+      showSocial: false,
     },
     admin: {
       panelClass: 'bg-[linear-gradient(135deg,#2E1065_0%,#6D28D9_55%,#4C1D95_100%)]',
@@ -126,6 +127,48 @@ export default function LoginPage({ variant = 'owner' }) {
       setLoading(false);
     }
   };
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+      // `useGoogleLogin` with standard flow returns an access_token.
+      // But we need an id_token to verify on backend securely.
+      // Wait, useGoogleLogin defaults to implicit flow which returns access_token.
+      // To get id_token, we can use `google.accounts.oauth2` or just use the `credential` from `GoogleLogin` component.
+      // Let's use `GoogleLogin` component or `useGoogleOneTapLogin` or `useGoogleLogin({ flow: 'auth-code' })`.
+      // The easiest way for custom button is `useGoogleLogin` but backend expects `idToken`.
+      // Actually, `@react-oauth/google` `useGoogleLogin` can do `flow: 'implicit'` (default) which does not return id_token.
+      // If we need a custom button and an id_token, there is no direct hook for id_token. The `useGoogleLogin` docs say: "For id_token use <GoogleLogin /> component".
+      // Let's just use `useGoogleLogin` and pass the access_token? No, backend expects id_token.
+      // Let's just render the official <GoogleLogin /> button inside the Button div and make it invisible or something? No, that's ugly.
+      // Actually, `client.verifyIdToken` expects an ID token.
+      // Let's fetch Google user info manually using the access_token in the frontend, OR better, let the backend do it.
+      // If we want backend to verify, it's safer. Let's change backend to accept access_token?
+      // Wait, `google-auth-library` has `client.getTokenInfo(access_token)` which verifies access tokens!
+      // Let's just pass `access_token` as `credential` to backend, and backend can use `getTokenInfo`.
+      
+      const user = await auth.googleLogin(tokenResponse.access_token);
+      const savedRedirect = location.state?.redirect;
+      const targetPath = savedRedirect
+        || {
+          petOwner: '/dashboard',
+          vet: '/vet/dashboard',
+          admin: '/admin/dashboard',
+        }[user?.role || auth.role]
+        || '/dashboard';
+
+      navigate(targetPath, { replace: true });
+    } catch (apiError) {
+      setError(typeof apiError === 'string' ? apiError : 'Google login failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google login was cancelled or failed.'),
+  });
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-neutral-50">
@@ -214,7 +257,7 @@ export default function LoginPage({ variant = 'owner' }) {
                     <div className="h-px flex-1 bg-neutral-200" />
                   </div>
 
-                  <Button type="button" variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
+                  <Button type="button" onClick={() => loginWithGoogle()} variant="secondary" fullWidth className="justify-center border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50">
                     <span className="flex items-center gap-2">
                       <GoogleMark />
                       {t('auth.continueWithGoogle', 'Continue with Google')}

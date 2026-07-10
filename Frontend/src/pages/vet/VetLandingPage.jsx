@@ -405,11 +405,11 @@ export default function VetLandingPage() {
 
           {/* Right: Links */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-[13px] text-neutral-400">
-            <Link to="/vet/privacy-policy" className="hover:text-white transition">Privacy Policy</Link>
+            <Link to="/vet/privacy-policy" state={{ fromVet: true }} className="hover:text-white transition">Privacy Policy</Link>
             <span>·</span>
-            <Link to="/vet/contact" className="hover:text-white transition">Contact</Link>
+            <Link to="/vet/contact" state={{ fromVet: true }} className="hover:text-white transition">Contact</Link>
             <span>·</span>
-            <Link to="/vet/terms-of-service" className="hover:text-white transition">Terms</Link>
+            <Link to="/vet/terms-of-service" state={{ fromVet: true }} className="hover:text-white transition">Terms</Link>
             <span className="text-neutral-700">|</span>
             <Link to="/" className="text-emerald-400 font-semibold hover:text-emerald-300 transition">
               Looking for a vet? →

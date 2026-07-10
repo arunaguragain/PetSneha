@@ -14,8 +14,8 @@ export default function TermsOfServicePage() {
   const location = useLocation();
   const isVet = location.pathname.startsWith('/vet') || location.state?.fromVet === true;
 
-  const Nav = user ? Navbar : (isVet ? VetLandingNavbar : LandingNavbar);
-  const Foot = user ? Footer : (isVet ? VetLandingFooter : LandingFooter);
+  const Nav = isVet ? VetLandingNavbar : (user ? Navbar : LandingNavbar);
+  const Foot = isVet ? VetLandingFooter : (user ? Footer : LandingFooter);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
