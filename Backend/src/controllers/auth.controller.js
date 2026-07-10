@@ -63,4 +63,15 @@ const resetPassword = catchAsync(async (req, res) => {
   sendAuthResponse(res, 200, result);
 });
 
-module.exports = { register, login, logout, forgotPassword, resetPassword };
+/**
+ * Authenticates a user using Google OAuth.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+const googleLogin = catchAsync(async (req, res) => {
+  const result = await authService.googleLogin(req.body);
+  sendAuthResponse(res, 200, result);
+});
+
+module.exports = { register, login, logout, forgotPassword, resetPassword, googleLogin };
