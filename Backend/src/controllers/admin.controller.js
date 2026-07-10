@@ -142,6 +142,14 @@ const removePost = catchAsync(async (req, res) => {
 });
 
 /**
+ * Dismiss report on a post.
+ */
+const dismissPostReport = catchAsync(async (req, res) => {
+  const data = await adminService.dismissPostReport(req.params.id);
+  sendItem(res, data);
+});
+
+/**
  * Pin post.
  */
 const pinPost = catchAsync(async (req, res) => {
@@ -207,6 +215,7 @@ module.exports = {
   getReportedPosts,
   getAllForumPosts,
   removePost,
+  dismissPostReport,
   pinPost,
   getPendingProducts,
   getAllProducts,

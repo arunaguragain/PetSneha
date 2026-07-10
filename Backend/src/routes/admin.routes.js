@@ -30,6 +30,7 @@ router.patch('/articles/:id/reject', [param('id').isMongoId().withMessage('Valid
 router.get('/forum/reported', adminController.getReportedPosts);
 router.get('/forum', adminController.getAllForumPosts);
 router.delete('/forum/:id', [param('id').isMongoId().withMessage('Valid post ID is required.')], validateRequest, adminController.removePost);
+router.patch('/forum/:id/dismiss-report', [param('id').isMongoId().withMessage('Valid post ID is required.')], validateRequest, adminController.dismissPostReport);
 router.patch('/forum/:id/pin', [param('id').isMongoId().withMessage('Valid post ID is required.')], validateRequest, adminController.pinPost);
 
 router.get('/products/pending', adminController.getPendingProducts);
