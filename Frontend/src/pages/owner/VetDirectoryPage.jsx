@@ -169,7 +169,7 @@ export default function VetDirectoryPage() {
                           )
                         ) : null}
                       </div>
-                      <div className="text-sm text-[#64748B] mt-1 truncate">{vet.specialisation || t('vetDirectory.generalPractice', 'General Practice')}</div>
+                      <div className="text-sm text-[#64748B] mt-1 truncate">{translateDynamic(vet.specialisation || t('vetDirectory.generalPractice', 'General Practice'), i18n.language)}</div>
                     </div>
                   </div>
                 </div>

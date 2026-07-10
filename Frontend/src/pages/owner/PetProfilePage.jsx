@@ -245,7 +245,7 @@ export default function PetProfilePage() {
                   {pet.name}
                 </h1>
                 <span className={`text-xs px-3 py-1.5 rounded-full uppercase tracking-wider ${getSpeciesBadgeClass(pet.species)}`}>
-                  {pet.breed || pet.species || 'Pet'}
+                  {translateDynamic(pet.breed || pet.species || 'Pet', i18n.language)}
                 </span>
               </div>
               <div className="text-sm text-[#64748B] mt-2 font-medium">
@@ -348,7 +348,7 @@ export default function PetProfilePage() {
                         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition">
                           <div>
                             <h3 className="font-semibold text-[#1E293B] text-base">{translateDynamic(record.title, i18n.language)}</h3>
-                            <p className="text-xs text-[#64748B] mt-0.5">{record.description || record.vetName || t('petProfile.defaultVet', 'Administered at PetCare Clinic')}</p>
+                            <p className="text-xs text-[#64748B] mt-0.5">{translateDynamic(record.description || record.vetName || t('petProfile.defaultVet', 'Administered at PetCare Clinic'), i18n.language)}</p>
                             <p className="text-xs text-[#64748B] mt-1">{formatDate(record.date)}</p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -396,7 +396,7 @@ export default function PetProfilePage() {
                   />
                   <div>
                     <div className="font-semibold text-[#1E293B] text-sm">{pet.savedVet?.name || pet.primaryVet?.name || 'Dr. Anita Rai'}</div>
-                    <div className="text-xs text-[#64748B]">{pet.savedVet?.clinicName || pet.primaryVet?.clinicName || 'Happy Paws Clinic, Lalitpur'}</div>
+                    <div className="text-xs text-[#64748B]">{translateDynamic(pet.savedVet?.clinicName || pet.primaryVet?.clinicName || 'Happy Paws Clinic, Lalitpur', i18n.language)}</div>
                   </div>
                 </div>
                 <button 
@@ -521,7 +521,7 @@ export default function PetProfilePage() {
                         getStatusTone(appointment.status) === 'warning' ? 'bg-[#FFFBEB] text-[#92400E]' : 
                         'bg-[#FEF2F2] text-[#B91C1C]'
                       }`}>
-                        {appointment.status || t('petProfile.pending', 'Pending')}
+                        {t(`status.${appointment.status || 'pending'}`, appointment.status || t('petProfile.pending', 'Pending'))}
                       </span>
                       <p className="text-sm text-[#475569]">{t('petProfile.fee', 'Fee:')} {formatCurrency(appointment.fee)}</p>
                       <div className="flex flex-wrap gap-2">

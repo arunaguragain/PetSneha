@@ -148,7 +148,7 @@ export default function AppointmentDetailPage() {
                   )}
                 </div>
                 <Badge variant={statusVariant(appointment.status)}>
-                  {appointment.status || 'pending'}
+                  {t(`status.${appointment.status || 'pending'}`, appointment.status || 'pending')}
                 </Badge>
               </div>
 

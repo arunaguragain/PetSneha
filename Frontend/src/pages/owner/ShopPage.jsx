@@ -9,10 +9,11 @@ import { useToast } from '../../context/ToastContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart, ArrowRight, ChevronDown, X } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
+import { translateDynamic } from '../../utils/mappings';
 
 export default function ShopPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const { addItem, itemCount } = useCart();
   const [loading, setLoading] = useState(true);
@@ -179,10 +180,10 @@ export default function ShopPage() {
                 {/* Content */}
                 <div className="p-3 flex flex-col flex-1">
                   <div className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wide">
-                    {product.category || 'Pet Supplies'}
+                    {translateDynamic(product.category ? product.category.toUpperCase() : 'Pet Supplies', i18n.language)}
                   </div>
-                  <h3 className="text-sm font-semibold text-[#1E293B] mt-1 line-clamp-1">{product.name}</h3>
-                  <p className="text-xs text-[#64748B] mt-0.5 line-clamp-2 min-h-[32px]">{product.description}</p>
+                  <h3 className="text-sm font-semibold text-[#1E293B] mt-1 line-clamp-1">{translateDynamic(product.name, i18n.language)}</h3>
+                  <p className="text-xs text-[#64748B] mt-0.5 line-clamp-2 min-h-[32px]">{translateDynamic(product.description, i18n.language)}</p>
                   
                   <div className="flex items-center justify-between mt-auto pt-3">
                     <div className="text-sm font-bold text-[#0046CE]">{formatCurrency(product.price)}</div>
@@ -247,17 +248,17 @@ export default function ShopPage() {
                 </div>
                 <div className="w-full md:w-7/12 flex flex-col justify-center">
                   <div className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest mb-1.5">
-                    {selectedProduct.category || 'Pet Supplies'}
+                    {translateDynamic(selectedProduct.category ? selectedProduct.category.toUpperCase() : 'Pet Supplies', i18n.language)}
                   </div>
                   <h2 className="text-2xl font-bold text-[#1E293B] mb-3 leading-tight" style={{ fontFamily: 'Literata, serif' }}>
-                    {selectedProduct.name}
+                    {translateDynamic(selectedProduct.name, i18n.language)}
                   </h2>
                   <div className="text-xl font-bold text-[#0046CE] mb-4">
                     {formatCurrency(selectedProduct.price)}
                   </div>
                   <div className="h-px w-full bg-[#E2E8F0] mb-4"></div>
                   <p className="text-sm text-[#475569] leading-relaxed mb-6">
-                    {selectedProduct.description}
+                    {translateDynamic(selectedProduct.description, i18n.language)}
                   </p>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-3 mt-auto">

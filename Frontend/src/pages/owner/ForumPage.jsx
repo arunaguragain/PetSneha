@@ -7,11 +7,12 @@ import { formatDate, getErrorMessage, unwrapItems } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { MessageSquare, ShieldCheck, CheckCircle2, Check, X, BookOpen } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { translateDynamic } from '../../utils/mappings';
 
 export default function ForumPage({ isEmbedded = false }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { addToast } = useToast();
   const { role } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -167,8 +168,8 @@ export default function ForumPage({ isEmbedded = false }) {
                   const answersCount = Array.isArray(post.answers) ? post.answers.length : 0;
                   const hasVetAnswer = Array.isArray(post.answers) && post.answers.some((answer) => answer.isVet === true);
                   const upvotes = Number(post.upvotes || 0);
-                  const authorName = post.isAnonymous ? 'Anonymous' : post.author?.name || 'Member';
-                  const groupLabel = post.group === 'newOwners' ? 'New Owners' : post.group === 'emergency' ? 'Emergency' : post.group === 'all' ? 'All' : post.group;
+                  const authorName = post.isAnonymous ? t('forum.anonymous', 'Anonymous') : post.author?.name || t('forum.member', 'Member');
+                  const groupLabel = post.group === 'newOwners' ? t('forum.newOwners', 'New Owners') : post.group === 'emergency' ? t('forum.emergency', 'Emergency') : post.group === 'all' ? t('forum.all', 'All') : post.group;
 
                   return (
                     <div 
@@ -188,12 +189,12 @@ export default function ForumPage({ isEmbedded = false }) {
                         </span>
                       </div>
                       
-                      <h3 className="font-semibold text-[#1E293B] mt-3 text-base">{post.title}</h3>
-                      <p className="text-sm text-[#64748B] mt-2 line-clamp-2">{post.content}</p>
+                      <h3 className="font-semibold text-[#1E293B] mt-3 text-base">{translateDynamic(post.title, i18n.language)}</h3>
+                      <p className="text-sm text-[#64748B] mt-2 line-clamp-2">{translateDynamic(post.content, i18n.language)}</p>
 
                       {hasVetAnswer && (
                         <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] px-2 py-1 text-xs font-semibold text-[#166534]">
-                          <Check className="w-3 h-3" /> Vet Answered
+                          <Check className="w-3 h-3" /> {t('forum.vetAnswered', 'Vet Answered')}
                         </div>
                       )}
 
@@ -283,15 +284,15 @@ export default function ForumPage({ isEmbedded = false }) {
             required
           />
           <Select
-            label="Group"
+            label={t('forum.group', 'Group')}
             value={createForm.group}
             onChange={(event) => setCreateForm((current) => ({ ...current, group: event.target.value }))}
           >
-            <option value="all">All</option>
-            <option value="dogs">Dogs</option>
-            <option value="cats">Cats</option>
-            <option value="newOwners">New Owners</option>
-            <option value="emergency">Emergency</option>
+            <option value="all">{t('forum.all', 'All')}</option>
+            <option value="dogs">{t('forum.dogs', 'Dogs')}</option>
+            <option value="cats">{t('forum.cats', 'Cats')}</option>
+            <option value="newOwners">{t('forum.newOwners', 'New Owners')}</option>
+            <option value="emergency">{t('forum.emergency', 'Emergency')}</option>
           </Select>
           <label className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-sm text-[#475569]">
             <input

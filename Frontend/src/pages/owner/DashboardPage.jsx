@@ -313,10 +313,10 @@ export default function DashboardPage() {
                           <p className="font-semibold text-[#1E293B] truncate">{pet.name}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${getSpeciesBadgeClass(pet.species)}`}>
-                              {pet.species || 'PET'}
+                              {translateDynamic(pet.species || 'PET', i18n.language)}
                             </span>
                             <span className="text-xs text-[#64748B]">
-                              {pet.age ? `${pet.age} Years` : ''}
+                              {pet.age ? `${pet.age} ${t('petProfile.yearsOld', 'Years')}` : ''}
                             </span>
                           </div>
                         </div>
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                       {savedVet?.name || t('dashboard.noSavedVet', 'No saved vet')}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {savedVet?.clinicName || savedVet?.clinic || t('dashboard.saveAVetFromDir', 'Save a vet from directory')}
+                      {translateDynamic(savedVet?.clinicName || savedVet?.clinic, i18n.language) || t('dashboard.saveAVetFromDir', 'Save a vet from directory')}
                     </p>
                   </div>
                 </div>
