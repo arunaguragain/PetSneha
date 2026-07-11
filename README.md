@@ -28,7 +28,7 @@ PetSneha is a full-stack pet care platform designed for pet owners, veterinarian
 - Multer for uploads
 - Jest + Supertest for backend tests
 
-## 🏗️ Project structure
+## Project structure
 
 ```
 PetSneha/
