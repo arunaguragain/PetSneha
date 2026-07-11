@@ -28,18 +28,41 @@ PetSneha is a full-stack pet care platform designed for pet owners, veterinarian
 - Multer for uploads
 - Jest + Supertest for backend tests
 
-##  Project structure
+## 🏗️ Project structure
 
+```
 PetSneha/
 ├── Backend/
 │   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── middleware/
+│   │   ├── utils/
+│   │   ├── config/
+│   │   └── app.js
+│   ├── tests/
 │   ├── server.js
 │   └── package.json
 ├── Frontend/
 │   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── api/
+│   │   ├── context/
+│   │   ├── utils/
+│   │   ├── styles/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── tests/
 │   ├── public/
+│   ├── vitest.config.js
 │   └── package.json
 └── README.md
+```
 
 
 ## Getting started
@@ -106,18 +129,6 @@ Run frontend tests:
 cd Frontend
 npm test
 ```
-
-##  Screenshots
-
-Here are a few existing app visuals from the project assets:
-
-[PetSneha logo](Frontend/public/logo.png)
-
-[Happy puppy illustration](Frontend/public/happy-puppy.png)
-
-[Security illustration](Frontend/public/shield.png)
-
-[Profile illustration](Frontend/public/profile.png)
 
 ##  Notes
 
