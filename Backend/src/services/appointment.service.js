@@ -38,9 +38,12 @@ function buildSlots(vet, date, bookedAppointments) {
 
   for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
     const slot = toTimeString(minutes);
-    if (!bookedSlots.has(slot)) {
-      slots.push(slot);
-    }
+    const isBooked = bookedSlots.has(slot);
+    slots.push({
+      slot,
+      booked: isBooked,
+      available: !isBooked,
+    });
   }
 
   return slots;

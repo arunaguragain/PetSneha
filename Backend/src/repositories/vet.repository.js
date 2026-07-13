@@ -15,7 +15,9 @@ async function create(payload) {
  * @returns {Promise<Array<import('mongoose').Document>>}
  */
 async function findAll(filter = {}) {
-  return Vet.find(filter).sort('-createdAt');
+  return Vet.find(filter)
+    .populate('userId', 'name email phone')
+    .sort('-createdAt');
 }
 
 /**
@@ -24,7 +26,9 @@ async function findAll(filter = {}) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findById(id) {
-  return Vet.findById(id).populate('reviews.authorId', 'name profilePhoto');
+  return Vet.findById(id)
+    .populate('reviews.authorId', 'name profilePhoto')
+    .populate('userId', 'name email phone');
 }
 
 /**
@@ -33,7 +37,8 @@ async function findById(id) {
  * @returns {Promise<import('mongoose').Document|null>}
  */
 async function findByUserId(userId) {
-  return Vet.findOne({ userId });
+  return Vet.findOne({ userId })
+    .populate('userId', 'name email phone');
 }
 
 /**
@@ -99,7 +104,9 @@ async function findAllPublic(filters = {}) {
     }
   }
 
-  return Vet.find(query).sort({ rating: -1 });
+  return Vet.find(query)
+    .populate('userId', 'name email phone')
+    .sort({ rating: -1 });
 }
 
 module.exports = { create, findAll, findAllPublic, findById, findByUserId, updateById, deleteById };

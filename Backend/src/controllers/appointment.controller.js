@@ -70,7 +70,7 @@ const confirmAppointment = catchAsync(async (req, res) => {
  */
 const getAvailableSlots = catchAsync(async (req, res) => {
   const slots = await appointmentService.getAvailableSlots(req.params.vetId, req.query.date);
-  sendList(res, slots.map((slot) => ({ slot })));
+  sendList(res, slots);
 });
 
 module.exports = {
