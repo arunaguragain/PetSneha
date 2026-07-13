@@ -84,10 +84,13 @@ export default function BookingPage() {
     const loadSlots = async () => {
       try {
         const response = await getVetSlots(vetId, selectedDate);
-        const slotsList = response.data?.slots
-          || response.data?.items
-          || (Array.isArray(response.data) ? response.data : response || []);
-        setSlots(slotsList);
+        const slotsList = response?.slots
+          || response?.items
+          || response?.data?.items
+          || response?.data?.data?.items
+          || response?.data
+          || [];
+        setSlots(Array.isArray(slotsList) ? slotsList : []);
       } catch (apiError) {
         addToast(getErrorMessage(apiError), 'danger');
       }
@@ -161,6 +164,7 @@ export default function BookingPage() {
   const fee = vet?.consultationFee || vet?.fee || 800;
   const serviceCharge = fee * 0.05;
   const total = fee + serviceCharge;
+  const normalizedVetName = vet?.name?.replace(/^Dr\.?\s*/i, '') || vet?.name;
 
   return (
     <div className="bg-white min-h-screen relative">
@@ -168,7 +172,7 @@ export default function BookingPage() {
         open={showInfoOverlay}
         icon={<Mail className="h-8 w-8" />}
         title={t('booking.requestSent')}
-        description={t('booking.requestSentBody', { vetName: vet?.name, email: user?.email })}
+        description={t('booking.requestSentBody', { vetName: normalizedVetName, email: user?.email })}
         actions={(
           <Button type="button" onClick={handleOverlayContinue} fullWidth>
             {t('booking.gotIt')}
@@ -281,32 +285,51 @@ export default function BookingPage() {
                 <h2 className="text-sm font-semibold text-[#1E293B] flex items-center gap-1">
                   <Clock className="w-4 h-4 text-[#0046CE]" /> {t('booking.availableTimeSlots')}
                 </h2>
+
+                {bookingError && (
+                  <div className="mt-4 text-sm text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-3">
+                    {bookingError}
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] mt-3">
                   {slots.length > 0 ? slots.map((slot) => {
                     const isAvailable = slot.available !== false && !slot.booked;
                     const isSelected = selectedSlot === slot.slot;
-                    
+
                     return (
                       <button
                         key={slot.slot}
                         type="button"
                         disabled={!isAvailable}
-                        onClick={() => { setSelectedSlot(slot.slot); setStep(3); }}
-                        className={`border rounded-lg py-2 text-center text-sm transition
-                          ${!isAvailable ? 'bg-[#F8FAFC] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed line-through' 
+                        onClick={() => { setSelectedSlot(slot.slot); setStep(3); setBookingError(''); }}
+                        className={`border rounded-lg py-2 text-center text-sm transition min-h-[56px]
+                          ${!isAvailable ? 'bg-[#F8FAFC] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed' 
                             : isSelected ? 'bg-[#0046CE] border-[#0046CE] text-white font-medium' 
                             : 'bg-white border-[#E2E8F0] text-[#1E293B] hover:border-[#0046CE] hover:text-[#0046CE] cursor-pointer'}`}
                       >
-                        {slot.slot}
+                        <div className="font-medium">{slot.slot}</div>
+                        {!isAvailable && <div className="text-[10px] text-[#94A3B8] uppercase tracking-[0.08em] mt-1">Unavailable</div>}
                       </button>
                     );
                   }) : (
-                    <div className="col-span-3 text-sm text-[#64748B] p-4 bg-[#F8FAFC] rounded-xl text-center border border-[#E2E8F0]">
-                      {t('booking.noSlotsAvailable')}
-                    </div>
+                    ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'].map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        disabled
+                        className="border rounded-lg py-2 text-center text-sm transition bg-[#F8FAFC] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed"
+                      >
+                        {time}
+                      </button>
+                    ))
                   )}
                 </div>
+                {slots.length === 0 && (
+                  <div className="mt-3 text-sm text-[#64748B] p-4 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0]">
+                    {t('booking.noSlotsAvailable')}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -362,6 +385,11 @@ export default function BookingPage() {
                 </div>
               </div>
 
+              {bookingError && (
+                <div className="text-sm text-[#B91C1C] bg-[#FEF2F2] border border-[#FECACA] rounded-lg p-3 mb-3">
+                  {bookingError}
+                </div>
+              )}
               <button 
                 onClick={handleConfirmBooking} 
                 disabled={!selectedDate || !selectedSlot || !selectedPetId || submitting}

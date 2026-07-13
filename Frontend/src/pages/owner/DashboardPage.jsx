@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Skeleton } from '../../components/ui';
+import { Button, Card, Skeleton, ConfirmationOverlay } from '../../components/ui';
 import { useAuth } from '../../hooks/useAuth';
 import { getAppointments, getPets, getPetReminders } from '../../api/pet.api';
+import { getVet } from '../../api/vet.api';
 import { getArticles } from '../../api/content.api';
 import { getErrorMessage, getPetEmoji, unwrapItems } from '../../utils/api';
 import { translateDynamic } from '../../utils/mappings';
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [seasonalArticle, setSeasonalArticle] = useState(null);
   const [error, setError] = useState('');
   const [savedVet, setSavedVet] = useState(null);
+  const [callTarget, setCallTarget] = useState(null);
 
   const getPhotoUrl = (photoSrc) => {
     if (!photoSrc) return '';
@@ -66,7 +68,19 @@ export default function DashboardPage() {
           setReminders(allReminders);
         }
 
-        setSavedVet(getSavedVet());
+        const storedVet = getSavedVet();
+        const savedVetId = storedVet?.savedVetId || storedVet?._id || storedVet?.id;
+        if (savedVetId && !storedVet?.phone && !storedVet?.userId?.phone) {
+          try {
+            const vetResponse = await getVet(savedVetId);
+            const vetData = vetResponse.data?.data?.vet || vetResponse.data?.vet || vetResponse.data;
+            setSavedVet({ ...storedVet, ...vetData });
+          } catch (_) {
+            setSavedVet(storedVet);
+          }
+        } else {
+          setSavedVet(storedVet);
+        }
 
         // Fetch latest 3 published articles for sidebar
         try {
@@ -421,10 +435,21 @@ export default function DashboardPage() {
                     <span>{t('dashboard.nextAvailable', 'Next Available')}: {savedVet.nextAvailable}</span>
                   </div>
                 )}
-                <button className="w-full mt-4 bg-[#0046CE] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#003DA8] transition">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCallTarget({
+                      name: savedVet?.name || t('dashboard.callNow', 'Veterinarian'),
+                      phone: savedVet?.phone || savedVet?.userId?.phone || '',
+                      fallback: !savedVet?.phone && !savedVet?.userId?.phone,
+                    });
+                  }}
+                  className="w-full mt-4 bg-[#0046CE] text-white rounded-xl py-3 text-sm font-semibold hover:bg-[#003DA8] transition"
+                >
                   {t('dashboard.callNow', 'Call Now')}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     const id = savedVet?._id || savedVet?.id;
                     if (id) {
@@ -439,6 +464,30 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+
+            <ConfirmationOverlay
+              open={!!callTarget}
+              icon={<Phone className="w-8 h-8 text-[#0046CE]" />}
+              title={callTarget?.fallback ? t('dashboard.callNow', 'Contact Support') : `Call ${callTarget?.name}?`}
+              description={callTarget?.fallback
+                ? t('dashboard.callSupportDesc', 'No phone number is available for this saved vet. Please contact support or choose another vet.')
+                : `You are about to call ${callTarget?.phone}. Make sure you are ready to speak with the clinic.`}
+              primaryAction={{
+                label: callTarget?.fallback ? t('dashboard.contactSupport', 'Contact Support') : `📞 Call ${callTarget?.phone}`,
+                onClick: () => {
+                  if (callTarget?.fallback) {
+                    navigate('/contact');
+                  } else if (callTarget?.phone) {
+                    window.location.href = `tel:${callTarget.phone}`;
+                  }
+                  setCallTarget(null);
+                },
+              }}
+              secondaryAction={{
+                label: t('buttons.cancel', 'Cancel'),
+                onClick: () => setCallTarget(null),
+              }}
+            />
 
             {/* Articles */}
             <div>

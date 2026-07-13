@@ -33,7 +33,7 @@ export default function EmergencyPage() {
   }, [addToast]);
 
   const handleCall = (vet) => {
-    setCallTarget({ name: vet.name, phone: vet.phone || '9800000000' });
+    setCallTarget({ name: vet.name, phone: vet.phone || vet.userId?.phone || '9800000000' });
   };
 
   const confirmCall = () => {
